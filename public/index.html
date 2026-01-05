@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Quiz Board</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="topbar__left">
+      <div class="brand">Quiz Board</div>
+    </div>
+
+    <div class="topbar__right">
+      <button class="btn reset-btn">Сбросить игру</button>
+      <button class="btn settings-btn">⚙️ Настройки</button>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="container" aria-label="Board container">
+      <div class="board-row">
+
+        <!-- LEFT: TOPICS -->
+        <div class="board-left">
+          <div class="cell topic">Тема 1</div>
+          <div class="cell topic">Тема 2</div>
+          <div class="cell topic">Тема 3</div>
+          <div class="cell topic">Тема 4</div>
+          <div class="cell topic">Тема 5</div>
+        </div>
+
+        <!-- RIGHT: SLOTS -->
+        <div class="board-right">
+          <div class="cells-grid">
+            <!-- row 0 -->
+            <div class="cell slot" data-row="0" data-col="0">100</div>
+            <div class="cell slot" data-row="0" data-col="1">200</div>
+            <div class="cell slot" data-row="0" data-col="2">300</div>
+            <div class="cell slot" data-row="0" data-col="3">400</div>
+            <div class="cell slot" data-row="0" data-col="4">500</div>
+
+            <!-- row 1 -->
+            <div class="cell slot" data-row="1" data-col="0">100</div>
+            <div class="cell slot" data-row="1" data-col="1">200</div>
+            <div class="cell slot" data-row="1" data-col="2">300</div>
+            <div class="cell slot" data-row="1" data-col="3">400</div>
+            <div class="cell slot" data-row="1" data-col="4">500</div>
+
+            <!-- row 2 -->
+            <div class="cell slot" data-row="2" data-col="0">100</div>
+            <div class="cell slot" data-row="2" data-col="1">200</div>
+            <div class="cell slot" data-row="2" data-col="2">300</div>
+            <div class="cell slot" data-row="2" data-col="3">400</div>
+            <div class="cell slot" data-row="2" data-col="4">500</div>
+
+            <!-- row 3 -->
+            <div class="cell slot" data-row="3" data-col="0">100</div>
+            <div class="cell slot" data-row="3" data-col="1">200</div>
+            <div class="cell slot" data-row="3" data-col="2">300</div>
+            <div class="cell slot" data-row="3" data-col="3">400</div>
+            <div class="cell slot" data-row="3" data-col="4">500</div>
+
+            <!-- row 4 -->
+            <div class="cell slot" data-row="4" data-col="0">100</div>
+            <div class="cell slot" data-row="4" data-col="1">200</div>
+            <div class="cell slot" data-row="4" data-col="2">300</div>
+            <div class="cell slot" data-row="4" data-col="3">400</div>
+            <div class="cell slot" data-row="4" data-col="4">500</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <!-- GAME MODAL -->
+  <div id="gameModal" class="modal" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+
+    <div class="modal__card modal__card--game" role="dialog" aria-modal="true">
+      <div class="modal__header">
+        <div id="gameMeta" class="modal__meta"></div>
+        <button id="gameCloseBtn" class="iconbtn" type="button" aria-label="Закрыть">✕</button>
+      </div>
+
+      <div class="modal__body">
+        <div id="gameEmptyState" class="empty-state hidden">
+  <div class="empty-state__icon">🧩</div>
+  <div class="empty-state__text">
+    Для цього питання ще немає даних
+  </div>
+</div>
+
+
+       <div id="gameMedia" style="margin-bottom:16px;"></div>
+  <div id="questionText" class="qbox"></div>
+
+        <div class="answer">
+          <button id="toggleAnswerBtn" class="btn" type="button">Показать ответ</button>
+          <div id="answerText" class="abox hidden"></div>
+        </div>
+      </div>
+
+      <div class="modal__footer">
+        <button id="togglePlayedBtn" class="btn ghost" type="button">Отметить как сыгранную</button>
+      </div>
+    </div>
+  </div>
+
+<!-- EDIT MODAL -->
+<div id="editModal" class="modal" aria-hidden="true">
+  <div class="modal__backdrop"></div>
+
+  <div
+    class="modal__card modal__card--edit"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="editTitle"
+  >
+    <div class="modal__header">
+      <div>
+        <div id="editTitle" class="modal__title">Настройка ячейки</div>
+        <div id="editMeta" class="modal__meta"></div>
+      </div>
+      <button
+        id="editCloseBtn"
+        class="iconbtn"
+        type="button"
+        aria-label="Закрыть"
+      >
+        ✕
+      </button>
+    </div>
+
+    <div class="modal__body">
+      <div class="form">
+
+        <!-- ВОПРОС -->
+        <label class="field">
+          <div class="field__label">Вопрос</div>
+          <textarea
+            id="qInput"
+            class="textarea"
+            rows="4"
+            placeholder="Введите текст вопроса..."
+          ></textarea>
+        </label>
+
+        <!-- ОТВЕТ -->
+        <label class="field">
+          <div class="field__label">Ответ</div>
+          <textarea
+            id="aInput"
+            class="textarea"
+            rows="3"
+            placeholder="Введите текст ответа..."
+          ></textarea>
+        </label>
+<!-- MEDIA -->
+<div id="mediaBlock" class="field">
+  <div class="field__label">Медиа</div>
+
+  <!-- hidden real input -->
+  <input
+    id="mediaInput"
+    type="file"
+    accept="image/*,audio/*,video/*"
+    hidden
+  />
+
+  <!-- custom button -->
+  <button
+    id="chooseFileBtn"
+    type="button"
+    class="btn secondary"
+  >
+    📎 Выбрать файл
+  </button>
+
+  <!-- file name -->
+  <div
+    id="fileName"
+    style="margin-top:6px; font-size:13px; opacity:.7;"
+  ></div>
+</div>
+
+
+<!-- MEDIA PREVIEW -->
+<div
+  id="mediaPreview"
+  style="margin-bottom:18px;"
+></div>
+<button
+  id="deleteMediaBtn"
+  class="btn ghost"
+  type="button"
+  style="margin-bottom:18px; display:none;"
+>
+  🗑 Удалить медиа
+</button>
+
+
+        <!-- ACTIONS -->
+        <div class="field split">
+          <button
+            id="saveCellBtn"
+            class="btn"
+            type="button"
+          >
+            Сохранить
+          </button>
+          <button
+            id="editBackBtn"
+            class="btn secondary"
+            type="button"
+          >
+            Закрыть
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+
+  <script src="./app.js"></script>
+</body>
+</html>

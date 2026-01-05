@@ -1,0 +1,11 @@
+# Node
+node_modules/
+
+# Media uploads
+media/
+
+# OS
+.DS_Store
+
+# Logs
+*.log
