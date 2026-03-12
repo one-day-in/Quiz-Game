@@ -1,5 +1,5 @@
 // src/bootstrap.js
-import { getSession, isAuthorized, signOut, onAuthStateChange } from './api/authApi.js';
+import { getSession, signOut, onAuthStateChange } from './api/authApi.js';
 import { createGame } from './api/gameApi.js';
 import { escapeHtml } from './utils/utils.js';
 import { createAppController } from './AppController.js';
@@ -11,7 +11,7 @@ import { createSettingsService } from './services/SettingsService.js';
 import { createModalService } from './services/ModalService.js';
 import { createMediaService } from './services/MediaService.js';
 
-import { renderLogin, renderAccessDenied } from './views/LoginView.js';
+import { renderLogin } from './views/LoginView.js';
 import { LobbyView } from './views/LobbyView.js';
 
 const root = document.getElementById('app');
@@ -171,15 +171,6 @@ async function startApp() {
         }
 
         const user = session.user;
-        const authorized = await isAuthorized(user.id);
-
-        if (!authorized) {
-            renderAccessDenied(root, user, async () => {
-                await signOut();
-                renderLogin(root);
-            });
-            return;
-        }
 
         const lastGame = getLastGame();
         if (lastGame) {
