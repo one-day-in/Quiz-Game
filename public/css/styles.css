@@ -1,0 +1,17 @@
+/* styles.css */
+@import url("./shared/variables.css");
+@import url("./shared/base.css");
+@import url("./shared/utilities.css");
+@import url("./shared/loader.css");
+@import url("./shared/confirm.css");
+
+@import url("./layout/layout.css");
+@import url("./layout/header.css");
+@import url("./layout/grid.css");
+@import url("./layout/cells.css");
+@import url("./layout/footer.css");
+@import url("./layout/login.css");
+@import url("./layout/lobby.css");
+
+@import url("./components/modal/modal.css");
+@import url("./components/settings-slider/settings-slider.css");

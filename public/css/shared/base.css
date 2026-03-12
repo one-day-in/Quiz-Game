@@ -1,0 +1,126 @@
+/* shared/base.css */
+
+/* ---------- Reset / base ---------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+
+  font-family: var(--font-sans);
+  font-size: var(--fs-3);
+  line-height: var(--lh);
+
+  color: var(--text);
+   overflow: hidden;
+  /* app-shell handles layout */
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* ---------- Focus ---------- */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+  border-radius: var(--radius-sm);
+}
+
+/* ---------- Bootstrap screens (bootstrap.js) ---------- */
+.loading,
+.error {
+  min-height: 100vh;
+
+  display: grid;
+  place-items: center;
+
+  padding: 28px;
+}
+
+.loading>*,
+.error>* {
+  max-width: 680px;
+}
+
+.loading h2,
+.error h2 {
+  margin: 0 0 10px;
+
+  font-size: var(--fs-6);
+  letter-spacing: -0.02em;
+}
+
+.loading p,
+.error p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.error pre {
+  margin: 14px 0 0;
+  padding: 12px;
+
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-2);
+
+  background: var(--surface-3);
+  box-shadow: var(--shadow-sm);
+
+  color: var(--text);
+}
+
+#retryBtn {
+  margin-top: 14px;
+}
+
+/* Make any stray 'button' in bootstrap look decent */
+.loading button,
+.error button {
+  height: 40px;
+  padding: 0 14px;
+
+  border-radius: 12px;
+  border: 1px solid var(--border-3);
+
+  background: var(--surface-2);
+  box-shadow: var(--shadow-btn);
+
+  transition:
+    transform var(--t-fast) var(--ease),
+    background var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease);
+}
+
+.loading button:hover,
+.error button:hover {
+  transform: translateY(-1px);
+  background: var(--surface-3);
+  border-color: var(--border-5);
+}
+
+.loading button:active,
+.error button:active {
+  transform: translateY(0px);
+}

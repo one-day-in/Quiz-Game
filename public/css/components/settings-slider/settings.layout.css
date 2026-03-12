@@ -1,0 +1,54 @@
+.settings__header {
+  padding: 18px 18px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  border-bottom: 1px solid var(--border-2);
+  background: var(--surface-1);
+}
+
+.settings__title {
+  margin: 0;
+  font-size: var(--fs-4);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+/* Body scrolls; footer stays pinned */
+.settings__body {
+  flex: 1 1 0;
+  min-height: 0;
+  padding: 16px 18px;
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--settings-section-gap);
+
+  overflow: auto;
+  background: var(--surface-1);
+}
+
+.settings__footer {
+  flex: 0 0 auto;
+  padding: 14px 18px;
+  border-top: 1px solid var(--border-2);
+  background: var(--surface-1);
+}
+
+/* Scrollbar (match modal vibe) */
+.settings__body::-webkit-scrollbar { width: 8px; }
+.settings__body::-webkit-scrollbar-track { background: transparent; }
+.settings__body::-webkit-scrollbar-thumb {
+  background: var(--surface-2);
+  border-radius: 20px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.settings__body::-webkit-scrollbar-thumb:hover {
+  background: var(--surface-3);
+  background-clip: padding-box;
+}

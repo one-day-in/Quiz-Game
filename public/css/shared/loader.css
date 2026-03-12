@@ -1,0 +1,151 @@
+/* loader.css — page-level & inline loading indicators */
+
+@keyframes loader-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes mode-flash {
+  0%   { opacity: 0; }
+  18%  { opacity: 1; }
+  70%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ─── Mode / Round announcement overlay ───────────────── */
+
+.mode-transition {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+
+  pointer-events: none;
+  opacity: 0;
+
+  background: var(--overlay-strong, rgba(0, 0, 0, 0.6));
+}
+
+.mode-transition--visible {
+  animation: mode-flash 600ms var(--ease, ease) forwards;
+}
+
+.mode-transition__label {
+  font-size: var(--fs-7);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: #fff;
+}
+
+.mode-transition__sub {
+  font-size: var(--fs-3);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* ─── Full-page loader ─────────────────────────────────── */
+
+.page-loader {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  background: var(--bg);
+  background-color: var(--bg-2);
+}
+
+.page-loader__ring {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 3px solid var(--border-2);
+  border-top-color: var(--brand);
+  animation: loader-spin 0.75s linear infinite;
+}
+
+.page-loader__text {
+  margin: 0;
+  font-size: var(--fs-2);
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+
+/* ─── Inline loader (inside components) ───────────────── */
+
+.inline-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 40px 16px;
+  color: var(--muted);
+  font-size: var(--fs-2);
+}
+
+.inline-loader__ring {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 2px solid var(--border-2);
+  border-top-color: var(--brand);
+  animation: loader-spin 0.75s linear infinite;
+}
+
+/* ─── Page-level error screen ──────────────────────────── */
+
+.page-error {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 32px;
+  background: var(--bg);
+  background-color: var(--bg-2);
+  text-align: center;
+}
+
+.page-error__title {
+  margin: 0;
+  font-size: var(--fs-4);
+  color: var(--text);
+}
+
+.page-error__detail {
+  margin: 0;
+  font-size: var(--fs-1);
+  font-family: var(--font-mono);
+  color: var(--danger);
+  background: var(--danger-a18);
+  border: 1px solid var(--danger-a35);
+  border-radius: var(--radius-sm);
+  padding: 12px 20px;
+  max-width: 540px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.page-error__retry {
+  margin-top: 4px;
+  padding: 12px 28px;
+  background: var(--btn-brand-bg);
+  color: var(--btn-brand-text);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-2);
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity var(--t-fast) var(--ease);
+}
+
+.page-error__retry:hover { opacity: 0.85; }

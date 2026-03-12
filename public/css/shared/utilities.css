@@ -1,0 +1,56 @@
+/* shared/utilities.css */
+
+/* Small utility set (optional). Keep minimal. */
+
+.u-muted {
+  color: var(--muted);
+}
+
+.u-mono {
+  font-family: var(--font-mono);
+}
+
+.u-btn {
+  height: 40px;
+  padding: 0 14px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+
+  border-radius: 12px;
+  border: 1px solid var(--btn-border);
+background: var(--btn-bg);
+box-shadow: var(--shadow-btn);
+
+  transition:
+    transform var(--t-fast) var(--ease),
+    background var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease);
+}
+
+.u-btn:hover {
+  transform: translateY(-1px);
+  background: var(--btn-bg-hover);
+border-color: var(--border-5);
+}
+
+.u-btn:active {
+  transform: translateY(0px);
+}
+
+.u-btn--brand {
+  border-color: var(--brand-a35);
+  background: var(--btn-brand-bg);
+}
+
+.u-btn--danger {
+  border-color: var(--danger-a35);
+  background: linear-gradient(180deg, var(--danger-a18), var(--danger-a08));
+}
+
+/* Visibility */
+.is-hidden {
+  display: none !important;
+}

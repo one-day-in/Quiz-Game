@@ -1,0 +1,32 @@
+/* layout/layout.css */
+
+.app-shell {
+  position: fixed;
+  inset: 0;
+
+  width: 100vw;
+  height: 100vh;
+
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: var(--bg), var(--bg-2);
+  padding: var(--app-pad);
+}
+
+/* Views */
+.app-header {
+  flex: 0 0 auto;
+  height: var(--header-h);
+}
+
+.game-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.app-footer {
+  flex: 0 0 auto;
+  height: var(--footer-h);
+}
+

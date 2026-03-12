@@ -1,0 +1,178 @@
+/* ─── Custom confirmation dialog ──────────────────────────────────── */
+
+.cfdialog {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px) saturate(140%);
+
+    opacity: 0;
+    transition: opacity 180ms ease;
+}
+
+.cfdialog--visible {
+    opacity: 1;
+}
+
+/* ─── Dialog box ──────────────────────────────────────────────────── */
+
+.cfdialog__box {
+    width: 380px;
+    max-width: calc(100vw - 48px);
+
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+
+    padding: 32px 28px 24px;
+
+    background: var(--surface-2);
+    border: 1px solid var(--border-3);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+
+    transform: translateY(14px) scale(0.96);
+    opacity: 0;
+    transition:
+        transform 200ms var(--ease),
+        opacity    180ms ease;
+}
+
+.cfdialog--visible .cfdialog__box {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+}
+
+/* ─── Message ─────────────────────────────────────────────────────── */
+
+.cfdialog__msg {
+    margin: 0;
+    font-size: var(--fs-3);
+    line-height: var(--lh);
+    color: var(--text);
+    text-align: center;
+}
+
+/* ─── Input (prompt dialog) ───────────────────────────────────────── */
+
+.cfdialog__input {
+    width: 100%;
+    padding: 12px 16px;
+    box-sizing: border-box;
+
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-3);
+    background: var(--surface);
+    color: var(--text);
+
+    font-family: inherit;
+    font-size: var(--fs-2);
+    line-height: var(--lh);
+
+    outline: none;
+    transition: box-shadow 140ms ease;
+}
+
+.cfdialog__input::placeholder {
+    color: var(--muted-2);
+}
+
+.cfdialog__input:focus {
+    box-shadow: var(--ring);
+    border-color: var(--brand);
+}
+
+/* ─── Buttons ─────────────────────────────────────────────────────── */
+
+.cfdialog__btns {
+    display: flex;
+    gap: 10px;
+}
+
+.cfdialog__btn {
+    flex: 1;           /* equal width */
+    padding: 12px 16px;
+
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-3);
+
+    font-family: inherit;
+    font-size: var(--fs-2);
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+
+    transition:
+        opacity     120ms ease,
+        transform   80ms  ease,
+        box-shadow  120ms ease;
+}
+
+.cfdialog__btn:focus-visible {
+    outline: none;
+    box-shadow: var(--ring);
+}
+
+.cfdialog__btn:active {
+    transform: translateY(1px);
+}
+
+/* Cancel */
+.cfdialog__btn--cancel {
+    background: var(--btn-bg);
+    color: var(--text-soft);
+}
+
+.cfdialog__btn--cancel:hover {
+    background: var(--btn-bg-hover);
+}
+
+/* Danger (delete/erase) */
+.cfdialog__btn--danger {
+    background: var(--btn-danger-bg);
+    color: var(--btn-danger-text);
+    border-color: transparent;
+    box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);
+}
+
+.cfdialog__btn--danger:hover {
+    opacity: 0.88;
+}
+
+/* ─── Round picker variant — 3× larger box ───────────────────────── */
+
+.cfdialog--round-picker .cfdialog__box {
+    width: 1140px;
+    padding: 48px 56px 48px;
+    gap: 40px;
+}
+
+.cfdialog--round-picker .cfdialog__msg {
+    font-size: var(--fs-5);
+}
+
+.cfdialog--round-picker .round-grid {
+    gap: 24px;
+}
+
+.cfdialog--round-picker .round-tile {
+    font-size: var(--fs-6);
+}
+
+/* Primary (non-destructive confirm) */
+.cfdialog__btn--primary {
+    background: var(--btn-brand-bg);
+    color: var(--btn-brand-text);
+    border-color: transparent;
+    box-shadow: var(--shadow-btn);
+}
+
+.cfdialog__btn--primary:hover {
+    opacity: 0.88;
+}

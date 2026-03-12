@@ -1,0 +1,389 @@
+/* =========================================
+   MODAL CONTROLS â€” TV SHOW EDITION
+   Clean, token-based, no fallbacks
+========================================= */
+
+/* =========================================
+   Base Button (all modal buttons)
+========================================= */
+
+.qmodal__btn {
+  height: 56px;
+  padding: 0 22px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+
+  border-radius: 999px;
+  border: 1px solid var(--btn-outline);
+
+  background: var(--btn-bg);
+  color: var(--text);
+
+  font-size: var(--fs-3);
+  font-weight: 900;
+  letter-spacing: var(--btn-letter);
+
+  cursor: pointer;
+  user-select: none;
+
+  box-shadow: var(--shadow-btn), var(--btn-glow);
+
+  transition:
+    transform var(--t-fast) var(--ease),
+    filter var(--t-fast) var(--ease),
+    box-shadow var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease),
+    background var(--t-fast) var(--ease);
+}
+
+/* Hover */
+.qmodal__btn:hover {
+  transform: translateY(calc(-1 * var(--lift-y)));
+  border-color: var(--btn-outline-hover);
+  box-shadow: var(--shadow-md), var(--btn-glow-hover);
+  filter: brightness(1.06);
+}
+
+/* Active / Press */
+.qmodal__btn:active {
+  transform: translateY(var(--btn-press-y));
+  filter: brightness(0.98);
+}
+
+/* Focus */
+.qmodal__btn:focus-visible {
+  box-shadow: var(--shadow-md), var(--ring);
+}
+
+/* =========================================
+   Primary Button (Done)
+========================================= */
+
+.qmodal__btn--primary {
+  background: linear-gradient(150deg, #220847, #12bbb0);
+  box-shadow:
+    0 0 0 0 rgba(0, 0, 0, 0),
+    0 0 20px rgba(69, 20, 205, 0.5);
+  color: var(--btn-primary-text);
+  border: 1px solid var(--btn-outline-hover);
+}
+
+.qmodal__btn--primary:hover {
+  box-shadow: var(--shadow-md), var(--btn-glow-hover);
+  filter: brightness(1.08);
+}
+
+/* =========================================
+   Ghost Buttons (icons: X, Upload, Delete)
+========================================= */
+
+.qmodal__btn--ghost {
+  width: 56px;
+  padding: 0;
+
+  border-radius: var(--radius-md);
+  font-size: var(--fs-4);
+}
+
+/* =========================================
+   Media Action Buttons (Upload / Delete)
+========================================= */
+
+.qmodal__mediaActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.qmodal__btn--mediaAction {
+  min-width: 170px;
+  padding: 0 18px;
+}
+
+/* mobile: let buttons fill the row */
+@media (max-width: 520px) {
+  .qmodal__btn--mediaAction {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
+
+/* =========================================
+   Secondary Button (Add Audio)
+========================================= */
+
+.qmodal__btn--secondary {
+  background: linear-gradient(180deg, var(--surface-2), var(--surface-3));
+  border-color: var(--btn-outline);
+}
+
+.qmodal__btn--secondary:hover {
+  filter: brightness(1.08);
+  border-color: var(--btn-outline-hover);
+}
+
+/* utility */
+.is-hidden {
+  display: none !important;
+}
+
+/* =========================================
+   Danger Variant (if used later)
+========================================= */
+
+.qmodal__btn--danger {
+  background: var(--btn-danger-gradient-2);
+  color: var(--btn-danger-text);
+  border: 1px solid var(--danger-a35);
+}
+
+.qmodal__btn--danger:hover {
+  box-shadow:
+    0 0 28px var(--danger-a35),
+    var(--shadow-md);
+}
+
+/* =========================================
+   Footer: Apple-like Toggle
+========================================= */
+
+/* ---------- Apple-like toggle container ---------- */
+
+.qmodal__toggle {
+  position: relative;
+  /* âœ… anchor ::before/::after */
+  overflow: hidden;
+  /* âœ… prevent knob overflow */
+
+  height: 56px;
+  padding: 0 18px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+
+  border-radius: 999px;
+  border: 1px solid var(--btn-outline);
+
+  background: var(--btn-bg);
+  color: var(--text);
+
+  font-size: var(--fs-3);
+  font-weight: 900;
+  letter-spacing: var(--btn-letter);
+
+  box-shadow: var(--shadow-btn), var(--btn-glow);
+
+  cursor: pointer;
+  user-select: none;
+
+  transition:
+    transform var(--t-fast) var(--ease),
+    filter var(--t-fast) var(--ease),
+    box-shadow var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease),
+    background var(--t-fast) var(--ease);
+}
+
+.qmodal__toggle:active {
+  transform: translateY(var(--btn-press-y));
+  filter: brightness(0.98);
+}
+
+/* hide native checkbox but keep accessible */
+.qmodal__toggleInput {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+
+/* static label — always "Answered", width never changes */
+.qmodal__toggle span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+/* switch track */
+.qmodal__toggle::after {
+  content: "";
+  width: 78px;
+  height: 38px;
+  border-radius: 999px;
+
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-3);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+
+  flex: 0 0 auto;
+}
+
+/* switch knob */
+.qmodal__toggle::before {
+  content: "";
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+
+  background: linear-gradient(180deg,
+      rgba(255, 255, 255, 0.95),
+      rgba(255, 255, 255, 0.75));
+
+  box-shadow:
+    0 10px 18px rgba(0, 0, 0, 0.55),
+    0 0 12px rgba(0, 0, 0, 0.25);
+
+  position: absolute;
+  right: 18px;
+  /* inside padding */
+  transform: translateX(-38px);
+  /* OFF (left) */
+
+  transition:
+    transform var(--t) var(--ease),
+    filter var(--t) var(--ease),
+    box-shadow var(--t) var(--ease);
+}
+
+/* focus ring when tabbing onto checkbox */
+.qmodal__toggle:has(.qmodal__toggleInput:focus-visible) {
+  box-shadow: var(--shadow-md), var(--ring);
+}
+
+/* ON state */
+.qmodal__toggle:has(.qmodal__toggleInput:checked) {
+  background: var(--btn-bg);
+  border-color: var(--success);
+}
+
+.qmodal__toggle:has(.qmodal__toggleInput:checked)::after {
+  background: var(--success);
+  border-color: var(--success);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.2),
+    0 0 18px var(--danger-a35);
+}
+
+.qmodal__toggle:has(.qmodal__toggleInput:checked)::before {
+  transform: translateX(0);
+  /* ON (right) */
+  filter: brightness(1.02);
+}
+
+/* ---------- Show/Hide Answer button (footer, view mode only) ---------- */
+
+/* Hidden in edit mode */
+.qmodal--edit .qmodal__btnToggleAnswer {
+  display: none;
+}
+
+.qmodal__btnToggleAnswer {
+  height: 56px;
+  padding: 0 18px;
+
+  border-radius: 999px;
+  border: 1px solid var(--btn-outline);
+
+  background: linear-gradient(180deg, var(--surface-2), var(--surface-3));
+  color: var(--text);
+
+  font-size: var(--fs-3);
+  font-weight: 900;
+  letter-spacing: var(--btn-letter);
+
+  box-shadow: var(--shadow-btn), var(--btn-glow);
+
+  transition:
+    transform var(--t-fast) var(--ease),
+    filter var(--t-fast) var(--ease),
+    box-shadow var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease),
+    background var(--t-fast) var(--ease);
+}
+
+.qmodal__btnToggleAnswer:hover:not(:disabled) {
+  transform: translateY(calc(-1 * var(--lift-y)));
+  border-color: var(--btn-outline-hover);
+  box-shadow: var(--shadow-md), var(--btn-glow-hover);
+  filter: brightness(1.06);
+}
+
+.qmodal__btnToggleAnswer:active:not(:disabled) {
+  transform: translateY(var(--btn-press-y));
+  filter: brightness(0.98);
+}
+
+.qmodal__btnToggleAnswer:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-md), var(--ring);
+}
+
+.qmodal__btnToggleAnswer:disabled {
+  opacity: 0.45;
+  filter: saturate(0.6);
+  cursor: not-allowed;
+  box-shadow: var(--shadow-sm);
+}
+
+/* modal.controls.css */
+/* =========================================
+   Text expand/collapse toggle (view mode)
+========================================= */
+
+.qmodal__textToggle {
+    height: auto;
+    padding: 6px 10px;
+
+    align-self: flex-start;
+
+    border-radius: 999px;
+    border: 1px solid var(--border-2);
+
+    background: var(--surface-2);
+    color: var(--muted);
+
+    font-size: var(--fs-2);
+    font-weight: 900;
+    letter-spacing: 0.04em;
+
+    cursor: pointer;
+    user-select: none;
+
+    transition:
+        transform var(--t-fast) var(--ease),
+        filter var(--t-fast) var(--ease),
+        background var(--t-fast) var(--ease),
+        border-color var(--t-fast) var(--ease);
+}
+
+.qmodal__textToggle:hover {
+    transform: translateY(calc(-1 * var(--lift-y)));
+    filter: brightness(1.05);
+    border-color: var(--border-3);
+}
+
+.qmodal__textToggle:active {
+    transform: translateY(0);
+}
+
+.qmodal__textToggle:focus {
+    outline: none;
+    box-shadow: var(--ring);
+}
+
+/* ─── Toggle mode button (always visible, text changes per mode) ─────────── */
+/* Has text label, so override the icon-only ghost width */
+.qmodal__btnToggleMode {
+    width: auto;
+    padding: 0 16px;
+    font-size: var(--fs-2);
+}

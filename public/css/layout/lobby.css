@@ -1,0 +1,157 @@
+/* lobby.css */
+
+.lobby {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 32px 40px;
+    gap: 28px;
+    background: var(--bg);
+    background-color: var(--bg-2);
+}
+
+/* ── Header ── */
+.lobby__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+}
+
+.lobby__title {
+    margin: 0;
+    font-size: var(--fs-6);
+    font-weight: 900;
+    color: var(--text);
+    letter-spacing: -0.02em;
+}
+
+.lobby__logout-btn {
+    padding: 10px 22px;
+    background: var(--btn-bg);
+    color: var(--text-soft);
+    border: 1px solid var(--btn-border);
+    border-radius: var(--radius-sm);
+    font-size: var(--fs-1);
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity var(--t-fast) var(--ease);
+}
+
+.lobby__logout-btn:hover {
+    opacity: 0.8;
+}
+
+/* ── Body ── */
+.lobby__body {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    flex: 1;
+}
+
+.lobby__create-btn {
+    align-self: flex-start;
+    padding: 12px 28px;
+    background: var(--btn-brand-bg);
+    color: var(--btn-brand-text);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: var(--fs-2);
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: var(--shadow-btn);
+    transition: opacity var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
+    letter-spacing: var(--btn-letter);
+}
+
+.lobby__create-btn:hover {
+    opacity: 0.9;
+    box-shadow: var(--btn-glow-hover), var(--shadow-btn);
+}
+
+.lobby__spinner,
+.lobby__empty,
+.lobby__error {
+    color: var(--muted);
+    font-size: var(--fs-2);
+    padding: 32px 0;
+    text-align: center;
+}
+
+.lobby__error {
+    color: var(--danger);
+}
+
+/* ── Game Cards Grid ── */
+.lobby__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 16px;
+}
+
+.lobby__card {
+    position: relative;
+    background: var(--surface-2);
+    border: 1px solid var(--border-2);
+    border-radius: var(--radius-md);
+    padding: 24px 20px 20px;
+    cursor: pointer;
+    transition:
+        transform var(--t-fast) var(--ease),
+        box-shadow var(--t-fast) var(--ease),
+        border-color var(--t-fast) var(--ease);
+    overflow: hidden;
+}
+
+.lobby__card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--cell-overlay-top);
+    pointer-events: none;
+}
+
+.lobby__card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-cell-hover);
+    border-color: var(--border-4);
+}
+
+.lobby__card-name {
+    font-size: var(--fs-3);
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 10px;
+    word-break: break-word;
+    line-height: var(--lh);
+}
+
+.lobby__card-date {
+    font-size: 14px;
+    color: var(--muted-2);
+    line-height: var(--lh);
+}
+
+.lobby__card-delete {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 4px 6px;
+    border-radius: 6px;
+    opacity: 0;
+    transition: opacity var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
+    line-height: 1;
+}
+
+.lobby__card:hover .lobby__card-delete {
+    opacity: 1;
+}
+
+.lobby__card-delete:hover {
+    background: var(--danger-a18);
+}

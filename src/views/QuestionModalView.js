@@ -1,0 +1,329 @@
+// src/views/QuestionModalView.js
+import { isQuizSpinnerMedia } from '../constants/quizSpinnerMedia.js';
+import { ViewDisposer } from '../utils/disposer.js';
+import { buildModalDom } from './questionModal.template.js';
+import { initMediaUI, applyModeUI, renderAll } from './questionModal.render.js';
+
+export class QuestionModalView {
+    constructor({
+        mode,
+        headerTitle,
+        isAnswered,
+        isQuizSpinner,
+        question,
+        answer,
+        onClose,
+        onToggleAnswered,
+        onToggleQuizSpinner,
+        onQuestionChange,
+        onAnswerChange,
+        onUploadMedia,
+        onDeleteMedia,
+        onAddAudio,
+        onDeleteAudio,
+    }) {
+        this._mode          = mode;
+        this._headerTitle   = (headerTitle || '').trim();
+        this._isAnswered    = !!isAnswered;
+        this._isQuizSpinner = !!isQuizSpinner;
+        this._question      = { ...(question || {}), audioFiles: question?.audioFiles || [] };
+        this._answer        = { ...(answer   || {}), audioFiles: answer?.audioFiles   || [] };
+        this._isAnswerShown = mode === 'edit';
+
+        this._cb = {
+            onClose, onToggleAnswered, onToggleQuizSpinner, onQuestionChange, onAnswerChange,
+            onUploadMedia, onDeleteMedia, onAddAudio, onDeleteAudio,
+        };
+
+        const { root, refs } = buildModalDom();
+        this._root = root;
+        this._refs = refs;
+
+        this._mediaUI = {
+            question: initMediaUI(refs.questionMediaHost),
+            answer:   initMediaUI(refs.answerMediaHost)
+        };
+
+        this._disposer = new ViewDisposer();
+
+        this._bindEvents();
+        this._bindFullscreenEvents();
+
+        applyModeUI(this, this._refs);
+        renderAll(this, this._refs);
+
+        this._prefetchMedia(this._question.media);
+        this._prefetchMedia(this._answer.media);
+    }
+
+    get el() { return this._root; }
+
+    destroy() {
+        this._disposer.destroy();
+        this._root?.remove();
+    }
+
+    // Called by ModalService after image/video upload or delete
+    updateMedia(mediaType, media) {
+        if (mediaType === 'question') {
+            this._question.media = media;
+            this._isQuizSpinner = isQuizSpinnerMedia(media);
+        } else {
+            this._answer.media = media;
+        }
+
+        renderAll(this, this._refs);
+        this._prefetchMedia(media);
+    }
+
+    // Called by ModalService after audio add or delete
+    updateAudioList(target, audioFiles) {
+        if (target === 'question') this._question.audioFiles = audioFiles;
+        else                       this._answer.audioFiles   = audioFiles;
+
+        renderAll(this, this._refs);
+    }
+
+    // Show/hide upload progress overlay on the media block
+    setUploading(target, isLoading) {
+        const overlay  = this._refs[`${target}UploadOverlay`];
+        const actions  = this._refs[`${target}MediaActions`];
+        if (overlay) {
+            overlay.hidden = !isLoading;
+            overlay.setAttribute('aria-hidden', isLoading ? 'false' : 'true');
+        }
+        if (actions) actions.classList.toggle('is-uploading', isLoading);
+    }
+
+    // Safe public accessor so ModalService doesn't reach into private state
+    getAudioFiles(target) {
+        const files = target === 'question' ? this._question.audioFiles : this._answer.audioFiles;
+        return [...(files || [])];
+    }
+
+    updateAnsweredState(isAnswered) {
+        this._isAnswered = !!isAnswered;
+        if (this._refs.answeredCheckbox) this._refs.answeredCheckbox.checked = this._isAnswered;
+    }
+
+    _bindFullscreenEvents() {
+        const fsEvents = ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'];
+        fsEvents.forEach(name => {
+            this._disposer.addEventListener(document, name, () => {
+                if (!this._isFullscreen() && this._root?.isConnected) {
+                    setTimeout(() => this._refs.closeX?.focus(), 100);
+                }
+            });
+        });
+    }
+
+    _isFullscreen() {
+        return !!(
+            document.fullscreenElement ||
+            document.webkitFullscreenElement ||
+            document.mozFullScreenElement ||
+            document.msFullscreenElement
+        );
+    }
+
+    _bindEvents() {
+        const r = this._refs;
+
+        // ── Close ──────────────────────────────────────────────────────────────
+        this._disposer.addEventListener(r.overlay,   'click', () => this._cb.onClose?.());
+        this._disposer.addEventListener(r.closeDone, 'click', () => this._cb.onClose?.());
+
+        // ── Toggle mode button (view ↔ edit) ──────────────────────────────────
+        this._disposer.addEventListener(r.btnToggleMode, 'click', () => {
+            this._mode = this._mode === 'edit' ? 'view' : 'edit';
+            if (this._mode === 'edit') this._isAnswerShown = true;
+            applyModeUI(this, this._refs);
+            renderAll(this, this._refs);
+        });
+
+        // ESC
+        this._disposer.addEventListener(document, 'keydown', (e) => {
+            if (e.key === 'Escape' && !this._isFullscreen()) this._cb.onClose?.();
+        });
+
+        // ── Answered toggle ────────────────────────────────────────────────────
+        this._disposer.addEventListener(r.answeredCheckbox, 'change', (e) => {
+            this._cb.onToggleAnswered?.(e.target.checked);
+        });
+        this._disposer.addEventListener(r.quizSpinnerCheckbox, 'change', async (e) => {
+            const checked = !!e.target.checked;
+            const prev = this._isQuizSpinner;
+            this._isQuizSpinner = checked;
+
+            try {
+                await this._cb.onToggleQuizSpinner?.(checked);
+            } catch {
+                this._isQuizSpinner = prev;
+                e.target.checked = prev;
+                renderAll(this, this._refs);
+            }
+        });
+
+        // ── Media peek buttons (view mode: opens a lightbox overlay) ────────
+        // The body uses overflow:hidden + flex layout, so there is no scrollable
+        // space to reveal the mediaRow in-place. Instead we open a floating
+        // lightbox that sits above everything (position:absolute inside dialog).
+        for (const type of ['question', 'answer']) {
+            const peekBtn = r[`${type}MediaPeekBtn`];
+            if (!peekBtn) continue;
+
+            this._disposer.addEventListener(peekBtn, 'click', () => {
+                const media = type === 'question' ? this._question.media : this._answer.media;
+                if (!media?.src) return;
+                const dialog = this._root.querySelector('.qmodal__dialog');
+                this._openMediaLightbox(media, dialog);
+            });
+        }
+
+        // ── Question ↔ Answer toggle (view mode) ───────────────────────────────
+        this._disposer.addEventListener(r.toggleAnswerBtn, 'click', () => {
+            if (r.toggleAnswerBtn.disabled || this._mode !== 'view') return;
+            this._isAnswerShown = !this._isAnswerShown;
+            applyModeUI(this, this._refs);
+            renderAll(this, this._refs);
+
+            if (this._isAnswerShown) {
+                requestAnimationFrame(() => {
+                    r.answerSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                });
+            }
+        });
+
+        // ── Text input ─────────────────────────────────────────────────────────
+        // IMPORTANT: also update the view's own state so that subsequent
+        // renderAll() calls (triggered e.g. by media upload completing) don't
+        // overwrite the textarea with the old persisted value.
+        this._disposer.addEventListener(r.questionTextInput, 'input', (e) => {
+            this._question.text = e.target.value;
+            this._cb.onQuestionChange?.(e.target.value);
+        });
+        this._disposer.addEventListener(r.answerTextInput, 'input', (e) => {
+            this._answer.text = e.target.value;
+            this._cb.onAnswerChange?.(e.target.value);
+        });
+
+        // ── Image / Video upload ───────────────────────────────────────────────
+        this._disposer.addEventListener(r.questionUploadBtn, 'click', () => r.questionFile.click());
+        this._disposer.addEventListener(r.answerUploadBtn,   'click', () => r.answerFile.click());
+
+        this._disposer.addEventListener(r.questionFile, 'change', (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            this._cb.onUploadMedia?.(file, 'question');
+            e.target.value = '';
+        });
+        this._disposer.addEventListener(r.answerFile, 'change', (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            this._cb.onUploadMedia?.(file, 'answer');
+            e.target.value = '';
+        });
+
+        // ── Image / Video delete ───────────────────────────────────────────────
+        this._disposer.addEventListener(r.questionDeleteBtn, 'click', () => {
+            if (!this._question.media) return;
+            this._cb.onDeleteMedia?.('question');
+        });
+        this._disposer.addEventListener(r.answerDeleteBtn, 'click', () => {
+            if (!this._answer.media) return;
+            this._cb.onDeleteMedia?.('answer');
+        });
+
+        // ── Audio upload ───────────────────────────────────────────────────────
+        this._disposer.addEventListener(r.questionAddAudioBtn, 'click', () => r.questionAudioFile.click());
+        this._disposer.addEventListener(r.answerAddAudioBtn,   'click', () => r.answerAudioFile.click());
+
+        this._disposer.addEventListener(r.questionAudioFile, 'change', (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            this._cb.onAddAudio?.(file, 'question');
+            e.target.value = '';
+        });
+        this._disposer.addEventListener(r.answerAudioFile, 'change', (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            this._cb.onAddAudio?.(file, 'answer');
+            e.target.value = '';
+        });
+
+        // ── Audio delete (delegated on the list containers) ────────────────────
+        this._disposer.addEventListener(r.questionAudioList, 'click', (e) => {
+            const btn = e.target.closest('.qmodal__audioDeleteBtn');
+            if (!btn) return;
+            this._cb.onDeleteAudio?.(btn.dataset.filename, btn.dataset.target);
+        });
+        this._disposer.addEventListener(r.answerAudioList, 'click', (e) => {
+            const btn = e.target.closest('.qmodal__audioDeleteBtn');
+            if (!btn) return;
+            this._cb.onDeleteAudio?.(btn.dataset.filename, btn.dataset.target);
+        });
+    }
+
+    _openMediaLightbox(media, dialogEl) {
+        // Build a full-dialog overlay (position:absolute inside the dialog)
+        // so the media renders at the full dialog size regardless of the flex layout.
+        const lb = document.createElement('div');
+        lb.className = 'qmodal__mediaLightbox';
+        lb.setAttribute('role', 'dialog');
+        lb.setAttribute('aria-modal', 'true');
+        lb.setAttribute('aria-label', 'Media preview');
+
+        // Close button
+        const closeBtn = document.createElement('button');
+        closeBtn.type      = 'button';
+        closeBtn.className = 'qmodal__mediaLightbox__close';
+        closeBtn.setAttribute('aria-label', 'Close preview');
+        closeBtn.textContent = '✕';
+
+        // Media element
+        let mediaEl;
+        const mime = (media.mime || '').toLowerCase();
+        if (mime.startsWith('video/')) {
+            mediaEl = document.createElement('video');
+            mediaEl.controls = true;
+            mediaEl.src      = media.src;
+        } else {
+            mediaEl = document.createElement('img');
+            mediaEl.alt = '';
+            mediaEl.src = media.src;
+        }
+        mediaEl.className = 'qmodal__mediaLightbox__media';
+
+        lb.append(closeBtn, mediaEl);
+        (dialogEl || this._root).appendChild(lb);
+
+        // Focus close button for keyboard users
+        requestAnimationFrame(() => closeBtn.focus());
+
+        const closeLightbox = () => {
+            if (mediaEl.tagName === 'VIDEO') { try { mediaEl.pause(); } catch {} }
+            lb.remove();
+            document.removeEventListener('keydown', onKeyDown, true);
+        };
+
+        const onKeyDown = (e) => {
+            if (e.key === 'Escape') {
+                e.stopPropagation(); // prevent the modal itself from closing
+                closeLightbox();
+            }
+        };
+
+        closeBtn.addEventListener('click', closeLightbox);
+        // Clicking the backdrop (but not the media element) also closes
+        lb.addEventListener('click', (e) => { if (e.target === lb) closeLightbox(); });
+        // Capture-phase so it fires before the modal's own keydown handler
+        document.addEventListener('keydown', onKeyDown, true);
+    }
+
+    _prefetchMedia(media) {
+        if (!media?.src || !media?.mime?.startsWith('image/')) return;
+        const img = new Image();
+        img.decoding = 'async';
+        img.src = media.src;
+    }
+}

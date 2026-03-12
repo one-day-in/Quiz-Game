@@ -1,0 +1,164 @@
+/* variables.css */
+
+:root {
+    --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Noto Sans",
+        "Apple Color Emoji", "Segoe UI Emoji";
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+    --lh: 1.35;
+
+    --fs-1: 16px;
+    --fs-2: 18px;
+    --fs-3: 22px;
+    --fs-4: 26px;
+    --fs-5: 32px;
+    --fs-6: 40px;
+    --fs-7: 64px;
+
+    --fs-modal: 54px;
+    --fs-modal-title: 44px;
+    --fs-modal-label: 20px;
+
+    --app-pad: 24px;
+    --header-h: 90px;
+    --footer-h: 60px;
+
+    --radius-sm: 14px;
+    --radius-md: 20px;
+    --radius-lg: 28px;
+
+    --board-gap: 18px;
+    --lift-y: 6px;
+
+    --bg: radial-gradient(1200px 600px at 50% -200px, #581c87, #0f0f23 70%);
+    --bg-2: #090014;
+
+    --surface: #111827;
+    --surface-2: #1f2937;
+    --surface-3: #0f172a;
+
+    --text: #f8fafc;
+    --text-soft: rgba(248, 250, 252, 0.82);
+    --muted: rgba(203, 213, 225, 0.82);
+    --muted-2: rgba(148, 163, 184, 0.7);
+
+    --brand: #3b82f6;
+    --brand-glow: rgba(59, 130, 246, 0.6);
+
+    --danger: #ef4444;
+    --success: #22c55e;
+
+    --warning: rgba(250, 204, 21, 1);
+    --warning-a10: rgba(250, 204, 21, 0.10);
+
+    --brand-a12: rgba(59, 130, 246, 0.12);
+    --brand-a18: rgba(59, 130, 246, 0.18);
+    --brand-a35: rgba(59, 130, 246, 0.35);
+    --brand-a55: rgba(59, 130, 246, 0.55);
+
+    --danger-a18: rgba(239, 68, 68, 0.18);
+    --danger-a35: rgba(239, 68, 68, 0.35);
+
+    --border-1: rgba(255, 255, 255, 0.08);
+    --border-2: rgba(255, 255, 255, 0.12);
+    --border-3: rgba(255, 255, 255, 0.18);
+    --border-4: rgba(255, 255, 255, 0.26);
+    --border-5: rgba(255, 255, 255, 0.36);
+
+    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.45);
+
+    --shadow-md:
+        0 10px 30px rgba(0, 0, 0, 0.6),
+        0 0 20px rgba(59, 130, 246, 0.08);
+
+    --shadow-lg:
+        0 20px 60px rgba(0, 0, 0, 0.75),
+        0 0 40px rgba(59, 130, 246, 0.15);
+
+    --shadow-btn:
+        0 8px 20px rgba(0, 0, 0, 0.6),
+        0 0 12px rgba(59, 130, 246, 0.2);
+
+    --shadow-cell:
+        0 14px 32px rgba(0, 0, 0, 0.7),
+        0 0 18px rgba(59, 130, 246, 0.12);
+
+    --shadow-cell-hover:
+        0 22px 48px rgba(0, 0, 0, 0.85),
+        0 0 28px rgba(59, 130, 246, 0.3);
+
+    --t-fast: 140ms;
+    --t: 220ms;
+    --t-slow: 320ms;
+
+    --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+    --ring:
+        0 0 0 3px rgba(59, 130, 246, 0.45),
+        0 0 24px rgba(59, 130, 246, 0.4);
+
+    --btn-bg: linear-gradient(180deg, #1f2937, #111827);
+    --btn-bg-hover: linear-gradient(180deg, #243042, #0f172a);
+    --btn-border: var(--border-3);
+
+    --btn-brand-bg: linear-gradient(180deg, #3b82f6, #1d4ed8);
+    --btn-brand-text: #ffffff;
+
+    --btn-danger-bg: linear-gradient(180deg, #ef4444, #b91c1c);
+
+    --btn-danger-gradient-2: var(--btn-danger-bg);
+    --btn-danger-text: #ffffff;
+
+    --btn-primary-bg: var(--btn-brand-bg);
+    --btn-primary-text: var(--btn-brand-text);
+
+    --btn-outline: rgba(255, 255, 255, 0.14);
+    --btn-outline-hover: rgba(147, 197, 253, 0.55);
+
+    --btn-glow: 0 0 0 rgba(0, 0, 0, 0);
+    --btn-glow-hover: 0 0 22px rgba(59, 130, 246, 0.45);
+
+    --btn-press-y: 1px;
+    --btn-letter: 0.02em;
+
+    --overlay-strong: rgba(0, 0, 0, 0.75);
+    --overlay-medium: rgba(0, 0, 0, 0.6);
+
+    --modal-overlay: var(--overlay-medium);
+
+    --modal-bg: #111827;
+    --modal-radius: var(--radius-lg);
+
+    --settings-panel-w: 34vw;
+    --settings-section-gap: 30px;
+    --settings-control-gap: 16px;
+
+
+    --cell-bg: linear-gradient(180deg, #e25c08, #0f172a);
+    --cell-bg-hover: linear-gradient(180deg, #a6e20c, #111827);
+
+    --cell-text: #ffffff;
+
+    --cell-border: rgba(59, 130, 246, 0.25);
+    --cell-border-hover: rgba(59, 130, 246, 0.5);
+    --cell-border-strong: rgba(59, 130, 246, 0.8);
+
+    --cell-overlay-top: linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 60%);
+    --cell-overlay-shine: radial-gradient(800px 240px at 50% -20%, rgba(255, 255, 255, 0.22), transparent 65%);
+
+    --topic-bg: linear-gradient(180deg, #2563eb, #1e40af);
+    --topic-border: rgba(147, 197, 253, 0.8);
+
+    --question-bg: var(--cell-bg);
+    --question-border: var(--border-3);
+
+    --cell-empty-bg: #1e293b;
+    --cell-empty-border: var(--border-2);
+    --cell-empty-text: var(--muted-2);
+
+    --cell-answered-opacity: 0.25;
+    --cell-answered-saturate: 0.25;
+
+    --edit-hint: rgba(250, 204, 21, 0.85);
+    --edit-hint-strong: rgba(250, 204, 21, 1);
+}

@@ -1,0 +1,50 @@
+/* leaderboard-page.css — Full-page layout overrides for leaderboard.html */
+
+body {
+  overflow: auto; /* base.css sets overflow: hidden; allow scroll on this page */
+}
+
+#leaderboard-app {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: var(--app-pad);
+  box-sizing: border-box;
+  background: var(--bg), var(--bg-2);
+}
+
+/* Override card-like footer appearance — this is now a full-page section */
+#leaderboard-app .app-footer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: auto;
+  min-height: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  overflow: visible;
+}
+
+#leaderboard-app .app-footer::before {
+  display: none;
+}
+
+/* Bigger title */
+#leaderboard-app .leaderboard__title {
+  font-size: var(--fs-4);
+  margin-bottom: 24px;
+}
+
+/* Grid expands to fill available height */
+#leaderboard-app .leaderboard__grid {
+  flex: 1;
+  grid-auto-rows: 1fr;
+}
+
+/* Cards fill their grid cell */
+#leaderboard-app .leaderboard__card {
+  min-height: unset;
+}

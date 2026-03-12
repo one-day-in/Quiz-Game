@@ -1,0 +1,63 @@
+/* Base wrapper */
+.settings {
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+    isolation: isolate;
+    pointer-events: none;
+}
+
+/* Overlay */
+.settings__overlay {
+    position: absolute;
+    inset: 0;
+
+    background: var(--modal-overlay, var(--overlay-medium));
+    backdrop-filter: blur(10px) saturate(140%);
+
+    opacity: 0;
+    transition: opacity 140ms ease-out;
+    will-change: opacity;
+    z-index: 0;
+    pointer-events: auto;
+}
+
+/* Panel (fixed for HD, no mobile adaptation) */
+.settings__panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+
+    height: 100%;
+    width: var(--settings-panel-w);
+
+    display: flex;
+    flex-direction: column;
+
+    border-left: 1px solid var(--border-2);
+    background: var(--surface);
+    box-shadow: var(--shadow-lg);
+
+    overflow: hidden;
+
+    opacity: 0;
+    transform: translateX(24px);
+    transition: opacity 180ms ease-out, transform 180ms ease-out;
+    will-change: opacity, transform;
+    z-index: 1;
+    pointer-events: auto;
+}
+
+/* Open state */
+.settings.is-open {
+    pointer-events: auto;
+}
+
+.settings.is-open .settings__overlay {
+    opacity: 1;
+}
+
+.settings.is-open .settings__panel {
+    opacity: 1;
+    transform: translateX(0);
+}

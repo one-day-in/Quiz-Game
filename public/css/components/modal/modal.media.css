@@ -1,0 +1,258 @@
+/* modal.media.css */
+/* =========================================
+   MODAL MEDIA
+========================================= */
+
+.qmodal__mediaHostWrap {
+    width: 100%;
+
+    max-height: 100%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    /* border-radius: var(--radius-md);
+    border: 1px solid var(--border-3); */
+
+    overflow: hidden;
+}
+
+.qmodal__mediaHost {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.qmodal__mediaHost img,
+.qmodal__mediaHost video {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: 16 / 9;
+
+    max-width: 100%;
+    max-height: 100%;
+
+    object-fit: contain;
+}
+
+.qmodal__mediaHost audio {
+    width: 60%;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-3);
+}
+
+/* =========================================
+   View mode: mediaHost fills the mediaRow container (which is flex: 1 1 0)
+========================================= */
+
+.qmodal:not(.qmodal--edit) .qmodal__mediaHost {
+    height: 100%;
+}
+
+.qmodal:not(.qmodal--edit) .qmodal__mediaHost img,
+.qmodal:not(.qmodal--edit) .qmodal__mediaHost video {
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    aspect-ratio: auto;  /* preserve natural image aspect ratio */
+    object-fit: contain; /* letterbox within the available space */
+}
+
+/* =========================================
+   Edit mode: media host fills available column space
+========================================= */
+
+.qmodal--edit .qmodal__mediaHostWrap {
+    flex: 1 1 0;
+    min-height: 80px;
+}
+
+/* Row wrapping media + delete button (same look as audioItem) */
+.qmodal__mediaRow {
+    align-items: flex-start;
+    flex: 0 0 auto; /* size to content, don't fill column */
+}
+
+/* When no media is uploaded the row is visually empty — strip all chrome */
+.qmodal__mediaRow:has(.qmodal__mediaHostWrap[hidden]) {
+    border-color: transparent;
+    background: transparent;
+    padding: 0;
+    gap: 0;
+}
+
+.qmodal__mediaRow .qmodal__mediaHostWrap {
+    min-height: unset;
+    flex: 1 1 0;
+}
+
+/* Scale image/video to fit the list item — natural size capped at 200px tall */
+.qmodal__mediaRow .qmodal__mediaHost img,
+.qmodal__mediaRow .qmodal__mediaHost video {
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: 200px;
+    aspect-ratio: unset;
+    object-fit: contain;
+}
+
+/* Hidden in view mode — edit-only control */
+.qmodal:not(.qmodal--edit) .qmodal__mediaDeleteBtn {
+    display: none;
+}
+
+/* =========================================
+   View mode: mediaRow fills remaining flex space
+   Only when media is actually uploaded (mediaHostWrap is visible).
+   The :not([hidden]) guards ensure we don't flex-grow an empty/collapsed row.
+========================================= */
+
+.qmodal:not(.qmodal--edit) .qmodal__mediaRow:has(.qmodal__mediaHostWrap:not([hidden])):not([hidden]) {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow: hidden;
+    align-items: stretch;
+
+    /* Strip the audioItem frame — media displays edge-to-edge in view mode */
+    border-color: transparent;
+    background: transparent;
+    padding: 0;
+    gap: 0;
+}
+
+/* mediaHostWrap and mediaHost fill the row height */
+.qmodal:not(.qmodal--edit) .qmodal__mediaRow .qmodal__mediaHostWrap {
+    height: 100%;
+}
+
+.qmodal:not(.qmodal--edit) .qmodal__mediaRow .qmodal__mediaHost {
+    height: 100%;
+}
+
+/* Image / video scales to fill the row — overrides the edit-mode 200px cap
+   (higher specificity: 4 classes vs 3, and comes later in the file) */
+.qmodal:not(.qmodal--edit) .qmodal__mediaRow .qmodal__mediaHost img,
+.qmodal:not(.qmodal--edit) .qmodal__mediaRow .qmodal__mediaHost video {
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    aspect-ratio: auto;
+    object-fit: contain;
+}
+
+/* =========================================
+   Media peek button
+   Shown in VIEW mode only when JS determines that media would be
+   squeezed below 150 px (text fills most of the modal height).
+   JS toggles the [hidden] attribute; CSS only handles the look.
+========================================= */
+
+/* Never visible in edit mode */
+.qmodal--edit .qmodal__mediaPeekBtn {
+    display: none !important;
+}
+
+/* View mode default: styled inline button, hidden by [hidden] attr */
+.qmodal:not(.qmodal--edit) .qmodal__mediaPeekBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    align-self: flex-start; /* don't stretch full width in the flex column */
+
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-3);
+    background: var(--surface-2);
+    color: var(--text-soft);
+
+    font-family: inherit;
+    font-size: var(--fs-2);
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+
+    transition: background 120ms ease, color 120ms ease;
+}
+
+.qmodal:not(.qmodal--edit) .qmodal__mediaPeekBtn:hover {
+    background: var(--btn-bg-hover);
+    color: var(--text);
+}
+
+.qmodal:not(.qmodal--edit) .qmodal__mediaPeekBtn:focus-visible {
+    outline: none;
+    box-shadow: var(--ring);
+}
+
+/* =========================================
+   Media lightbox overlay
+   Sits inside .qmodal__dialog (position:relative) so it covers the full
+   dialog area without affecting the page layout. Opened by JS when the
+   user clicks the "📷 Show media" peek button.
+========================================= */
+
+.qmodal__dialog {
+    position: relative; /* anchor for the absolute lightbox */
+}
+
+.qmodal__mediaLightbox {
+    position: absolute;
+    inset: 0;
+    z-index: 500;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(0, 0, 0, 0.82);
+    border-radius: inherit; /* match dialog corners */
+    overflow: hidden;
+}
+
+.qmodal__mediaLightbox__media {
+    max-width:  calc(100% - 48px);
+    max-height: calc(100% - 72px); /* leave room for close button */
+    object-fit: contain;
+    border-radius: var(--radius-sm);
+}
+
+.qmodal__mediaLightbox__close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width:  36px;
+    height: 36px;
+    padding: 0;
+
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+
+    transition: background 120ms ease;
+}
+
+.qmodal__mediaLightbox__close:hover {
+    background: rgba(255, 255, 255, 0.28);
+}
+
+.qmodal__mediaLightbox__close:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.55);
+}
