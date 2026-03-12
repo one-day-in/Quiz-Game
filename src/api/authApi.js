@@ -16,13 +16,37 @@ export async function getSession() {
     return data.session;
 }
 
-export async function isAuthorized(userId) {
-    const { data } = await supabase
+export async function isAuthorized(user) {
+    const email = user?.email?.trim().toLowerCase();
+    const userId = user?.id;
+
+    if (userId) {
+        const { data: userIdMatch } = await supabase
+            .from('authorized_users')
+            .select('user_id')
+            .eq('user_id', userId)
+            .maybeSingle();
+
+        if (userIdMatch) return true;
+    }
+
+    if (!email) return false;
+
+    const { data: emailMatch } = await supabase
+        .from('authorized_emails')
+        .select('email')
+        .eq('email', email)
+        .maybeSingle();
+
+    if (emailMatch) return true;
+
+    const { data: legacyEmailMatch } = await supabase
         .from('authorized_users')
-        .select('user_id')
-        .eq('user_id', userId)
-        .single();
-    return !!data;
+        .select('email')
+        .eq('email', email)
+        .maybeSingle();
+
+    return !!legacyEmailMatch;
 }
 
 export function onAuthStateChange(callback) {
