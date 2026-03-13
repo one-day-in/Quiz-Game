@@ -22,6 +22,14 @@
     background: var(--surface-2);
 }
 
+.qmodal__headerMain {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+    flex: 1 1 0;
+}
+
 .qmodal__headerActions {
     display: flex;
     align-items: center;
@@ -68,11 +76,42 @@
     letter-spacing: -0.02em;
     color: var(--text);
 
-    flex: 1 1 0;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.qmodal__buzzStatus {
+    display: inline-flex;
+    align-items: center;
+    align-self: flex-start;
+    min-height: 30px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border-2);
+    background: var(--surface);
+    color: var(--text-soft);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.qmodal__buzzStatus--pending {
+    color: #fcd34d;
+    border-color: rgba(252, 211, 77, 0.4);
+}
+
+.qmodal__buzzStatus--open {
+    color: #fca5a5;
+    border-color: rgba(248, 113, 113, 0.45);
+    box-shadow: 0 0 18px rgba(239, 68, 68, 0.18);
+}
+
+.qmodal__buzzStatus--buzzed {
+    color: #86efac;
+    border-color: rgba(34, 197, 94, 0.45);
 }
 
 /* Body */

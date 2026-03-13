@@ -169,6 +169,14 @@ class GameService {
         return this.repo.setLiveState(patch);
     }
 
+    claimBuzz(playerId) {
+        return this.repo.claimBuzz(playerId);
+    }
+
+    subscribeToRemoteGameChanges(fn) {
+        return this.repo.subscribeToGame(fn);
+    }
+
     async addAudioToCell(roundId, rowId, cellId, type, audioRecord) {
         if (!this.model) throw new Error('GameService not initialized');
 

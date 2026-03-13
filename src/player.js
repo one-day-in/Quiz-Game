@@ -4,7 +4,8 @@ import {
   adjustPlayerScore,
   claimPlayerSlot,
   getPlayerByController,
-  subscribeToPlayers,
+  claimBuzz,
+  subscribeToGame,
   updatePlayer,
 } from './api/gameApi.js';
 
@@ -16,6 +17,7 @@ const STORAGE_PREFIX = 'quiz-game:player-controller';
 let player = null;
 let controllerId = null;
 let stopPlayersSubscription = null;
+let buzzAttemptPending = false;
 
 async function startPlayerController() {
   const { data: { session } } = await supabase.auth.getSession();
@@ -146,7 +148,11 @@ function renderController(currentPlayer) {
           <button class="player-controller__scoreBtn player-controller__scoreBtn--minus" data-delta="-100" type="button">-100</button>
           <button class="player-controller__scoreBtn player-controller__scoreBtn--plus" data-delta="100" type="button">+100</button>
         </div>
-        <p class="player-controller__hint">Later this screen will also host the realtime buzz button.</p>
+        <div class="player-controller__buzzCard">
+          <span class="player-controller__scoreLabel">Buzz</span>
+          <button id="playerBuzzBtn" class="player-controller__buzzBtn" type="button" disabled>Waiting for question</button>
+          <p id="playerBuzzStatus" class="player-controller__hint">The button activates 1 second after the question opens.</p>
+        </div>
         <p id="playerControllerStatus" class="player-controller__status" hidden></p>
       </section>
     </main>
@@ -155,6 +161,23 @@ function renderController(currentPlayer) {
   const scoreEl = document.getElementById('playerScoreValue');
   const statusEl = document.getElementById('playerControllerStatus');
   const nameInput = document.getElementById('playerControllerName');
+  const buzzBtn = document.getElementById('playerBuzzBtn');
+
+  buzzBtn?.addEventListener('click', async () => {
+    if (!player || buzzAttemptPending || buzzBtn.disabled) return;
+    buzzAttemptPending = true;
+    buzzBtn.disabled = true;
+    buzzBtn.textContent = 'Sending...';
+
+    try {
+      await claimBuzz(gameId, player.id);
+    } catch (error) {
+      statusEl.textContent = error.message || 'Could not claim buzz';
+      statusEl.hidden = false;
+    } finally {
+      buzzAttemptPending = false;
+    }
+  });
 
   root.querySelectorAll('[data-delta]').forEach((button) => {
     button.addEventListener('click', async () => {
@@ -197,7 +220,8 @@ function renderController(currentPlayer) {
 
 function bindRealtimePlayers() {
   stopPlayersSubscription?.();
-  stopPlayersSubscription = subscribeToPlayers(gameId, (players) => {
+  stopPlayersSubscription = subscribeToGame(gameId, (game) => {
+    const players = game.players || [];
     const nextPlayer = players.find((entry) => entry.controllerId === controllerId || entry.id === player?.id) ?? null;
     if (!nextPlayer) {
       player = null;
@@ -217,7 +241,42 @@ function bindRealtimePlayers() {
     if (document.activeElement !== nameInput) {
       nameInput.value = nextPlayer.name;
     }
+    updateBuzzUI(game.live?.buzz || null, nextPlayer);
   });
+}
+
+function updateBuzzUI(buzz, currentPlayer) {
+  const buzzBtn = document.getElementById('playerBuzzBtn');
+  const buzzStatus = document.getElementById('playerBuzzStatus');
+  if (!buzzBtn || !buzzStatus) return;
+
+  if (!buzz) {
+    buzzBtn.disabled = true;
+    buzzBtn.textContent = 'Waiting for question';
+    buzzStatus.textContent = 'The button activates 1 second after the question opens.';
+    return;
+  }
+
+  const isWinner = buzz.winnerPlayerId && currentPlayer?.id === buzz.winnerPlayerId;
+  const isOpen = buzz.status === 'open' || (buzz.status === 'pending' && Date.now() >= new Date(buzz.enabledAt).getTime());
+
+  if (buzz.status === 'buzzed') {
+    buzzBtn.disabled = true;
+    buzzBtn.textContent = isWinner ? 'You buzzed first' : 'Too late';
+    buzzStatus.textContent = isWinner ? 'Wait for the host to score your answer.' : 'Another player already locked the question.';
+    return;
+  }
+
+  if (isOpen) {
+    buzzBtn.disabled = buzzAttemptPending;
+    buzzBtn.textContent = buzzAttemptPending ? 'Sending...' : 'Buzz now';
+    buzzStatus.textContent = 'Tap as fast as you can.';
+    return;
+  }
+
+  buzzBtn.disabled = true;
+  buzzBtn.textContent = 'Get ready';
+  buzzStatus.textContent = 'Buzz opens 1 second after the question appears.';
 }
 
 function toggleJoinPending(isPending) {

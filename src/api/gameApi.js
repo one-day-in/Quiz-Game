@@ -144,6 +144,20 @@ export async function getGame(gameId) {
     return normalizeGame(data.data);
 }
 
+async function getGameRow(gameId) {
+    const { data, error } = await supabase
+        .from('games')
+        .select('data, updated_at')
+        .eq('id', gameId)
+        .single();
+
+    if (error) throw new Error(`[Game] getGame failed: ${error.message}`);
+    return {
+        data: normalizeGame(data.data),
+        updatedAt: data.updated_at,
+    };
+}
+
 export async function saveGame(gameId, gameData) {
     const normalized = normalizeGame(gameData);
     const { error } = await supabase
@@ -312,6 +326,44 @@ export async function setLiveState(gameId, patch = {}) {
     game.meta.updatedAt = new Date().toISOString();
     await saveGame(gameId, game);
     return game.live;
+}
+
+export async function claimBuzz(gameId, playerId) {
+    const { data: game, updatedAt } = await getGameRow(gameId);
+    const buzz = normalizeLive(game.live).buzz;
+    if (!buzz) throw new Error('Buzz is not active');
+
+    const now = new Date().toISOString();
+    const enabledAt = buzz.enabledAt ? new Date(buzz.enabledAt).getTime() : 0;
+    const nowMs = Date.now();
+
+    if (buzz.winnerPlayerId) throw new Error('Too late');
+    if (buzz.status === 'closed') throw new Error('Buzz is closed');
+    if (buzz.status === 'pending' && nowMs < enabledAt) throw new Error('Buzz is not open yet');
+
+    game.live = {
+        ...normalizeLive(game.live),
+        buzz: {
+            ...buzz,
+            status: 'buzzed',
+            winnerPlayerId: playerId,
+            winnerAt: now,
+        },
+    };
+    game.meta.updatedAt = now;
+
+    const { data, error } = await supabase
+        .from('games')
+        .update({ data: game, updated_at: now })
+        .eq('id', gameId)
+        .eq('updated_at', updatedAt)
+        .select('data')
+        .maybeSingle();
+
+    if (error) throw new Error(`[Game] claimBuzz failed: ${error.message}`);
+    if (!data) throw new Error('Too late');
+
+    return normalizeLive(data.data.live).buzz;
 }
 
 // ================================================

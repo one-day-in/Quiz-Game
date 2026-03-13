@@ -43,6 +43,14 @@ export class GameRepository {
     return gameApi.setLiveState(this._gameId, patch);
   }
 
+  claimBuzz(playerId) {
+    return gameApi.claimBuzz(this._gameId, playerId);
+  }
+
+  subscribeToGame(onGameChange) {
+    return gameApi.subscribeToGame(this._gameId, onGameChange);
+  }
+
   resetRound(roundId) {
     return gameApi.resetRound(this._gameId, roundId);
   }
