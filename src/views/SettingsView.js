@@ -103,7 +103,7 @@ export class SettingsView {
   async _generateQR() {
     if (!this._gameId || !this._qrImg || !this._qrLink) return;
 
-    const url = `${window.location.origin}/leaderboard.html?gameId=${this._gameId}`;
+    const url = `${window.location.origin}${import.meta.env.BASE_URL}leaderboard.html?gameId=${this._gameId}`;
 
     this._qrLink.href = url;
     this._qrLink.textContent = 'Open leaderboard ↗';
