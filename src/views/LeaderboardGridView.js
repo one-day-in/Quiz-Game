@@ -85,9 +85,9 @@ function fitPlayerNames(grid) {
     if (!nameWrap || !nameEl) return;
     nameEl.style.width = '100%';
     fitTextToBox(nameWrap, nameEl, {
-      widthRatio: 0.94,
-      heightRatio: 0.55,
-      minSize: 14,
+      widthRatio: 0.96,
+      heightRatio: 0.82,
+      minSize: 18,
       step: 0.5,
       noWrap: true,
     });

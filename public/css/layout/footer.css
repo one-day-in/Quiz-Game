@@ -99,6 +99,10 @@
 /* Name */
 .leaderboard__nameWrap {
   width: 100%;
+  min-height: clamp(48px, 7vh, 92px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
   overflow: hidden;
 }
@@ -115,10 +119,11 @@
 
   color: var(--text);
 
-  font-size: clamp(24px, 2.4vw, 42px);
+  font-size: clamp(34px, 3vw, 54px);
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.14em;
+  line-height: 1;
 
   white-space: nowrap;
   overflow: hidden;
