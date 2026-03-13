@@ -39,6 +39,10 @@ export class GameRepository {
     return gameApi.updateCell(this._gameId, roundId, rowId, cellId, patch);
   }
 
+  setLiveState(patch) {
+    return gameApi.setLiveState(this._gameId, patch);
+  }
+
   resetRound(roundId) {
     return gameApi.resetRound(this._gameId, roundId);
   }

@@ -4,6 +4,7 @@ import {
   adjustPlayerScore,
   claimPlayerSlot,
   getPlayerByController,
+  subscribeToPlayers,
   updatePlayer,
 } from './api/gameApi.js';
 
@@ -14,6 +15,7 @@ const STORAGE_PREFIX = 'quiz-game:player-controller';
 
 let player = null;
 let controllerId = null;
+let stopPlayersSubscription = null;
 
 async function startPlayerController() {
   const { data: { session } } = await supabase.auth.getSession();
@@ -32,6 +34,7 @@ async function startPlayerController() {
 
   try {
     player = await getPlayerByController(gameId, controllerId);
+    bindRealtimePlayers();
     if (player) {
       renderController(player);
       return;
@@ -109,6 +112,7 @@ function renderJoin() {
       player = await claimPlayerSlot(gameId, { name, controllerId });
       savePlayerBinding(gameId, { playerId: player.id, controllerId });
       renderController(player);
+      bindRealtimePlayers();
     } catch (error) {
       errorEl.textContent = error.message || 'Could not join the game';
       errorEl.hidden = false;
@@ -191,6 +195,31 @@ function renderController(currentPlayer) {
   });
 }
 
+function bindRealtimePlayers() {
+  stopPlayersSubscription?.();
+  stopPlayersSubscription = subscribeToPlayers(gameId, (players) => {
+    const nextPlayer = players.find((entry) => entry.controllerId === controllerId || entry.id === player?.id) ?? null;
+    if (!nextPlayer) {
+      player = null;
+      renderJoin();
+      return;
+    }
+
+    const scoreEl = document.getElementById('playerScoreValue');
+    const nameInput = document.getElementById('playerControllerName');
+    if (!scoreEl || !nameInput) {
+      renderController(nextPlayer);
+      return;
+    }
+
+    player = nextPlayer;
+    scoreEl.textContent = formatPoints(nextPlayer.points);
+    if (document.activeElement !== nameInput) {
+      nameInput.value = nextPlayer.name;
+    }
+  });
+}
+
 function toggleJoinPending(isPending) {
   const form = document.getElementById('playerJoinForm');
   form?.querySelectorAll('input, button').forEach((element) => {
@@ -245,4 +274,8 @@ function escapeHtml(value) {
 startPlayerController().catch((error) => {
   console.error('[player] start failed:', error);
   renderError('Failed to load controller', error.message || String(error));
+});
+
+window.addEventListener('beforeunload', () => {
+  stopPlayersSubscription?.();
 });

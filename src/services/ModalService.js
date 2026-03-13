@@ -73,6 +73,17 @@ export class ModalService {
       cellId: cellData.cellId
     };
 
+    void this._game.setLiveState({
+      activeQuestion: {
+        roundId: cellData.roundId,
+        rowId: cellData.rowId,
+        cellId: cellData.cellId,
+        openedAt: new Date().toISOString(),
+      },
+    }).catch((error) => {
+      console.error('[ModalService] Failed to set active question state:', error);
+    });
+
     const shouldMarkAsAnswered = mode === 'view' && !cellData.isAnswered;
     if (shouldMarkAsAnswered) {
       void this._updateCell({ isAnswered: true }, { silent: true });
@@ -255,6 +266,10 @@ export class ModalService {
     }
     this.activeCell = null;
     if (this.container?.isConnected) this.container.innerHTML = '';
+
+    void this._game.setLiveState({ activeQuestion: null }).catch((error) => {
+      console.error('[ModalService] Failed to clear active question state:', error);
+    });
 
     // Targeted patch — only the closed cell's is-answered state updates
     this._game.touch(lastCell);

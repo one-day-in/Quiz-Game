@@ -1,6 +1,10 @@
 import { supabase } from './supabaseClient.js';
 
 export const MAX_PLAYERS = 8;
+const LIVE_DEFAULTS = Object.freeze({
+    activeQuestion: null,
+    buzz: null,
+});
 
 // ================================================
 // DEFAULT GAME STATE
@@ -27,7 +31,8 @@ function makeDefaultGame() {
         schemaVersion: '1.0',
         meta: { updatedAt: new Date().toISOString() },
         rounds: Array.from({ length: 3 }, makeDefaultRound),
-        players: []
+        players: [],
+        live: structuredClone(LIVE_DEFAULTS),
     };
 }
 
@@ -49,6 +54,30 @@ function normalizePlayers(players = []) {
     return (Array.isArray(players) ? players : [])
         .slice(0, MAX_PLAYERS)
         .map((player, idx) => normalizePlayer(player, idx));
+}
+
+function normalizeLive(live) {
+    return {
+        activeQuestion: live?.activeQuestion ?? null,
+        buzz: live?.buzz ?? null,
+    };
+}
+
+function normalizeGame(game = {}) {
+    return {
+        ...game,
+        meta: {
+            updatedAt: game?.meta?.updatedAt || new Date().toISOString(),
+        },
+        rounds: Array.isArray(game?.rounds) ? game.rounds : Array.from({ length: 3 }, makeDefaultRound),
+        players: normalizePlayers(game?.players),
+        live: normalizeLive(game?.live),
+    };
+}
+
+function extractGameFromRealtimePayload(payload) {
+    const data = payload?.new?.data ?? payload?.record?.data ?? payload?.data ?? null;
+    return data ? normalizeGame(data) : null;
 }
 
 // ================================================
@@ -112,17 +141,45 @@ export async function getGame(gameId) {
         .single();
 
     if (error) throw new Error(`[Game] getGame failed: ${error.message}`);
-    return data.data;
+    return normalizeGame(data.data);
 }
 
 export async function saveGame(gameId, gameData) {
+    const normalized = normalizeGame(gameData);
     const { error } = await supabase
         .from('games')
-        .update({ data: gameData, updated_at: new Date().toISOString() })
+        .update({ data: normalized, updated_at: new Date().toISOString() })
         .eq('id', gameId);
 
     if (error) throw new Error(`[Game] saveGame failed: ${error.message}`);
     return { ok: true };
+}
+
+export function subscribeToGame(gameId, onGameChange) {
+    const channel = supabase
+        .channel(`game:${gameId}`)
+        .on(
+            'postgres_changes',
+            {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'games',
+                filter: `id=eq.${gameId}`,
+            },
+            (payload) => {
+                const game = extractGameFromRealtimePayload(payload);
+                if (game) onGameChange(game);
+            }
+        )
+        .subscribe();
+
+    return () => {
+        supabase.removeChannel(channel);
+    };
+}
+
+export function subscribeToPlayers(gameId, onPlayersChange) {
+    return subscribeToGame(gameId, (game) => onPlayersChange(game.players ?? []));
 }
 
 // ================================================
@@ -244,6 +301,17 @@ export async function adjustPlayerScore(gameId, playerId, delta) {
     game.meta.updatedAt = new Date().toISOString();
     await saveGame(gameId, game);
     return player;
+}
+
+export async function setLiveState(gameId, patch = {}) {
+    const game = await getGame(gameId);
+    game.live = {
+        ...normalizeLive(game.live),
+        ...patch,
+    };
+    game.meta.updatedAt = new Date().toISOString();
+    await saveGame(gameId, game);
+    return game.live;
 }
 
 // ================================================

@@ -165,6 +165,10 @@ class GameService {
         }
     }
 
+    async setLiveState(patch) {
+        return this.repo.setLiveState(patch);
+    }
+
     async addAudioToCell(roundId, rowId, cellId, type, audioRecord) {
         if (!this.model) throw new Error('GameService not initialized');
 

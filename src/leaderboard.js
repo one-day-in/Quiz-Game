@@ -1,13 +1,13 @@
 import { supabase } from './api/supabaseClient.js';
-import { getPlayers } from './api/gameApi.js';
+import { getPlayers, subscribeToPlayers } from './api/gameApi.js';
 import { LeaderboardGridView } from './views/LeaderboardGridView.js';
 
 const root = document.getElementById('leaderboard-app');
 
 // gameId from URL: /leaderboard.html?gameId=xxx
 const gameId = new URLSearchParams(location.search).get('gameId');
-let refreshTimer = null;
 let leaderboardEl = null;
+let stopPlayersSubscription = null;
 
 async function startLeaderboard() {
     // Auth check
@@ -39,7 +39,10 @@ async function startLeaderboard() {
     try {
         const players = await getPlayers(gameId);
         renderLeaderboard(players);
-        scheduleRefresh();
+        stopPlayersSubscription?.();
+        stopPlayersSubscription = subscribeToPlayers(gameId, (nextPlayers) => {
+            renderLeaderboard(nextPlayers);
+        });
     } catch (e) {
         root.innerHTML = `
             <div class="page-error">
@@ -56,18 +59,8 @@ function renderLeaderboard(players) {
     root.appendChild(leaderboardEl);
 }
 
-function scheduleRefresh() {
-    clearTimeout(refreshTimer);
-    refreshTimer = window.setTimeout(async () => {
-        try {
-            const players = await getPlayers(gameId);
-            renderLeaderboard(players);
-        } catch (error) {
-            console.error('[leaderboard] refresh failed:', error);
-        } finally {
-            scheduleRefresh();
-        }
-    }, 2000);
-}
-
 startLeaderboard();
+
+window.addEventListener('beforeunload', () => {
+    stopPlayersSubscription?.();
+});
