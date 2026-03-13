@@ -1,4 +1,3 @@
-import { supabase } from './api/supabaseClient.js';
 import { getPlayers, subscribeToPlayers } from './api/gameApi.js';
 import { LeaderboardGridView } from './views/LeaderboardGridView.js';
 import QRCode from 'qrcode';
@@ -11,17 +10,6 @@ let leaderboardEl = null;
 let stopPlayersSubscription = null;
 
 async function startLeaderboard() {
-    // Auth check
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-        root.innerHTML = `
-            <div class="page-error">
-                <h2 class="page-error__title">Not logged in</h2>
-                <pre class="page-error__detail">Please open the game first.</pre>
-            </div>`;
-        return;
-    }
-
     if (!gameId) {
         root.innerHTML = `
             <div class="page-error">
@@ -67,7 +55,6 @@ function renderLeaderboard(players) {
             <p class="leaderboard-page__eyebrow">Players</p>
             <h1 class="leaderboard-page__title">Connect a player controller</h1>
             <p class="leaderboard-page__text">Scan this QR code on a phone to join the game, set a name, and use the buzzer.</p>
-            <a class="leaderboard-page__link" target="_blank" rel="noopener noreferrer">Open player controller ↗</a>
         </div>
         <div class="leaderboard-page__qrWrap">
             <img class="leaderboard-page__qr" alt="Player controller QR code">
@@ -84,11 +71,9 @@ function renderLeaderboard(players) {
 
 async function renderPlayerJoinQr(joinPanel) {
     const qrImg = joinPanel.querySelector('.leaderboard-page__qr');
-    const qrLink = joinPanel.querySelector('.leaderboard-page__link');
-    if (!qrImg || !qrLink) return;
+    if (!qrImg) return;
 
     const url = `${window.location.origin}${import.meta.env.BASE_URL}player.html?gameId=${gameId}`;
-    qrLink.href = url;
 
     try {
         qrImg.src = await QRCode.toDataURL(url, {
@@ -98,7 +83,6 @@ async function renderPlayerJoinQr(joinPanel) {
         });
     } catch (error) {
         console.error('[leaderboard] QR generation failed:', error);
-        qrLink.textContent = 'Open player controller';
     }
 }
 

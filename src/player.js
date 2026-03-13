@@ -1,4 +1,3 @@
-import { supabase } from './api/supabaseClient.js';
 import {
   MAX_PLAYERS,
   adjustPlayerScore,
@@ -20,12 +19,6 @@ let stopPlayersSubscription = null;
 let buzzAttemptPending = false;
 
 async function startPlayerController() {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) {
-    renderError('Not logged in', 'Please log into the game before opening the player controller.');
-    return;
-  }
-
   if (!gameId) {
     renderError('No game selected', 'Scan the QR code from the game screen.');
     return;
