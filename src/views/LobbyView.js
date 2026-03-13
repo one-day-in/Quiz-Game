@@ -1,5 +1,5 @@
 // src/views/LobbyView.js
-import { listGames } from '../api/gameApi.js';
+import { listGames, renameGame } from '../api/gameApi.js';
 import { GameRepository } from '../services/GameRepository.js';
 import { escapeHtml } from '../utils/utils.js';
 import { showConfirm, showPrompt } from '../utils/confirm.js';
@@ -59,6 +59,62 @@ export class LobbyView {
         }
     }
 
+    // Inline rename: replaces the name <div> with an <input>, saves on Enter/blur
+    _openRenameEditor(nameEl, game) {
+        if (nameEl.querySelector('input')) return; // already editing
+
+        const current = game.name;
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'lobby__card-name-input';
+        input.value = current;
+
+        nameEl.textContent = '';
+        nameEl.appendChild(input);
+        input.focus();
+        input.select();
+
+        let committed = false;
+
+        const restore = (text) => {
+            if (!nameEl.isConnected) return;
+            nameEl.textContent = text;
+        };
+
+        const commit = async () => {
+            if (committed) return;
+            committed = true;
+
+            const next = input.value.trim();
+
+            if (!next || next === current) {
+                restore(current);
+                return;
+            }
+
+            // Optimistic update — feels instant
+            restore(next);
+
+            try {
+                await renameGame(game.id, next);
+                game.name = next; // keep local cache in sync
+            } catch (err) {
+                console.error('[LobbyView] rename failed:', err);
+                restore(current);
+                game.name = current;
+                alert(`Error renaming game: ${err.message}`);
+            }
+        };
+
+        input.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Enter')  { ev.preventDefault(); commit(); }
+            if (ev.key === 'Escape') { ev.preventDefault(); committed = true; restore(current); }
+        });
+
+        input.addEventListener('blur', commit);
+    }
+
     _render() {
         const { onOpen, onCreate, onLogout } = this._cb;
 
@@ -91,6 +147,12 @@ export class LobbyView {
                                 Updated: ${formatDate(game.updated_at)}
                             </div>
                             <button
+                                class="lobby__card-rename"
+                                data-id="${escapeHtml(game.id)}"
+                                type="button"
+                                title="Rename game"
+                            >✏</button>
+                            <button
                                 class="lobby__card-delete"
                                 data-id="${escapeHtml(game.id)}"
                                 data-name="${escapeHtml(game.name)}"
@@ -118,13 +180,26 @@ export class LobbyView {
                 if (name) await onCreate?.(name);
             });
 
-        // Open game (click on card body, not delete btn)
+        // Open game (click on card body, not action buttons)
         this._root.querySelectorAll('.lobby__card').forEach(card => {
             const id = card.dataset.id;
             const game = this._games.find(g => g.id === id);
             card.addEventListener('click', (e) => {
                 if (e.target.closest('.lobby__card-delete')) return;
+                if (e.target.closest('.lobby__card-rename')) return;
+                if (e.target.closest('.lobby__card-name-input')) return;
                 onOpen?.(id, game?.name || 'Game');
+            });
+        });
+
+        // Rename game
+        this._root.querySelectorAll('.lobby__card-rename').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const card = btn.closest('.lobby__card');
+                const nameEl = card?.querySelector('.lobby__card-name');
+                const game = this._games.find(g => g.id === btn.dataset.id);
+                if (game && nameEl) this._openRenameEditor(nameEl, game);
             });
         });
 

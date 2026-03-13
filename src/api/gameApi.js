@@ -59,6 +59,16 @@ export async function createGame(name) {
     return data;
 }
 
+export async function renameGame(gameId, name) {
+    const { error } = await supabase
+        .from('games')
+        .update({ name: name.trim() })
+        .eq('id', gameId);
+
+    if (error) throw new Error(`[Game] renameGame failed: ${error.message}`);
+    return { ok: true };
+}
+
 export async function deleteGame(gameId) {
     const { error } = await supabase
         .from('games')
