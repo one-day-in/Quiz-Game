@@ -23,7 +23,7 @@ async function startLeaderboard() {
         root.innerHTML = `
             <div class="page-error">
                 <h2 class="page-error__title">No game selected</h2>
-                <pre class="page-error__detail">Open leaderboard from within the game settings.</pre>
+                <pre class="page-error__detail">Open leaderboard from the game header.</pre>
             </div>`;
         return;
     }

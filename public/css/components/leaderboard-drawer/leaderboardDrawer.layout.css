@@ -1,4 +1,4 @@
-.settings__header {
+.leaderboard-drawer__header {
   padding: 18px 18px;
 
   display: flex;
@@ -10,7 +10,7 @@
   background: var(--surface-1);
 }
 
-.settings__title {
+.leaderboard-drawer__title {
   margin: 0;
   font-size: var(--fs-4);
   font-weight: 800;
@@ -19,29 +19,29 @@
 }
 
 /* Body scrolls; QR area grows to fill the panel */
-.settings__body {
+.leaderboard-drawer__body {
   flex: 1 1 0;
   min-height: 0;
   padding: 16px 18px;
 
   display: flex;
   flex-direction: column;
-  gap: var(--settings-section-gap);
+  gap: var(--leaderboard-drawer-section-gap);
 
   overflow: auto;
   background: var(--surface-1);
 }
 
 /* Scrollbar (match modal vibe) */
-.settings__body::-webkit-scrollbar { width: 8px; }
-.settings__body::-webkit-scrollbar-track { background: transparent; }
-.settings__body::-webkit-scrollbar-thumb {
+.leaderboard-drawer__body::-webkit-scrollbar { width: 8px; }
+.leaderboard-drawer__body::-webkit-scrollbar-track { background: transparent; }
+.leaderboard-drawer__body::-webkit-scrollbar-thumb {
   background: var(--surface-2);
   border-radius: 20px;
   border: 2px solid transparent;
   background-clip: padding-box;
 }
-.settings__body::-webkit-scrollbar-thumb:hover {
+.leaderboard-drawer__body::-webkit-scrollbar-thumb:hover {
   background: var(--surface-3);
   background-clip: padding-box;
 }

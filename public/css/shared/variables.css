@@ -129,9 +129,8 @@
     --modal-bg: #111827;
     --modal-radius: var(--radius-lg);
 
-    --settings-panel-w: 34vw;
-    --settings-section-gap: 30px;
-    --settings-control-gap: 16px;
+    --leaderboard-drawer-panel-w: 34vw;
+    --leaderboard-drawer-section-gap: 30px;
 
 
     --cell-bg: linear-gradient(180deg, #e25c08, #0f172a);

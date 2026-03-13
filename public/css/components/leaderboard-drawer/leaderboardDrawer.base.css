@@ -1,5 +1,5 @@
 /* Leaderboard drawer wrapper */
-.settings {
+.leaderboard-drawer {
     position: fixed;
     inset: 0;
     z-index: 999999;
@@ -8,7 +8,7 @@
 }
 
 /* Overlay */
-.settings__overlay {
+.leaderboard-drawer__overlay {
     position: absolute;
     inset: 0;
 
@@ -23,13 +23,13 @@
 }
 
 /* Slide-over panel */
-.settings__panel {
+.leaderboard-drawer__panel {
     position: absolute;
     top: 0;
     right: 0;
 
     height: 100%;
-    width: var(--settings-panel-w);
+    width: var(--leaderboard-drawer-panel-w);
 
     display: flex;
     flex-direction: column;
@@ -49,15 +49,15 @@
 }
 
 /* Open state */
-.settings.is-open {
+.leaderboard-drawer.is-open {
     pointer-events: auto;
 }
 
-.settings.is-open .settings__overlay {
+.leaderboard-drawer.is-open .leaderboard-drawer__overlay {
     opacity: 1;
 }
 
-.settings.is-open .settings__panel {
+.leaderboard-drawer.is-open .leaderboard-drawer__panel {
     opacity: 1;
     transform: translateX(0);
 }

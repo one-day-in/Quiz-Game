@@ -1,5 +1,5 @@
 /* QR section for the leaderboard launcher drawer */
-.settings__section h4 {
+.leaderboard-drawer__section h4 {
   margin: 0 0 10px;
   font-size: var(--fs-2);
   font-weight: 800;
@@ -7,14 +7,14 @@
 }
 
 /* Leaderboard QR section — fills remaining space in body */
-.settings__section--leaderboard {
+.leaderboard-drawer__section--qr {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
 }
 
-.settings__qr-wrap {
+.leaderboard-drawer__qr-wrap {
   flex: 1;
   min-height: 0;
   position: relative;
@@ -27,7 +27,7 @@
 }
 
 /* Bluish radial glow behind the QR */
-.settings__qr-glow {
+.leaderboard-drawer__qr-glow {
   position: absolute;
   inset: 0;
   pointer-events: none;
@@ -35,7 +35,7 @@
   border-radius: var(--radius-lg);
 }
 
-.settings__qr-img {
+.leaderboard-drawer__qr-img {
   position: relative;
   z-index: 1;
 
@@ -54,7 +54,7 @@
   object-fit: contain;
 }
 
-.settings__qr-link {
+.leaderboard-drawer__qr-link {
   position: relative;
   z-index: 1;
   flex-shrink: 0;
@@ -68,9 +68,7 @@
   padding-bottom: 4px;
 }
 
-.settings__qr-link:hover {
+.leaderboard-drawer__qr-link:hover {
   opacity: 0.8;
   text-decoration: underline;
 }
-
-/* Utility */

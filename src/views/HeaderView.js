@@ -18,7 +18,7 @@ export function HeaderView({ uiState, gameName, onLeaderboardClick, onBackToLobb
       <h1 class="app-title">${escapeHtml(title)}</h1>
     </div>
     <div class="hdr-right">
-      <button class="hdr-settings-btn" type="button">🏆 Leaderboard</button>
+      <button class="hdr-leaderboard-btn" type="button">🏆 Leaderboard</button>
     </div>
   `;
 
@@ -33,7 +33,7 @@ export function HeaderView({ uiState, gameName, onLeaderboardClick, onBackToLobb
 
   el.querySelector('.hdr-lobby-btn').addEventListener('click', () => onBackToLobby?.());
   el.querySelector('.round-indicator').addEventListener('click', () => onRoundClick?.());
-  el.querySelector('.hdr-settings-btn').addEventListener('click', (e) => {
+  el.querySelector('.hdr-leaderboard-btn').addEventListener('click', (e) => {
     e.stopPropagation();
     onLeaderboardClick?.();
   });

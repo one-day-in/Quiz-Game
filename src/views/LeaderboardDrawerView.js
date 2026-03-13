@@ -65,23 +65,23 @@ export class LeaderboardDrawerView {
 
   _build() {
     const root = document.createElement('div');
-    root.className = 'settings';
+    root.className = 'leaderboard-drawer';
 
     root.innerHTML = `
-      <div class="settings__overlay"></div>
+      <div class="leaderboard-drawer__overlay"></div>
 
-      <aside class="settings__panel" role="dialog" aria-label="Leaderboard">
-        <header class="settings__header">
-          <h3 class="settings__title">Leaderboard</h3>
-          <button class="settings__close" type="button" aria-label="Close">&times;</button>
+      <aside class="leaderboard-drawer__panel" role="dialog" aria-label="Leaderboard">
+        <header class="leaderboard-drawer__header">
+          <h3 class="leaderboard-drawer__title">Leaderboard</h3>
+          <button class="leaderboard-drawer__close" type="button" aria-label="Close">&times;</button>
         </header>
 
-        <div class="settings__body">
-          <div class="settings__section settings__section--leaderboard">
-            <div class="settings__qr-wrap">
-              <div class="settings__qr-glow"></div>
-              <img class="settings__qr-img" alt="Leaderboard QR code">
-              <a class="settings__qr-link" target="_blank" rel="noopener noreferrer">Open leaderboard ↗</a>
+        <div class="leaderboard-drawer__body">
+          <div class="leaderboard-drawer__section leaderboard-drawer__section--qr">
+            <div class="leaderboard-drawer__qr-wrap">
+              <div class="leaderboard-drawer__qr-glow"></div>
+              <img class="leaderboard-drawer__qr-img" alt="Leaderboard QR code">
+              <a class="leaderboard-drawer__qr-link" target="_blank" rel="noopener noreferrer">Open leaderboard ↗</a>
             </div>
           </div>
         </div>
@@ -89,11 +89,11 @@ export class LeaderboardDrawerView {
     `;
 
     this._root = root;
-    this._overlay = root.querySelector('.settings__overlay');
-    this._panel = root.querySelector('.settings__panel');
-    this._closeBtn = root.querySelector('.settings__close');
-    this._qrImg  = root.querySelector('.settings__qr-img');
-    this._qrLink = root.querySelector('.settings__qr-link');
+    this._overlay = root.querySelector('.leaderboard-drawer__overlay');
+    this._panel = root.querySelector('.leaderboard-drawer__panel');
+    this._closeBtn = root.querySelector('.leaderboard-drawer__close');
+    this._qrImg  = root.querySelector('.leaderboard-drawer__qr-img');
+    this._qrLink = root.querySelector('.leaderboard-drawer__qr-link');
 
     this._generateQR();
   }

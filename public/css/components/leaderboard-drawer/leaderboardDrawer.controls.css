@@ -1,7 +1,7 @@
 /* components/leaderboard-drawer/leaderboardDrawer.controls.css */
 
 /* Close button (top-right) */
-.settings__close {
+.leaderboard-drawer__close {
     width: 46px;
     height: 46px;
 
@@ -27,18 +27,18 @@
         border-color var(--t-fast) var(--ease);
 }
 
-.settings__close:hover {
+.leaderboard-drawer__close:hover {
     transform: translateY(calc(-1 * var(--lift-y)));
     border-color: var(--btn-outline-hover);
     box-shadow: var(--shadow-md), var(--btn-glow-hover);
     filter: brightness(1.06);
 }
 
-.settings__close:active {
+.leaderboard-drawer__close:active {
     transform: translateY(var(--btn-press-y));
     filter: brightness(0.98);
 }
 
-.settings__close:focus-visible {
+.leaderboard-drawer__close:focus-visible {
     box-shadow: var(--shadow-md), var(--ring);
 }
