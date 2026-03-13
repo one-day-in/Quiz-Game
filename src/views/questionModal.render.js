@@ -17,7 +17,7 @@ export function initMediaUI(host) {
   img.fetchPriority = 'high'; // hint browser to prioritise this fetch
   video.className   = 'qmodal__media qmodal__media--video';
   video.controls    = true;
-  video.preload     = 'auto';
+  video.preload     = 'metadata';
 
   host.append(img, video);
 

@@ -334,12 +334,41 @@ export class QuestionModalView {
     // Shows a spinner over the whole dialog until every image/video that is
     // part of this cell is decoded and paint-ready. Falls back after 8 s so a
     // slow/broken file never blocks the user forever.
+    //
+    // Uses the actual <img>/<video> elements already in the DOM (created by
+    // initMediaUI) — no orphan elements, no duplicate network requests.
 
     async _showContentWhenReady() {
-        const mediaSrcs = [this._question?.media, this._answer?.media]
-            .filter(m => m?.src && m?.mime);
+        const waits = [];
 
-        if (!mediaSrcs.length) return; // text-only cell — no loader needed
+        for (const type of ['question', 'answer']) {
+            const media = this[`_${type}`]?.media;
+            if (!media?.src || !media?.mime) continue;
+
+            const host = this._refs[`${type}MediaHost`];
+            if (!host) continue;
+
+            const mime = (media.mime || '').toLowerCase();
+
+            if (mime.startsWith('image/')) {
+                const img = host.querySelector('img');
+                if (img) waits.push(img.decode().catch(() => {}));
+            } else if (mime.startsWith('video/')) {
+                const video = host.querySelector('video');
+                if (video) {
+                    if (video.readyState >= 1 /* HAVE_METADATA */) {
+                        // already ready — no wait needed
+                    } else {
+                        waits.push(new Promise(resolve => {
+                            video.addEventListener('loadedmetadata', resolve, { once: true });
+                            video.addEventListener('error',          resolve, { once: true });
+                        }));
+                    }
+                }
+            }
+        }
+
+        if (!waits.length) return; // text-only or audio-only cell
 
         // Build overlay
         const overlay = document.createElement('div');
@@ -351,36 +380,11 @@ export class QuestionModalView {
 
         // Wait for all media with an 8-second safety timeout
         const timeout = new Promise(r => setTimeout(r, 8000));
-        await Promise.race([
-            Promise.allSettled(mediaSrcs.map(m => this._decodeMedia(m))),
-            timeout,
-        ]);
+        await Promise.race([Promise.allSettled(waits), timeout]);
 
         // Fade out then remove
         overlay.classList.add('qmodal__mediaLoadOverlay--done');
         overlay.addEventListener('transitionend', () => overlay.remove(), { once: true });
         setTimeout(() => overlay.remove(), 300); // fallback if no transition fires
-    }
-
-    _decodeMedia(media) {
-        const mime = (media.mime || '').toLowerCase();
-
-        if (mime.startsWith('image/')) {
-            const img = new Image();
-            img.src = media.src;
-            return img.decode().catch(() => {}); // ignore decode errors
-        }
-
-        if (mime.startsWith('video/')) {
-            return new Promise(resolve => {
-                const v = document.createElement('video');
-                v.preload = 'metadata';
-                v.addEventListener('loadedmetadata', resolve, { once: true });
-                v.addEventListener('error',          resolve, { once: true });
-                v.src = media.src;
-            });
-        }
-
-        return Promise.resolve(); // audio or unknown — no wait needed
     }
 }
