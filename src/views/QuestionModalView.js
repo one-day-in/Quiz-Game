@@ -16,6 +16,7 @@ export class QuestionModalView {
         onClose,
         onToggleAnswered,
         onToggleQuizSpinner,
+        onBuzzControl,
         onQuestionChange,
         onAnswerChange,
         onUploadMedia,
@@ -33,7 +34,7 @@ export class QuestionModalView {
         this._isAnswerShown = mode === 'edit';
 
         this._cb = {
-            onClose, onToggleAnswered, onToggleQuizSpinner, onQuestionChange, onAnswerChange,
+            onClose, onToggleAnswered, onToggleQuizSpinner, onBuzzControl, onQuestionChange, onAnswerChange,
             onUploadMedia, onDeleteMedia, onAddAudio, onDeleteAudio,
         };
 
@@ -183,6 +184,9 @@ export class QuestionModalView {
                 e.target.checked = prev;
                 renderAll(this, this._refs);
             }
+        });
+        this._disposer.addEventListener(r.buzzControlBtn, 'click', async () => {
+            await this._cb.onBuzzControl?.(this._buzzState);
         });
 
         // ── Media peek buttons (view mode: opens a lightbox overlay) ────────
