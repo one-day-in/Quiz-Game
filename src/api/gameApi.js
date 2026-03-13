@@ -2,6 +2,7 @@ import { supabase } from './supabaseClient.js';
 
 export const MAX_PLAYERS = 8;
 const LIVE_DEFAULTS = Object.freeze({
+    isArmed: false,
     activeQuestion: null,
     buzz: null,
 });
@@ -58,6 +59,7 @@ function normalizePlayers(players = []) {
 
 function normalizeLive(live) {
     return {
+        isArmed: !!live?.isArmed,
         activeQuestion: live?.activeQuestion ?? null,
         buzz: live?.buzz ?? null,
     };

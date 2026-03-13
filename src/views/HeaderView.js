@@ -1,7 +1,7 @@
 // src/views/HeaderView.js
 import { escapeHtml } from '../utils/utils.js';
 
-export function HeaderView({ uiState, gameName, onLeaderboardClick, onBackToLobby, onRoundClick }) {
+export function HeaderView({ uiState, gameName, onLeaderboardClick, onBackToLobby, onRoundClick, onToggleLiveMode }) {
   const el = document.createElement('header');
   el.className = 'app-header';
 
@@ -18,14 +18,20 @@ export function HeaderView({ uiState, gameName, onLeaderboardClick, onBackToLobb
       <h1 class="app-title">${escapeHtml(title)}</h1>
     </div>
     <div class="hdr-right">
+      <button class="hdr-live-btn" type="button" aria-pressed="false">Live: Off</button>
       <button class="hdr-leaderboard-btn" type="button">🏆 Leaderboard</button>
     </div>
   `;
 
   const roundValueEl = el.querySelector('.js-round-value');
+  const liveBtnEl = el.querySelector('.hdr-live-btn');
 
   function update(ui) {
     roundValueEl.textContent = String((ui?.activeRoundId ?? 0) + 1);
+    const isLiveArmed = !!ui?.isLiveArmed;
+    liveBtnEl.textContent = isLiveArmed ? 'Live: On' : 'Live: Off';
+    liveBtnEl.setAttribute('aria-pressed', String(isLiveArmed));
+    liveBtnEl.classList.toggle('is-live', isLiveArmed);
   }
 
   // Initial render
@@ -33,6 +39,10 @@ export function HeaderView({ uiState, gameName, onLeaderboardClick, onBackToLobb
 
   el.querySelector('.hdr-lobby-btn').addEventListener('click', () => onBackToLobby?.());
   el.querySelector('.round-indicator').addEventListener('click', () => onRoundClick?.());
+  el.querySelector('.hdr-live-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    onToggleLiveMode?.();
+  });
   el.querySelector('.hdr-leaderboard-btn').addEventListener('click', (e) => {
     e.stopPropagation();
     onLeaderboardClick?.();

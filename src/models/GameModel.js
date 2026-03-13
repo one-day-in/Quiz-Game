@@ -5,7 +5,7 @@ class GameModel {
     this.meta = gameData.meta || { updatedAt: new Date().toISOString() };
     this.schemaVersion = gameData.schemaVersion || '1.0';
     this.players = gameData.players || [];
-    this.live = gameData.live || { activeQuestion: null, buzz: null };
+    this.live = gameData.live || { isArmed: false, activeQuestion: null, buzz: null };
   }
 
   getCell(roundIdx, rowIdx, cellIdx) {

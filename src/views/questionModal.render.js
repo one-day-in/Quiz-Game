@@ -100,11 +100,6 @@ export function applyModeUI(view, refs) {
   if (refs.btnToggleMode) {
     refs.btnToggleMode.textContent = isEdit ? '👁 View' : '✏ Edit';
   }
-  if (refs.buzzControlBtn) {
-    refs.buzzControlBtn.disabled = isEdit;
-    refs.buzzControlBtn.textContent = view._buzzState?.status ? 'Reset buzz' : 'Start buzz';
-    setHidden(refs.buzzControlBtn, false);
-  }
 
   for (const t of ['question', 'answer']) {
     setHidden(refs[`${t}TextView`],      isEdit);

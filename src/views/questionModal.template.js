@@ -150,10 +150,6 @@ export function buildModalDom() {
           <span>Answered</span>
         </label>
 
-        <button type="button" class="qmodal__btn qmodal__btn--danger qmodal__btnBuzzControl">
-          Start buzz
-        </button>
-
         <button type="button" class="qmodal__btn qmodal__btnToggleAnswer">
           👁️ Show answer
         </button>
@@ -179,7 +175,6 @@ export function buildModalDom() {
       quizSpinnerCheckbox: qs('.qmodal__quizSpinnerInput'),
       btnToggleMode:      qs('.qmodal__btnToggleMode'),
       closeDone:          qs('.qmodal__btnClose'),
-      buzzControlBtn:     qs('.qmodal__btnBuzzControl'),
       answeredCheckbox:   qs('.qmodal__toggleInput'),
       toggleAnswerBtn:    qs('.qmodal__btnToggleAnswer'),
       emptyState:         qs('.qmodal__emptyState'),

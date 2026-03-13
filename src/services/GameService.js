@@ -52,7 +52,13 @@ class GameService {
     }
 
     getState() {
-        return { model: this.model, uiState: { ...this.uiState } };
+        return {
+            model: this.model,
+            uiState: {
+                ...this.uiState,
+                isLiveArmed: !!this.model?.live?.isArmed,
+            }
+        };
     }
 
     getModel() { return this.model; }
@@ -166,7 +172,33 @@ class GameService {
     }
 
     async setLiveState(patch) {
-        return this.repo.setLiveState(patch);
+        if (this.model?.live && typeof patch === 'object' && patch !== null) {
+            this.model.live = {
+                ...this.model.live,
+                ...patch,
+            };
+            this.model.meta.updatedAt = new Date().toISOString();
+            this._emit();
+        }
+
+        try {
+            return await this.repo.setLiveState(patch);
+        } catch (error) {
+            if (this.model?.live && typeof patch === 'object' && patch !== null) {
+                const fresh = await this.repo.loadGame();
+                this.model = new GameModel(fresh);
+                this._emit();
+            }
+            throw error;
+        }
+    }
+
+    async setLiveArmed(isArmed) {
+        return this.setLiveState({
+            isArmed: !!isArmed,
+            activeQuestion: null,
+            buzz: null,
+        });
     }
 
     claimBuzz(playerId) {

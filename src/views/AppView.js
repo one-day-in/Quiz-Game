@@ -5,7 +5,7 @@ import { LeaderboardDrawerView } from './LeaderboardDrawerView.js';
 import { ViewDisposer } from '../utils/disposer.js';
 import { fitAllCells } from '../utils/fitText.js';
 
-export function AppView({ model, uiState, actions, gameId, gameName, onCellClick, onBackToLobby, onRoundClick }) {
+export function AppView({ model, uiState, actions, gameId, gameName, onCellClick, onBackToLobby, onRoundClick, onToggleLiveMode }) {
   const container = document.createElement('div');
   container.className = 'app-shell';
 
@@ -32,7 +32,8 @@ export function AppView({ model, uiState, actions, gameId, gameName, onCellClick
     gameName,
     onLeaderboardClick: toggleLeaderboardDrawer,
     onBackToLobby,
-    onRoundClick
+    onRoundClick,
+    onToggleLiveMode,
   });
   container.appendChild(header.el);
 

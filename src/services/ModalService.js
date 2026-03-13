@@ -75,17 +75,47 @@ export class ModalService {
       cellId: cellData.cellId
     };
 
-    void this._game.setLiveState({
-      activeQuestion: {
-        roundId: cellData.roundId,
-        rowId: cellData.rowId,
-        cellId: cellData.cellId,
-        openedAt: new Date().toISOString(),
-      },
-      buzz: null,
-    }).catch((error) => {
-      console.error('[ModalService] Failed to set active question state:', error);
-    });
+    const isLiveArmed = !!this._game.getModel()?.live?.isArmed;
+    let enabledAt = null;
+
+    if (isLiveArmed) {
+      const buzzSessionId = `buzz_${cellData.roundId}_${cellData.rowId}_${cellData.cellId}_${Date.now()}`;
+      enabledAt = new Date(Date.now() + 1000).toISOString();
+
+      void this._game.setLiveState({
+        activeQuestion: {
+          roundId: cellData.roundId,
+          rowId: cellData.rowId,
+          cellId: cellData.cellId,
+          openedAt: new Date().toISOString(),
+        },
+        buzz: {
+          sessionId: buzzSessionId,
+          status: 'pending',
+          enabledAt,
+          winnerPlayerId: null,
+          winnerAt: null,
+        },
+      }).catch((error) => {
+        console.error('[ModalService] Failed to set active question state:', error);
+      });
+
+      clearTimeout(this._buzzOpenTimer);
+      this._buzzOpenTimer = setTimeout(() => {
+        if (!this.activeCell) return;
+        void this._game.setLiveState({
+          buzz: {
+            sessionId: buzzSessionId,
+            status: 'open',
+            enabledAt,
+            winnerPlayerId: null,
+            winnerAt: null,
+          },
+        }).catch((error) => {
+          console.error('[ModalService] Failed to open buzz state:', error);
+        });
+      }, 1000);
+    }
 
     const shouldMarkAsAnswered = mode === 'view' && !cellData.isAnswered;
     if (shouldMarkAsAnswered) {
@@ -110,7 +140,13 @@ export class ModalService {
 
       isAnswered: shouldMarkAsAnswered ? true : cellData.isAnswered,
       isQuizSpinner: isQuizSpinnerMedia(question.media),
-      buzzState: null,
+      buzzState: isLiveArmed ? {
+        status: 'pending',
+        enabledAt,
+        winnerPlayerId: null,
+        winnerAt: null,
+        winnerName: null,
+      } : null,
       question,
       answer,
 
@@ -118,53 +154,6 @@ export class ModalService {
 
       onToggleAnswered: (checked) => {
         void this._updateCell({ isAnswered: checked });
-      },
-      onBuzzControl: async (buzzState) => {
-        if (buzzState?.status) {
-          clearTimeout(this._buzzOpenTimer);
-          this._buzzOpenTimer = null;
-          await this._game.setLiveState({ buzz: null });
-          this.view?.updateBuzzState(null);
-          return;
-        }
-
-        const buzzSessionId = `buzz_${cellData.roundId}_${cellData.rowId}_${cellData.cellId}_${Date.now()}`;
-        const enabledAt = new Date(Date.now() + 1000).toISOString();
-        const pendingBuzz = {
-          sessionId: buzzSessionId,
-          status: 'pending',
-          enabledAt,
-          winnerPlayerId: null,
-          winnerAt: null,
-          winnerName: null,
-        };
-
-        await this._game.setLiveState({
-          buzz: {
-            sessionId: buzzSessionId,
-            status: 'pending',
-            enabledAt,
-            winnerPlayerId: null,
-            winnerAt: null,
-          },
-        });
-        this.view?.updateBuzzState(pendingBuzz);
-
-        clearTimeout(this._buzzOpenTimer);
-        this._buzzOpenTimer = setTimeout(() => {
-          if (!this.activeCell) return;
-          void this._game.setLiveState({
-            buzz: {
-              sessionId: buzzSessionId,
-              status: 'open',
-              enabledAt,
-              winnerPlayerId: null,
-              winnerAt: null,
-            },
-          }).catch((error) => {
-            console.error('[ModalService] Failed to open buzz state:', error);
-          });
-        }, 1000);
       },
 
       onToggleQuizSpinner: async (checked) => {
@@ -331,9 +320,11 @@ export class ModalService {
     this.activeCell = null;
     if (this.container?.isConnected) this.container.innerHTML = '';
 
-    void this._game.setLiveState({ activeQuestion: null, buzz: null }).catch((error) => {
-      console.error('[ModalService] Failed to clear active question state:', error);
-    });
+    if (this._game.getModel()?.live?.isArmed) {
+      void this._game.setLiveState({ activeQuestion: null, buzz: null }).catch((error) => {
+        console.error('[ModalService] Failed to clear active question state:', error);
+      });
+    }
 
     // Targeted patch — only the closed cell's is-answered state updates
     this._game.touch(lastCell);
