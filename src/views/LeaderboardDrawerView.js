@@ -72,7 +72,7 @@ export class LeaderboardDrawerView {
 
       <aside class="leaderboard-drawer__panel" role="dialog" aria-label="Leaderboard">
         <header class="leaderboard-drawer__header">
-          <h3 class="leaderboard-drawer__title">Player Join</h3>
+          <h3 class="leaderboard-drawer__title">Leaderboard</h3>
           <button class="leaderboard-drawer__close" type="button" aria-label="Close">&times;</button>
         </header>
 
@@ -80,8 +80,8 @@ export class LeaderboardDrawerView {
           <div class="leaderboard-drawer__section leaderboard-drawer__section--qr">
             <div class="leaderboard-drawer__qr-wrap">
               <div class="leaderboard-drawer__qr-glow"></div>
-              <img class="leaderboard-drawer__qr-img" alt="Player controller QR code">
-              <a class="leaderboard-drawer__qr-link" target="_blank" rel="noopener noreferrer">Open player controller ↗</a>
+              <img class="leaderboard-drawer__qr-img" alt="Leaderboard QR code">
+              <a class="leaderboard-drawer__qr-link" target="_blank" rel="noopener noreferrer">Open leaderboard ↗</a>
             </div>
           </div>
         </div>
@@ -104,10 +104,10 @@ export class LeaderboardDrawerView {
     // BASE_URL is injected by Vite: '/' in dev, '/Quiz-Game/' on GitHub Pages.
     // This ensures the QR code points to the correct public URL regardless of
     // whether the user scans it on the same network or a different one.
-    const url = `${window.location.origin}${import.meta.env.BASE_URL}player.html?gameId=${this._gameId}`;
+    const url = `${window.location.origin}${import.meta.env.BASE_URL}leaderboard.html?gameId=${this._gameId}`;
 
     this._qrLink.href = url;
-    this._qrLink.textContent = 'Open player controller ↗';
+    this._qrLink.textContent = 'Open leaderboard ↗';
 
     try {
       const dataUrl = await QRCode.toDataURL(url, {
