@@ -156,6 +156,11 @@ async function renderGame(user, gameId, gameName) {
 
 let _starting = false;
 
+// True while an authenticated session is active (lobby or game is rendered).
+// Prevents Supabase SIGNED_IN events fired on tab-refocus (token refresh) from
+// destroying the current game/lobby state and re-initialising the whole app.
+let _sessionActive = false;
+
 async function startApp() {
     if (_starting) return;
     _starting = true;
@@ -166,9 +171,12 @@ async function startApp() {
         const session = await getSession();
 
         if (!session) {
+            _sessionActive = false;
             renderLogin(root);
             return;
         }
+
+        _sessionActive = true;
 
         const user = session.user;
 
@@ -190,11 +198,19 @@ async function startApp() {
 }
 
 export async function start() {
-    // Re-run startApp only on meaningful auth events (login / logout).
-    // TOKEN_REFRESHED, INITIAL_SESSION, USER_UPDATED, etc. are intentionally ignored
-    // so that automatic token refreshes don't cause a full page reload.
     onAuthStateChange((event, _session) => {
-        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+        if (event === 'SIGNED_OUT') {
+            // Session gone → always go to login
+            _sessionActive = false;
+            if (!_starting) startApp();
+            return;
+        }
+
+        if (event === 'SIGNED_IN' && !_sessionActive) {
+            // Only react to SIGNED_IN if we don't already have a running session.
+            // Supabase fires SIGNED_IN on every token refresh (visibilitychange, etc.)
+            // — ignoring those events keeps the open modal / game state intact when
+            // the user switches tabs and comes back.
             if (!_starting) startApp();
         }
     });
