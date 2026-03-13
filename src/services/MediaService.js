@@ -8,9 +8,15 @@ export class MediaService {
     this.game = gameService; // GameService: updateCell (await-able)
   }
 
-  // Supabase Storage returns full HTTPS-URLs, so src === url
+  // Supabase Storage returns full HTTPS-URLs, so src === url.
+  // Exception: builtin spinner uses a local asset — resolve via BASE_URL
+  // so it works both on localhost ('/') and GitHub Pages ('/Quiz-Game/').
   toViewMedia(raw) {
     if (!raw) return null;
+    if (isQuizSpinnerMedia(raw)) {
+      const src = `${import.meta.env.BASE_URL}quiz-spinner.gif`;
+      return { ...QUIZ_SPINNER_MEDIA, src };
+    }
     return { ...raw, src: raw.url || '' };
   }
 
