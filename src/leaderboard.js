@@ -8,6 +8,8 @@ const root = document.getElementById('leaderboard-app');
 const gameId = new URLSearchParams(location.search).get('gameId');
 let leaderboardEl = null;
 let stopPlayersSubscription = null;
+let refreshTimer = null;
+let lastPlayersSnapshot = '';
 
 async function startLeaderboard() {
     if (!gameId) {
@@ -32,6 +34,7 @@ async function startLeaderboard() {
         stopPlayersSubscription = subscribeToPlayers(gameId, (nextPlayers) => {
             renderLeaderboard(nextPlayers);
         });
+        scheduleRefresh();
     } catch (e) {
         root.innerHTML = `
             <div class="page-error">
@@ -42,6 +45,10 @@ async function startLeaderboard() {
 }
 
 function renderLeaderboard(players) {
+    const snapshot = JSON.stringify(players ?? []);
+    if (snapshot === lastPlayersSnapshot) return;
+    lastPlayersSnapshot = snapshot;
+
     leaderboardEl?.destroy?.();
     root.innerHTML = '';
 
@@ -69,6 +76,20 @@ function renderLeaderboard(players) {
     void renderPlayerJoinQr(joinPanel);
 }
 
+function scheduleRefresh() {
+    clearTimeout(refreshTimer);
+    refreshTimer = window.setTimeout(async () => {
+        try {
+            const players = await getPlayers(gameId);
+            renderLeaderboard(players);
+        } catch (error) {
+            console.error('[leaderboard] fallback refresh failed:', error);
+        } finally {
+            scheduleRefresh();
+        }
+    }, 1500);
+}
+
 async function renderPlayerJoinQr(joinPanel) {
     const qrImg = joinPanel.querySelector('.leaderboard-page__qr');
     if (!qrImg) return;
@@ -90,4 +111,5 @@ startLeaderboard();
 
 window.addEventListener('beforeunload', () => {
     stopPlayersSubscription?.();
+    clearTimeout(refreshTimer);
 });
