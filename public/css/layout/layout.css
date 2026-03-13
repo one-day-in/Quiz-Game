@@ -14,6 +14,47 @@
   padding: var(--app-pad);
 }
 
+.app-shell__buzzOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  border: 0;
+  padding: 24px;
+  display: grid;
+  place-content: center;
+  gap: 16px;
+  background:
+    radial-gradient(circle at 50% 35%, rgba(248, 113, 113, 0.24), transparent 30%),
+    rgba(2, 6, 23, 0.88);
+  color: #fff1f2;
+  text-align: center;
+  cursor: pointer;
+}
+
+.app-shell__buzzEyebrow {
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #fecaca;
+}
+
+.app-shell__buzzName {
+  font-size: clamp(42px, 7vw, 96px);
+  line-height: 0.96;
+  font-weight: 900;
+  text-shadow:
+    0 0 18px rgba(239, 68, 68, 0.25),
+    0 0 36px rgba(248, 113, 113, 0.16);
+}
+
+.app-shell__buzzHint {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: rgba(255, 241, 242, 0.84);
+}
+
 /* Views */
 .app-header {
   flex: 0 0 auto;
@@ -29,4 +70,3 @@
   flex: 0 0 auto;
   height: var(--footer-h);
 }
-

@@ -48,7 +48,10 @@ export function createAppController({ root, gameService, modalService, roundNavi
     if (!model) return;
 
     // While modal is open, skip grid re-renders — they'll block the UI thread.
-    if (modalService.isOpen()) return;
+    if (modalService.isOpen()) {
+      appViewRef?.syncLive?.(model, uiState);
+      return;
+    }
 
     if (!appViewRef) {
       appViewRef = AppView({

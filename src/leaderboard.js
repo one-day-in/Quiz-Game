@@ -10,10 +10,6 @@ let leaderboardEl = null;
 let stopGameSubscription = null;
 let refreshTimer = null;
 let lastLeaderboardSnapshot = '';
-let overlayEl = null;
-let overlayHideTimer = null;
-let activeOverlayKey = null;
-let dismissedOverlayKey = null;
 
 async function startLeaderboard() {
     if (!gameId) {
@@ -50,16 +46,7 @@ async function startLeaderboard() {
 
 async function renderLeaderboard(game) {
     const players = game?.players ?? [];
-    const buzz = game?.live?.buzz ?? null;
-    const snapshot = JSON.stringify({
-        players,
-        buzz: buzz ? {
-            sessionId: buzz.sessionId ?? null,
-            status: buzz.status ?? null,
-            winnerPlayerId: buzz.winnerPlayerId ?? null,
-            winnerAt: buzz.winnerAt ?? null,
-        } : null,
-    });
+    const snapshot = JSON.stringify(players);
     if (snapshot === lastLeaderboardSnapshot) return;
     lastLeaderboardSnapshot = snapshot;
 
@@ -97,26 +84,9 @@ async function renderLeaderboard(game) {
         },
     });
     shell.appendChild(leaderboardEl);
-
-    overlayEl = document.createElement('button');
-    overlayEl.type = 'button';
-    overlayEl.className = 'leaderboard-page__buzzOverlay';
-    overlayEl.hidden = true;
-    overlayEl.innerHTML = `
-        <span class="leaderboard-page__buzzEyebrow">First buzz</span>
-        <strong class="leaderboard-page__buzzName"></strong>
-        <span class="leaderboard-page__buzzHint">Tap anywhere to close</span>
-    `;
-    overlayEl.addEventListener('click', () => {
-        if (!activeOverlayKey) return;
-        dismissedOverlayKey = activeOverlayKey;
-        hideBuzzOverlay();
-    });
-    shell.appendChild(overlayEl);
     root.appendChild(shell);
 
     await renderPlayerJoinQr(joinPanel);
-    syncBuzzOverlay(players, buzz);
 }
 
 function scheduleRefresh() {
@@ -150,50 +120,9 @@ async function renderPlayerJoinQr(joinPanel) {
     }
 }
 
-function syncBuzzOverlay(players, buzz) {
-    if (!overlayEl) return;
-
-    const overlayKey = buzz?.status === 'buzzed' && buzz?.winnerPlayerId
-        ? `${buzz.sessionId || 'buzz'}:${buzz.winnerPlayerId}:${buzz.winnerAt || ''}`
-        : null;
-
-    if (!overlayKey) {
-        hideBuzzOverlay();
-        return;
-    }
-
-    if (dismissedOverlayKey === overlayKey || activeOverlayKey === overlayKey) {
-        return;
-    }
-
-    const winner = players.find((player) => player.id === buzz.winnerPlayerId);
-    const winnerName = winner?.name || 'Player';
-    const nameEl = overlayEl.querySelector('.leaderboard-page__buzzName');
-    if (nameEl) {
-        nameEl.textContent = `${winnerName} buzzed first`;
-    }
-
-    activeOverlayKey = overlayKey;
-    overlayEl.hidden = false;
-    clearTimeout(overlayHideTimer);
-    overlayHideTimer = window.setTimeout(() => {
-        hideBuzzOverlay();
-    }, 10000);
-}
-
-function hideBuzzOverlay() {
-    clearTimeout(overlayHideTimer);
-    overlayHideTimer = null;
-    if (overlayEl) {
-        overlayEl.hidden = true;
-    }
-    activeOverlayKey = null;
-}
-
 startLeaderboard();
 
 window.addEventListener('beforeunload', () => {
     stopGameSubscription?.();
     clearTimeout(refreshTimer);
-    clearTimeout(overlayHideTimer);
 });
