@@ -1,5 +1,7 @@
 import { supabase } from './supabaseClient.js';
 
+export const MAX_PLAYERS = 8;
+
 // ================================================
 // DEFAULT GAME STATE
 // ================================================
@@ -27,6 +29,26 @@ function makeDefaultGame() {
         rounds: Array.from({ length: 3 }, makeDefaultRound),
         players: []
     };
+}
+
+function createPlayerId() {
+    return `p_${Date.now()}_${Math.random().toString(16).slice(2, 10)}`;
+}
+
+function normalizePlayer(player, idx = 0) {
+    return {
+        id: (player?.id || createPlayerId()).toString(),
+        name: (player?.name || `Player ${idx + 1}`).toString().trim() || `Player ${idx + 1}`,
+        points: Number.isFinite(player?.points) ? player.points : 0,
+        controllerId: player?.controllerId ? String(player.controllerId) : null,
+        joinedAt: player?.joinedAt || new Date().toISOString(),
+    };
+}
+
+function normalizePlayers(players = []) {
+    return (Array.isArray(players) ? players : [])
+        .slice(0, MAX_PLAYERS)
+        .map((player, idx) => normalizePlayer(player, idx));
 }
 
 // ================================================
@@ -135,14 +157,93 @@ export async function updateTopic(gameId, roundId, rowId, topic) {
 // ================================================
 export async function getPlayers(gameId) {
     const game = await getGame(gameId);
-    return Array.isArray(game.players) ? game.players : [];
+    return normalizePlayers(game.players);
 }
 
 export async function savePlayers(gameId, players) {
     const game = await getGame(gameId);
-    game.players = players;
+    game.players = normalizePlayers(players);
     game.meta.updatedAt = new Date().toISOString();
     return saveGame(gameId, game);
+}
+
+export async function getPlayerByController(gameId, controllerId) {
+    if (!controllerId) return null;
+    const players = await getPlayers(gameId);
+    return players.find((player) => player.controllerId === controllerId) ?? null;
+}
+
+export async function claimPlayerSlot(gameId, { name, controllerId }) {
+    const game = await getGame(gameId);
+    const players = normalizePlayers(game.players);
+    const nextName = (name || '').trim();
+    if (!nextName) throw new Error('Player name is required');
+    if (!controllerId) throw new Error('Controller ID is required');
+
+    const existing = players.find((player) => player.controllerId === controllerId);
+    if (existing) {
+        existing.name = nextName;
+        game.players = players;
+        game.meta.updatedAt = new Date().toISOString();
+        await saveGame(gameId, game);
+        return existing;
+    }
+
+    if (players.length >= MAX_PLAYERS) {
+        throw new Error('No free player slots');
+    }
+
+    const player = normalizePlayer({
+        id: createPlayerId(),
+        name: nextName,
+        points: 0,
+        controllerId,
+        joinedAt: new Date().toISOString(),
+    }, players.length);
+
+    players.push(player);
+    game.players = players;
+    game.meta.updatedAt = new Date().toISOString();
+    await saveGame(gameId, game);
+    return player;
+}
+
+export async function updatePlayer(gameId, playerId, updates = {}) {
+    const game = await getGame(gameId);
+    const players = normalizePlayers(game.players);
+    const player = players.find((entry) => entry.id === playerId);
+    if (!player) throw new Error('Player not found');
+
+    if (typeof updates.name === 'string') {
+        const nextName = updates.name.trim();
+        player.name = nextName || player.name;
+    }
+
+    if (Number.isFinite(updates.points)) {
+        player.points = updates.points;
+    }
+
+    if (typeof updates.controllerId === 'string') {
+        player.controllerId = updates.controllerId;
+    }
+
+    game.players = players;
+    game.meta.updatedAt = new Date().toISOString();
+    await saveGame(gameId, game);
+    return player;
+}
+
+export async function adjustPlayerScore(gameId, playerId, delta) {
+    const game = await getGame(gameId);
+    const players = normalizePlayers(game.players);
+    const player = players.find((entry) => entry.id === playerId);
+    if (!player) throw new Error('Player not found');
+
+    player.points = (Number(player.points) || 0) + (Number(delta) || 0);
+    game.players = players;
+    game.meta.updatedAt = new Date().toISOString();
+    await saveGame(gameId, game);
+    return player;
 }
 
 // ================================================

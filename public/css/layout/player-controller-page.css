@@ -1,0 +1,198 @@
+body {
+  overflow: auto;
+}
+
+#player-controller-app {
+  min-height: 100vh;
+  padding: 24px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(1200px 600px at 50% -10%, rgba(59, 130, 246, 0.18), transparent 60%),
+    var(--bg),
+    var(--bg-2);
+}
+
+.player-controller {
+  width: min(100%, 520px);
+}
+
+.player-controller__card {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-2);
+  background: linear-gradient(180deg, var(--surface), var(--surface-3));
+  box-shadow: var(--shadow-lg);
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.player-controller__card--controller {
+  gap: 22px;
+}
+
+.player-controller__eyebrow {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.player-controller__title {
+  margin: 0;
+  font-size: clamp(28px, 6vw, 40px);
+  line-height: 1.05;
+}
+
+.player-controller__copy,
+.player-controller__hint {
+  margin: 0;
+  color: var(--text-soft);
+}
+
+.player-controller__field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.player-controller__label {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.player-controller__input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 54px;
+  padding: 0 16px;
+  border-radius: 16px;
+  border: 1px solid var(--border-3);
+  background: var(--surface-3);
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.player-controller__input:focus {
+  outline: none;
+  border-color: var(--cell-border-hover);
+  box-shadow: var(--ring);
+}
+
+.player-controller__joinForm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.player-controller__primary,
+.player-controller__scoreBtn {
+  min-height: 56px;
+  border-radius: 18px;
+  border: 1px solid var(--btn-outline);
+  color: var(--text);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition:
+    transform var(--t-fast) var(--ease),
+    box-shadow var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease),
+    filter var(--t-fast) var(--ease);
+}
+
+.player-controller__primary {
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.9), rgba(30, 64, 175, 0.95));
+  box-shadow: var(--shadow-btn);
+}
+
+.player-controller__scoreBtn {
+  background: var(--btn-bg);
+  box-shadow: var(--shadow-sm);
+  font-size: clamp(18px, 4vw, 24px);
+}
+
+.player-controller__primary:hover,
+.player-controller__scoreBtn:hover {
+  transform: translateY(calc(-1 * (var(--lift-y) / 2)));
+  border-color: var(--btn-outline-hover);
+  box-shadow: var(--shadow-md);
+  filter: brightness(1.05);
+}
+
+.player-controller__primary:disabled,
+.player-controller__scoreBtn:disabled,
+.player-controller__input:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.player-controller__scoreCard {
+  border-radius: 20px;
+  border: 1px solid var(--border-2);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.98));
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+}
+
+.player-controller__scoreLabel {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.player-controller__scoreValue {
+  font-size: clamp(54px, 14vw, 84px);
+  line-height: 1;
+  font-weight: 900;
+  color: var(--danger);
+  text-shadow:
+    0 0 10px var(--danger-a35),
+    0 0 22px var(--danger-a35),
+    0 0 36px var(--danger-a18);
+}
+
+.player-controller__actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.player-controller__scoreBtn--minus {
+  color: #fecaca;
+}
+
+.player-controller__scoreBtn--plus {
+  color: #bbf7d0;
+}
+
+.player-controller__status,
+.player-controller__error {
+  margin: 0;
+  color: #fecaca;
+  font-weight: 700;
+}
+
+@media (max-width: 560px) {
+  #player-controller-app {
+    padding: 16px;
+  }
+
+  .player-controller__card {
+    padding: 22px 18px;
+  }
+}

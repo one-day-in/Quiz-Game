@@ -13,6 +13,7 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, 'index.html'),
         leaderboard: resolve(__dirname, 'leaderboard.html'),
+        player: resolve(__dirname, 'player.html'),
       },
     },
   },

@@ -1,11 +1,13 @@
 import { supabase } from './api/supabaseClient.js';
-import { getPlayers, savePlayers } from './api/gameApi.js';
-import { FooterView } from './views/FooterView.js';
+import { getPlayers } from './api/gameApi.js';
+import { LeaderboardGridView } from './views/LeaderboardGridView.js';
 
 const root = document.getElementById('leaderboard-app');
 
 // gameId from URL: /leaderboard.html?gameId=xxx
 const gameId = new URLSearchParams(location.search).get('gameId');
+let refreshTimer = null;
+let leaderboardEl = null;
 
 async function startLeaderboard() {
     // Auth check
@@ -34,34 +36,38 @@ async function startLeaderboard() {
             <p class="page-loader__text">Loading…</p>
         </div>`;
 
-    let initialPlayers;
     try {
-        initialPlayers = await getPlayers(gameId);
+        const players = await getPlayers(gameId);
+        renderLeaderboard(players);
+        scheduleRefresh();
     } catch (e) {
         root.innerHTML = `
             <div class="page-error">
                 <h2 class="page-error__title">Error loading players</h2>
                 <pre class="page-error__detail">${e.message}</pre>
             </div>`;
-        return;
     }
+}
 
+function renderLeaderboard(players) {
+    leaderboardEl?.destroy?.();
     root.innerHTML = '';
+    leaderboardEl = LeaderboardGridView({ players, maxPlayers: 8 });
+    root.appendChild(leaderboardEl);
+}
 
-    // Debounced save — 600ms after last change
-    let saveTimer = null;
-
-    const leaderboard = FooterView({
-        initialPlayers,
-        onPlayersChange: (players) => {
-            clearTimeout(saveTimer);
-            saveTimer = setTimeout(() => {
-                savePlayers(gameId, players).catch(console.error);
-            }, 600);
+function scheduleRefresh() {
+    clearTimeout(refreshTimer);
+    refreshTimer = window.setTimeout(async () => {
+        try {
+            const players = await getPlayers(gameId);
+            renderLeaderboard(players);
+        } catch (error) {
+            console.error('[leaderboard] refresh failed:', error);
+        } finally {
+            scheduleRefresh();
         }
-    });
-
-    root.appendChild(leaderboard);
+    }, 2000);
 }
 
 startLeaderboard();
