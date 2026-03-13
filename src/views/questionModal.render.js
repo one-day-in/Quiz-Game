@@ -13,9 +13,11 @@ export function initMediaUI(host) {
   const img   = document.createElement('img');
   const video = document.createElement('video');
 
-  img.className   = 'qmodal__media qmodal__media--img';
-  video.className = 'qmodal__media qmodal__media--video';
-  video.controls  = true;
+  img.className     = 'qmodal__media qmodal__media--img';
+  img.fetchPriority = 'high'; // hint browser to prioritise this fetch
+  video.className   = 'qmodal__media qmodal__media--video';
+  video.controls    = true;
+  video.preload     = 'auto';
 
   host.append(img, video);
 

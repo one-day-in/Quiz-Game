@@ -54,6 +54,9 @@ export class QuestionModalView {
 
         this._prefetchMedia(this._question.media);
         this._prefetchMedia(this._answer.media);
+
+        // Show loading overlay until all media is decoded and paint-ready
+        this._showContentWhenReady();
     }
 
     get el() { return this._root; }
@@ -325,5 +328,59 @@ export class QuestionModalView {
         const img = new Image();
         img.decoding = 'async';
         img.src = media.src;
+    }
+
+    // ── Media loading overlay ──────────────────────────────────────────────
+    // Shows a spinner over the whole dialog until every image/video that is
+    // part of this cell is decoded and paint-ready. Falls back after 8 s so a
+    // slow/broken file never blocks the user forever.
+
+    async _showContentWhenReady() {
+        const mediaSrcs = [this._question?.media, this._answer?.media]
+            .filter(m => m?.src && m?.mime);
+
+        if (!mediaSrcs.length) return; // text-only cell — no loader needed
+
+        // Build overlay
+        const overlay = document.createElement('div');
+        overlay.className = 'qmodal__mediaLoadOverlay';
+        overlay.innerHTML = '<div class="qmodal__mediaLoadSpinner"></div>';
+
+        const dialog = this._root.querySelector('.qmodal__dialog');
+        dialog?.appendChild(overlay);
+
+        // Wait for all media with an 8-second safety timeout
+        const timeout = new Promise(r => setTimeout(r, 8000));
+        await Promise.race([
+            Promise.allSettled(mediaSrcs.map(m => this._decodeMedia(m))),
+            timeout,
+        ]);
+
+        // Fade out then remove
+        overlay.classList.add('qmodal__mediaLoadOverlay--done');
+        overlay.addEventListener('transitionend', () => overlay.remove(), { once: true });
+        setTimeout(() => overlay.remove(), 300); // fallback if no transition fires
+    }
+
+    _decodeMedia(media) {
+        const mime = (media.mime || '').toLowerCase();
+
+        if (mime.startsWith('image/')) {
+            const img = new Image();
+            img.src = media.src;
+            return img.decode().catch(() => {}); // ignore decode errors
+        }
+
+        if (mime.startsWith('video/')) {
+            return new Promise(resolve => {
+                const v = document.createElement('video');
+                v.preload = 'metadata';
+                v.addEventListener('loadedmetadata', resolve, { once: true });
+                v.addEventListener('error',          resolve, { once: true });
+                v.src = media.src;
+            });
+        }
+
+        return Promise.resolve(); // audio or unknown — no wait needed
     }
 }
