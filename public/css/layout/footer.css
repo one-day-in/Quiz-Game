@@ -115,6 +115,7 @@
 
   color: var(--text);
 
+  font-size: clamp(24px, 2.4vw, 42px);
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.14em;

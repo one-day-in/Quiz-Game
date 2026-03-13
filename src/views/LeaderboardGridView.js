@@ -1,3 +1,5 @@
+import { fitTextToBox } from '../utils/fitText.js';
+
 export function LeaderboardGridView({
   players = [],
   maxPlayers = 8,
@@ -81,23 +83,14 @@ function fitPlayerNames(grid) {
     const nameWrap = card.querySelector('.leaderboard__nameWrap');
     const nameEl = card.querySelector('.leaderboard__name');
     if (!nameWrap || !nameEl) return;
-
-    const cardHeight = card.clientHeight;
-    if (card.clientWidth <= 0 || cardHeight <= 0) return;
-
-    const maxWidth = nameWrap.clientWidth * 0.92;
-    let size = Math.max(14, cardHeight * 0.18);
-
-    nameEl.style.width = 'auto';
-    nameEl.style.fontSize = `${size}px`;
-    nameEl.style.whiteSpace = 'nowrap';
-
-    while (nameEl.scrollWidth > maxWidth && size > 11) {
-      size -= 0.5;
-      nameEl.style.fontSize = `${size}px`;
-    }
-
     nameEl.style.width = '100%';
+    fitTextToBox(nameWrap, nameEl, {
+      widthRatio: 0.94,
+      heightRatio: 0.55,
+      minSize: 14,
+      step: 0.5,
+      noWrap: true,
+    });
   });
 }
 
