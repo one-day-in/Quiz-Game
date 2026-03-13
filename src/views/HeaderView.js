@@ -18,7 +18,7 @@ export function HeaderView({ uiState, gameName, onSettingsClick, onBackToLobby, 
       <h1 class="app-title">${escapeHtml(title)}</h1>
     </div>
     <div class="hdr-right">
-      <button class="hdr-settings-btn" type="button">⚙ Settings</button>
+      <button class="hdr-settings-btn" type="button">🏆 Leaderboard</button>
     </div>
   `;
 

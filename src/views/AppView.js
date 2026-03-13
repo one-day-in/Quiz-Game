@@ -1,7 +1,7 @@
 // src/views/AppView.js
 import { HeaderView } from './HeaderView.js';
 import { GameGridView } from './GameGridView.js';
-import { SettingsView } from './SettingsView.js';
+import { LeaderboardView } from './LeaderboardView.js';
 import { ViewDisposer } from '../utils/disposer.js';
 import { fitAllCells } from '../utils/fitText.js';
 
@@ -67,10 +67,8 @@ export function AppView({ model, uiState, actions, settingsService, gameId, game
       return;
     }
 
-    settingsViewInstance = new SettingsView({
-      settingsService,
+    settingsViewInstance = new LeaderboardView({
       gameId,
-      onLogout,
       onClose: () => {
         settingsViewInstance = null;
         // Re-render grid with last known state — ensures mode/round changes are
