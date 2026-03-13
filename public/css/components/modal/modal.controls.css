@@ -32,7 +32,6 @@
   box-shadow: var(--shadow-btn), var(--btn-glow);
 
   transition:
-    transform var(--t-fast) var(--ease),
     filter var(--t-fast) var(--ease),
     box-shadow var(--t-fast) var(--ease),
     border-color var(--t-fast) var(--ease),
@@ -41,7 +40,6 @@
 
 /* Hover */
 .qmodal__btn:hover {
-  transform: translateY(calc(-1 * var(--lift-y)));
   border-color: var(--btn-outline-hover);
   box-shadow: var(--shadow-md), var(--btn-glow-hover);
   filter: brightness(1.06);
@@ -183,7 +181,6 @@
   user-select: none;
 
   transition:
-    transform var(--t-fast) var(--ease),
     filter var(--t-fast) var(--ease),
     box-shadow var(--t-fast) var(--ease),
     border-color var(--t-fast) var(--ease),
@@ -191,7 +188,6 @@
 }
 
 .qmodal__toggle:active {
-  transform: translateY(var(--btn-press-y));
   filter: brightness(0.98);
 }
 
@@ -303,7 +299,6 @@
   box-shadow: var(--shadow-btn), var(--btn-glow);
 
   transition:
-    transform var(--t-fast) var(--ease),
     filter var(--t-fast) var(--ease),
     box-shadow var(--t-fast) var(--ease),
     border-color var(--t-fast) var(--ease),
@@ -311,14 +306,12 @@
 }
 
 .qmodal__btnToggleAnswer:hover:not(:disabled) {
-  transform: translateY(calc(-1 * var(--lift-y)));
   border-color: var(--btn-outline-hover);
   box-shadow: var(--shadow-md), var(--btn-glow-hover);
   filter: brightness(1.06);
 }
 
 .qmodal__btnToggleAnswer:active:not(:disabled) {
-  transform: translateY(var(--btn-press-y));
   filter: brightness(0.98);
 }
 
@@ -359,20 +352,18 @@
     user-select: none;
 
     transition:
-        transform var(--t-fast) var(--ease),
         filter var(--t-fast) var(--ease),
         background var(--t-fast) var(--ease),
         border-color var(--t-fast) var(--ease);
 }
 
 .qmodal__textToggle:hover {
-    transform: translateY(calc(-1 * var(--lift-y)));
     filter: brightness(1.05);
     border-color: var(--border-3);
 }
 
 .qmodal__textToggle:active {
-    transform: translateY(0);
+    filter: brightness(0.95);
 }
 
 .qmodal__textToggle:focus {
