@@ -1,18 +1,26 @@
+html,
 body {
-  overflow: auto;
+  min-height: 100%;
+}
+
+body {
+  overflow: hidden;
+  background:
+    radial-gradient(1200px 600px at 50% -10%, rgba(59, 130, 246, 0.18), transparent 60%),
+    var(--bg),
+    var(--bg-2);
+  background-repeat: no-repeat;
+  background-size: cover;
 }
 
 #player-controller-app {
-  min-height: 100vh;
+  min-height: 100dvh;
+  height: 100dvh;
   padding: 24px;
   box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
-  background:
-    radial-gradient(1200px 600px at 50% -10%, rgba(59, 130, 246, 0.18), transparent 60%),
-    var(--bg),
-    var(--bg-2);
 }
 
 .player-controller {
@@ -95,7 +103,8 @@ body {
 }
 
 .player-controller__primary,
-.player-controller__scoreBtn {
+.player-controller__scoreBtn,
+.player-controller__secondary {
   min-height: 56px;
   border-radius: 18px;
   border: 1px solid var(--btn-outline);
@@ -115,14 +124,16 @@ body {
   box-shadow: var(--shadow-btn);
 }
 
-.player-controller__scoreBtn {
+.player-controller__scoreBtn,
+.player-controller__secondary {
   background: var(--btn-bg);
   box-shadow: var(--shadow-sm);
   font-size: clamp(18px, 4vw, 24px);
 }
 
 .player-controller__primary:hover,
-.player-controller__scoreBtn:hover {
+.player-controller__scoreBtn:hover,
+.player-controller__secondary:hover {
   transform: translateY(calc(-1 * (var(--lift-y) / 2)));
   border-color: var(--btn-outline-hover);
   box-shadow: var(--shadow-md);
@@ -131,6 +142,7 @@ body {
 
 .player-controller__primary:disabled,
 .player-controller__scoreBtn:disabled,
+.player-controller__secondary:disabled,
 .player-controller__input:disabled {
   cursor: wait;
   opacity: 0.65;
@@ -211,6 +223,10 @@ body {
   opacity: 0.72;
 }
 
+.player-controller__secondary--danger {
+  color: #fecaca;
+}
+
 .player-controller__scoreBtn--minus {
   color: #fecaca;
 }
@@ -228,10 +244,11 @@ body {
 
 @media (max-width: 560px) {
   #player-controller-app {
-    padding: 16px;
+    padding: 12px;
   }
 
   .player-controller__card {
-    padding: 22px 18px;
+    padding: 18px 16px;
+    gap: 16px;
   }
 }

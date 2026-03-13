@@ -1,6 +1,7 @@
 export function LeaderboardGridView({
   players = [],
   maxPlayers = 8,
+  onRemovePlayer = null,
 } = {}) {
   const el = document.createElement('footer');
   el.className = 'app-footer';
@@ -17,7 +18,7 @@ export function LeaderboardGridView({
   const normalizedPlayers = (Array.isArray(players) ? players : []).slice(0, maxPlayers);
 
   for (const player of normalizedPlayers) {
-    grid.appendChild(buildPlayerCard(player));
+    grid.appendChild(buildPlayerCard(player, onRemovePlayer));
   }
 
   for (let i = normalizedPlayers.length; i < maxPlayers; i += 1) {
@@ -36,7 +37,7 @@ export function LeaderboardGridView({
   return el;
 }
 
-function buildPlayerCard(player) {
+function buildPlayerCard(player, onRemovePlayer) {
   const card = document.createElement('div');
   card.className = 'leaderboard__card leaderboard__card--readonly';
   card.dataset.playerId = player.id;
@@ -56,9 +57,21 @@ function buildPlayerCard(player) {
   points.textContent = formatPoints(player.points);
   points.setAttribute('aria-label', `Points: ${player.points ?? 0}`);
 
+  const removeBtn = document.createElement('button');
+  removeBtn.type = 'button';
+  removeBtn.className = 'leaderboard__remove';
+  removeBtn.textContent = '✕';
+  removeBtn.title = 'Remove player';
+  removeBtn.setAttribute('aria-label', `Remove ${player.name || 'player'}`);
+
   nameWrap.appendChild(name);
   scoreWrap.appendChild(points);
-  card.append(nameWrap, scoreWrap);
+  card.append(nameWrap, scoreWrap, removeBtn);
+
+  removeBtn.addEventListener('click', (event) => {
+    event.stopPropagation();
+    onRemovePlayer?.(player);
+  });
 
   return card;
 }

@@ -4,6 +4,7 @@ import {
   claimPlayerSlot,
   getPlayerByController,
   claimBuzz,
+  removePlayer,
   subscribeToGame,
   updatePlayer,
 } from './api/gameApi.js';
@@ -146,6 +147,7 @@ function renderController(currentPlayer) {
           <button id="playerBuzzBtn" class="player-controller__buzzBtn" type="button" disabled>Waiting for question</button>
           <p id="playerBuzzStatus" class="player-controller__hint">The button activates 1 second after the question opens.</p>
         </div>
+        <button id="playerDeleteBtn" class="player-controller__secondary player-controller__secondary--danger" type="button">Leave game</button>
         <p id="playerControllerStatus" class="player-controller__status" hidden></p>
       </section>
     </main>
@@ -155,6 +157,7 @@ function renderController(currentPlayer) {
   const statusEl = document.getElementById('playerControllerStatus');
   const nameInput = document.getElementById('playerControllerName');
   const buzzBtn = document.getElementById('playerBuzzBtn');
+  const deleteBtn = document.getElementById('playerDeleteBtn');
 
   buzzBtn?.addEventListener('click', async () => {
     if (!player || buzzAttemptPending || buzzBtn.disabled) return;
@@ -205,6 +208,23 @@ function renderController(currentPlayer) {
       statusEl.textContent = error.message || 'Could not update name';
       statusEl.hidden = false;
       nameInput.value = player.name;
+    } finally {
+      setControllerPending(false);
+    }
+  });
+
+  deleteBtn?.addEventListener('click', async () => {
+    if (!player || !window.confirm(`Remove ${player.name} from this game?`)) return;
+
+    setControllerPending(true);
+    try {
+      await removePlayer(gameId, player.id);
+      clearPlayerBinding(gameId);
+      player = null;
+      renderJoin();
+    } catch (error) {
+      statusEl.textContent = error.message || 'Could not leave the game';
+      statusEl.hidden = false;
     } finally {
       setControllerPending(false);
     }
@@ -306,6 +326,10 @@ function loadPlayerBinding(gameIdValue) {
 function savePlayerBinding(gameIdValue, binding) {
   const previous = loadPlayerBinding(gameIdValue) || {};
   localStorage.setItem(`${STORAGE_PREFIX}:${gameIdValue}`, JSON.stringify({ ...previous, ...binding }));
+}
+
+function clearPlayerBinding(gameIdValue) {
+  localStorage.removeItem(`${STORAGE_PREFIX}:${gameIdValue}`);
 }
 
 function formatPoints(value) {

@@ -317,6 +317,31 @@ export async function adjustPlayerScore(gameId, playerId, delta) {
     return player;
 }
 
+export async function removePlayer(gameId, playerId) {
+    const game = await getGame(gameId);
+    const players = normalizePlayers(game.players);
+    const nextPlayers = players.filter((entry) => entry.id !== playerId);
+    if (nextPlayers.length === players.length) throw new Error('Player not found');
+
+    const buzz = normalizeLive(game.live).buzz;
+    if (buzz?.winnerPlayerId === playerId) {
+        game.live = {
+            ...normalizeLive(game.live),
+            buzz: {
+                ...buzz,
+                winnerPlayerId: null,
+                winnerAt: null,
+                status: Date.now() >= new Date(buzz.enabledAt || 0).getTime() ? 'open' : 'pending',
+            },
+        };
+    }
+
+    game.players = nextPlayers;
+    game.meta.updatedAt = new Date().toISOString();
+    await saveGame(gameId, game);
+    return nextPlayers;
+}
+
 export async function setLiveState(gameId, patch = {}) {
     const game = await getGame(gameId);
     game.live = {
