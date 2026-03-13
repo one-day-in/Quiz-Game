@@ -62,15 +62,14 @@ export class QuestionModalView {
     get el() { return this._root; }
 
     destroy() {
-        // Explicitly abort any in-progress video loads before DOM removal.
-        // Leaving a video with preload='metadata' mid-load causes a brief main-thread
-        // stall while the browser cancels the network request on element removal.
+        // Pause + src-clear video before DOM removal — cleanest abort signal.
+        // No video.load() call: it triggers extra async browser steps and
+        // the element is about to be removed anyway.
         for (const type of ['question', 'answer']) {
             const video = this._refs[`${type}MediaHost`]?.querySelector('video');
             if (video?.src) {
                 try { video.pause(); } catch {}
                 video.removeAttribute('src');
-                video.load(); // signals browser to release the resource
             }
         }
 

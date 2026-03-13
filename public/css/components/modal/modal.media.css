@@ -277,7 +277,14 @@
 
     opacity: 1;
     transition: opacity 200ms ease;
-    pointer-events: none; /* allow clicks through once fading */
+    pointer-events: none; /* allow clicks through */
+}
+
+/* Explicitly block pointer events on ALL children too.
+   Without this the spinner (pointer-events: auto by default)
+   would intercept clicks meant for the Done / overlay buttons. */
+.qmodal__mediaLoadOverlay * {
+    pointer-events: none;
 }
 
 .qmodal__mediaLoadOverlay--done {
