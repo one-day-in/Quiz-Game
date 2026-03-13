@@ -3,6 +3,7 @@ import {
   adjustPlayerScore,
   claimPlayerSlot,
   getPlayerByController,
+  getGame,
   claimBuzz,
   removePlayer,
   subscribeToGame,
@@ -18,6 +19,7 @@ let player = null;
 let controllerId = null;
 let stopPlayersSubscription = null;
 let buzzAttemptPending = false;
+let gameRefreshTimer = null;
 
 async function startPlayerController() {
   if (!gameId) {
@@ -31,8 +33,10 @@ async function startPlayerController() {
   try {
     player = await getPlayerByController(gameId, controllerId);
     bindRealtimePlayers();
+    startGameRefreshLoop();
     if (player) {
-      renderController(player);
+      const game = await getGame(gameId);
+      renderController(player, game.live?.buzz || null);
       return;
     }
 
@@ -117,7 +121,7 @@ function renderJoin() {
   });
 }
 
-function renderController(currentPlayer) {
+function renderController(currentPlayer, buzz = null) {
   player = currentPlayer;
   root.innerHTML = `
     <main class="player-controller">
@@ -158,6 +162,8 @@ function renderController(currentPlayer) {
   const nameInput = document.getElementById('playerControllerName');
   const buzzBtn = document.getElementById('playerBuzzBtn');
   const deleteBtn = document.getElementById('playerDeleteBtn');
+
+  updateBuzzUI(buzz, currentPlayer);
 
   buzzBtn?.addEventListener('click', async () => {
     if (!player || buzzAttemptPending || buzzBtn.disabled) return;
@@ -234,28 +240,45 @@ function renderController(currentPlayer) {
 function bindRealtimePlayers() {
   stopPlayersSubscription?.();
   stopPlayersSubscription = subscribeToGame(gameId, (game) => {
-    const players = game.players || [];
-    const nextPlayer = players.find((entry) => entry.controllerId === controllerId || entry.id === player?.id) ?? null;
-    if (!nextPlayer) {
-      player = null;
-      renderJoin();
-      return;
-    }
-
-    const scoreEl = document.getElementById('playerScoreValue');
-    const nameInput = document.getElementById('playerControllerName');
-    if (!scoreEl || !nameInput) {
-      renderController(nextPlayer);
-      return;
-    }
-
-    player = nextPlayer;
-    scoreEl.textContent = formatPoints(nextPlayer.points);
-    if (document.activeElement !== nameInput) {
-      nameInput.value = nextPlayer.name;
-    }
-    updateBuzzUI(game.live?.buzz || null, nextPlayer);
+    syncControllerFromGame(game);
   });
+}
+
+function startGameRefreshLoop() {
+  clearInterval(gameRefreshTimer);
+  gameRefreshTimer = window.setInterval(async () => {
+    try {
+      const game = await getGame(gameId);
+      syncControllerFromGame(game);
+    } catch (_) {
+      // Ignore transient refresh failures on mobile.
+    }
+  }, 1000);
+}
+
+function syncControllerFromGame(game) {
+  const players = game.players || [];
+  const nextPlayer = players.find((entry) => entry.controllerId === controllerId || entry.id === player?.id) ?? null;
+  if (!nextPlayer) {
+    player = null;
+    clearPlayerBinding(gameId);
+    renderJoin();
+    return;
+  }
+
+  const scoreEl = document.getElementById('playerScoreValue');
+  const nameInput = document.getElementById('playerControllerName');
+  if (!scoreEl || !nameInput) {
+    renderController(nextPlayer, game.live?.buzz || null);
+    return;
+  }
+
+  player = nextPlayer;
+  scoreEl.textContent = formatPoints(nextPlayer.points);
+  if (document.activeElement !== nameInput) {
+    nameInput.value = nextPlayer.name;
+  }
+  updateBuzzUI(game.live?.buzz || null, nextPlayer);
 }
 
 function updateBuzzUI(buzz, currentPlayer) {
