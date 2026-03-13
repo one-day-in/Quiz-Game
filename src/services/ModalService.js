@@ -208,10 +208,10 @@ export class ModalService {
     });
 
     this.container.appendChild(this.view.el);
-
-    this._disposer.addEventListener(document, 'keydown', (e) => {
-      if (e.key === 'Escape') this.close();
-    });
+    // ESC is handled inside QuestionModalView (properly cleaned up on destroy).
+    // Do NOT add a document keydown listener here — ModalService._disposer is
+    // long-lived and never destroyed between openings, so listeners would
+    // accumulate and call close() / touch() N times per ESC press.
   }
 
   async _updateCell(update, { silent = false } = {}) {
