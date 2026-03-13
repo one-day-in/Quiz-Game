@@ -1,4 +1,4 @@
-/* Base wrapper */
+/* Leaderboard drawer wrapper */
 .settings {
     position: fixed;
     inset: 0;
@@ -22,7 +22,7 @@
     pointer-events: auto;
 }
 
-/* Panel (fixed for HD, no mobile adaptation) */
+/* Slide-over panel */
 .settings__panel {
     position: absolute;
     top: 0;

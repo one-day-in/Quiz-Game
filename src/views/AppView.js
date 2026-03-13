@@ -1,16 +1,16 @@
 // src/views/AppView.js
 import { HeaderView } from './HeaderView.js';
 import { GameGridView } from './GameGridView.js';
-import { LeaderboardView } from './LeaderboardView.js';
+import { LeaderboardDrawerView } from './LeaderboardDrawerView.js';
 import { ViewDisposer } from '../utils/disposer.js';
 import { fitAllCells } from '../utils/fitText.js';
 
-export function AppView({ model, uiState, actions, settingsService, gameId, gameName, onCellClick, onBackToLobby, onLogout, onRoundClick }) {
+export function AppView({ model, uiState, actions, gameId, gameName, onCellClick, onBackToLobby, onRoundClick }) {
   const container = document.createElement('div');
   container.className = 'app-shell';
 
   const disposer = new ViewDisposer(container);
-  let settingsViewInstance = null;
+  let leaderboardDrawerInstance = null;
   let gridEl = null;
   let lastModel = model;
   let lastUiState = uiState;
@@ -30,7 +30,7 @@ export function AppView({ model, uiState, actions, settingsService, gameId, game
   const header = HeaderView({
     uiState,
     gameName,
-    onSettingsClick: toggleSettings,
+    onLeaderboardClick: toggleLeaderboardDrawer,
     onBackToLobby,
     onRoundClick
   });
@@ -52,34 +52,33 @@ export function AppView({ model, uiState, actions, settingsService, gameId, game
     }
     gridEl = newGrid;
 
-    // Re-append settings on top if open (replaceWith moves it out)
-    if (settingsViewInstance?.el?.isConnected === false) {
-      container.appendChild(settingsViewInstance.el);
+    // Re-append the leaderboard drawer on top if open (replaceWith moves it out).
+    if (leaderboardDrawerInstance?.el?.isConnected === false) {
+      container.appendChild(leaderboardDrawerInstance.el);
     }
 
     fit();
   }
 
-  function toggleSettings() {
-    if (settingsViewInstance) {
-      settingsViewInstance.beginClose();
-      settingsViewInstance = null;
+  function toggleLeaderboardDrawer() {
+    if (leaderboardDrawerInstance) {
+      leaderboardDrawerInstance.beginClose();
+      leaderboardDrawerInstance = null;
       return;
     }
 
-    settingsViewInstance = new LeaderboardView({
+    leaderboardDrawerInstance = new LeaderboardDrawerView({
       gameId,
       onClose: () => {
-        settingsViewInstance = null;
-        // Re-render grid with last known state — ensures mode/round changes are
-        // visible the moment settings closes (guards against any timing edge-cases
-        // where the _emit()-triggered render ran while settings was still open)
+        leaderboardDrawerInstance = null;
+        // Re-render the grid once the leaderboard drawer closes so the latest
+        // round state is visible immediately.
         renderGrid(lastModel, lastUiState);
       }
     });
 
-    container.appendChild(settingsViewInstance.el);
-    settingsViewInstance.beginOpen();
+    container.appendChild(leaderboardDrawerInstance.el);
+    leaderboardDrawerInstance.beginOpen();
   }
 
   // Public update — called on every subsequent state change

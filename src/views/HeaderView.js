@@ -1,7 +1,7 @@
 // src/views/HeaderView.js
 import { escapeHtml } from '../utils/utils.js';
 
-export function HeaderView({ uiState, gameName, onSettingsClick, onBackToLobby, onRoundClick }) {
+export function HeaderView({ uiState, gameName, onLeaderboardClick, onBackToLobby, onRoundClick }) {
   const el = document.createElement('header');
   el.className = 'app-header';
 
@@ -35,7 +35,7 @@ export function HeaderView({ uiState, gameName, onSettingsClick, onBackToLobby, 
   el.querySelector('.round-indicator').addEventListener('click', () => onRoundClick?.());
   el.querySelector('.hdr-settings-btn').addEventListener('click', (e) => {
     e.stopPropagation();
-    onSettingsClick?.();
+    onLeaderboardClick?.();
   });
 
   return { el, update };

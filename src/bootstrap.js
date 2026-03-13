@@ -7,7 +7,7 @@ import { Disposer } from './utils/disposer.js';
 
 import { createGameRepository } from './services/GameRepository.js';
 import { createGameService } from './services/GameService.js';
-import { createSettingsService } from './services/SettingsService.js';
+import { createRoundNavigationService } from './services/RoundNavigationService.js';
 import { createModalService } from './services/ModalService.js';
 import { createMediaService } from './services/MediaService.js';
 
@@ -101,7 +101,7 @@ async function renderGame(user, gameId, gameName) {
         const repo = createGameRepository(gameId);
         const gameService = createGameService(repo);
         const mediaService = createMediaService({ repo, gameService });
-        const settingsService = createSettingsService(gameService, mediaService);
+        const roundNavigationService = createRoundNavigationService(gameService);
         const modalService = createModalService(gameService, mediaService);
 
         await gameService.initialize();
@@ -127,14 +127,10 @@ async function renderGame(user, gameId, gameName) {
             root,
             gameService,
             modalService,
-            settingsService,
+            roundNavigationService,
             gameId,
             gameName,
             onBackToLobby: () => renderLobby(user),
-            onLogout: async () => {
-                await signOut();
-                renderLogin(root);
-            }
         });
 
         _currentCleanup = () => {

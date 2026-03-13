@@ -3,7 +3,7 @@ import { AppView } from './views/AppView.js';
 import { Disposer } from './utils/disposer.js';
 import { showRoundPicker } from './utils/confirm.js';
 
-export function createAppController({ root, gameService, modalService, settingsService, gameId, gameName, onBackToLobby, onLogout }) {
+export function createAppController({ root, gameService, modalService, roundNavigationService, gameId, gameName, onBackToLobby }) {
   let appViewRef = null; // { el, update } — kept alive across state changes
   const disposer = new Disposer();
 
@@ -12,12 +12,12 @@ export function createAppController({ root, gameService, modalService, settingsS
   };
 
   async function handleRoundClick() {
-    const st = settingsService.getState();
+    const st = roundNavigationService.getState();
     const picked = await showRoundPicker({
       rounds: st.roundNames,
       currentRound: st.activeRoundId,
     });
-    if (picked !== null) settingsService.setActiveRound(picked);
+    if (picked !== null) roundNavigationService.setActiveRound(picked);
   }
 
   function handleCellClick({ roundId, rowId, cellId, value }) {
@@ -50,12 +50,10 @@ export function createAppController({ root, gameService, modalService, settingsS
         model,
         uiState,
         actions,
-        settingsService,
         gameId,
         gameName,
         onCellClick: handleCellClick,
         onBackToLobby,
-        onLogout,
         onRoundClick: handleRoundClick
       });
       root.appendChild(appViewRef.el);

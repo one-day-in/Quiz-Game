@@ -1,10 +1,9 @@
-// public/src/views/SettingsView.js
+// src/views/LeaderboardDrawerView.js
 import QRCode from 'qrcode';
 import { ViewDisposer } from '../utils/disposer.js';
 
-export class SettingsView {
-  constructor({ settingsService, gameId, onClose } = {}) {
-    this._svc = settingsService;
+export class LeaderboardDrawerView {
+  constructor({ gameId, onClose } = {}) {
     this._gameId = gameId;
     this._onCloseExternal = onClose;
 
@@ -14,7 +13,6 @@ export class SettingsView {
     this._disposer = new ViewDisposer(this._root);
     this._disposer.autoDestroy();
     this._wire();
-    this._subscribe();
   }
 
   get el() { return this._root; }
@@ -103,6 +101,9 @@ export class SettingsView {
   async _generateQR() {
     if (!this._gameId || !this._qrImg || !this._qrLink) return;
 
+    // BASE_URL is injected by Vite: '/' in dev, '/Quiz-Game/' on GitHub Pages.
+    // This ensures the QR code points to the correct public URL regardless of
+    // whether the user scans it on the same network or a different one.
     const url = `${window.location.origin}${import.meta.env.BASE_URL}leaderboard.html?gameId=${this._gameId}`;
 
     this._qrLink.href = url;
@@ -116,23 +117,12 @@ export class SettingsView {
       });
       if (this._qrImg) this._qrImg.src = dataUrl;
     } catch (e) {
-      console.error('[SettingsView] QR generation failed:', e);
+      console.error('[LeaderboardDrawerView] QR generation failed:', e);
     }
   }
 
   _wire() {
     this._disposer.addEventListener(this._overlay, 'click', () => this.beginClose());
     this._disposer.addEventListener(this._closeBtn, 'click', () => this.beginClose());
-  }
-
-  _subscribe() {
-    this._disposer.addSubscription(
-      (fn) => this._svc.subscribe(fn),
-      (state) => this._render(state)
-    );
-  }
-
-  _render(_st) {
-    // nothing to update
   }
 }
