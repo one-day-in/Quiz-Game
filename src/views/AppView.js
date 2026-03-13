@@ -15,8 +15,9 @@ export function AppView({ model, uiState, actions, gameId, gameName, onCellClick
   let lastModel = model;
   let lastUiState = uiState;
   let buzzOverlayHideTimer = null;
-  let activeBuzzOverlayKey = null;
-  let dismissedBuzzOverlayKey = null;
+  let activeBuzzOverlayToken = null;
+  let dismissedBuzzOverlayToken = null;
+  let isBuzzOverlayHydrated = false;
 
   // ResizeObserver — recalculate fitText on resize
   const ro = new ResizeObserver(() => {
@@ -50,8 +51,8 @@ export function AppView({ model, uiState, actions, gameId, gameName, onCellClick
     <span class="app-shell__buzzHint">Tap anywhere to close</span>
   `;
   buzzOverlay.addEventListener('click', () => {
-    if (!activeBuzzOverlayKey) return;
-    dismissedBuzzOverlayKey = activeBuzzOverlayKey;
+    if (!activeBuzzOverlayToken) return;
+    dismissedBuzzOverlayToken = activeBuzzOverlayToken;
     hideBuzzOverlay();
   });
   container.appendChild(buzzOverlay);
@@ -107,23 +108,30 @@ export function AppView({ model, uiState, actions, gameId, gameName, onCellClick
   function syncBuzzOverlay(m) {
     const players = m?.players ?? [];
     const buzz = m?.live?.buzz ?? null;
-    const overlayKey = buzz?.status === 'buzzed' && buzz?.winnerPlayerId
-      ? `${buzz.sessionId || 'buzz'}:${buzz.winnerPlayerId}:${buzz.winnerAt || ''}`
+    const overlayToken = buzz?.status === 'buzzed' && buzz?.winnerPlayerId
+      ? `${buzz.sessionId || 'buzz'}:${buzz.winnerPlayerId}`
       : null;
 
-    if (!overlayKey) {
-      dismissedBuzzOverlayKey = null;
+    if (!overlayToken) {
+      dismissedBuzzOverlayToken = null;
       hideBuzzOverlay();
+      isBuzzOverlayHydrated = true;
       return;
     }
 
-    if (dismissedBuzzOverlayKey === overlayKey || activeBuzzOverlayKey === overlayKey) {
+    if (!isBuzzOverlayHydrated) {
+      isBuzzOverlayHydrated = true;
+      dismissedBuzzOverlayToken = overlayToken;
+      return;
+    }
+
+    if (dismissedBuzzOverlayToken === overlayToken || activeBuzzOverlayToken === overlayToken) {
       return;
     }
 
     const winner = players.find((player) => player.id === buzz.winnerPlayerId);
     buzzOverlay.querySelector('.app-shell__buzzName').textContent = `${winner?.name || 'Player'} buzzed first`;
-    activeBuzzOverlayKey = overlayKey;
+    activeBuzzOverlayToken = overlayToken;
     buzzOverlay.hidden = false;
     clearTimeout(buzzOverlayHideTimer);
     buzzOverlayHideTimer = setTimeout(() => {
@@ -135,7 +143,7 @@ export function AppView({ model, uiState, actions, gameId, gameName, onCellClick
     clearTimeout(buzzOverlayHideTimer);
     buzzOverlayHideTimer = null;
     buzzOverlay.hidden = true;
-    activeBuzzOverlayKey = null;
+    activeBuzzOverlayToken = null;
   }
 
   // Public update — called on every subsequent state change
