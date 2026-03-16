@@ -234,9 +234,11 @@ function syncControllerFromGame(game) {
   const players = game.players || [];
   const nextPlayer = players.find((entry) => entry.controllerId === controllerId || entry.id === player?.id) ?? null;
   if (!nextPlayer) {
-    player = null;
-    clearPlayerBinding(gameId);
-    renderJoin();
+    if (player) {
+      player = null;
+      clearPlayerBinding(gameId);
+      renderJoin();
+    }
     return;
   }
 

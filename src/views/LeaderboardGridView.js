@@ -87,16 +87,16 @@ function fitPlayerNames(grid) {
     nameEl.style.fontSize = '';
 
     const maxWidth = nameWrap.clientWidth * 0.96;
-    const maxHeight = nameWrap.clientHeight * 0.82;
-    if (maxWidth <= 0 || maxHeight <= 0) return;
+    if (maxWidth <= 0) return;
 
     let size = parseFloat(window.getComputedStyle(nameEl).fontSize);
-    const minSize = 18;
+    const minSize = 24;
 
-    while (
-      (nameEl.scrollWidth > maxWidth || nameEl.scrollHeight > maxHeight) &&
-      size > minSize
-    ) {
+    if (nameEl.scrollWidth <= maxWidth) {
+      return;
+    }
+
+    while (nameEl.scrollWidth > maxWidth && size > minSize) {
       size -= 0.5;
       nameEl.style.fontSize = `${size}px`;
     }
