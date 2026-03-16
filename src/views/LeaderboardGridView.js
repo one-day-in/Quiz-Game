@@ -66,8 +66,7 @@ function createSlot(onRemovePlayer) {
 
   const points = document.createElement('div');
   points.className = 'leaderboard__points';
-  points.textContent = '000';
-  points.setAttribute('aria-label', 'Points: 0');
+  points.hidden = true;
 
   nameWrap.appendChild(name);
   scoreWrap.appendChild(points);
@@ -98,8 +97,9 @@ function updateSlot(slot, player) {
     delete slot.card.dataset.playerId;
     slot.name.textContent = '';
     slot.name.style.fontSize = '';
-    slot.points.textContent = '000';
-    slot.points.setAttribute('aria-label', 'Points: 0');
+    slot.points.hidden = true;
+    slot.points.textContent = '';
+    slot.points.removeAttribute('aria-label');
     if (slot.removeBtn) {
       slot.removeBtn.hidden = true;
       slot.removeBtn._player = null;
@@ -111,6 +111,7 @@ function updateSlot(slot, player) {
   slot.card.className = 'leaderboard__card leaderboard__card--readonly';
   slot.card.dataset.playerId = player.id;
   slot.name.textContent = player.name || 'Player';
+  slot.points.hidden = false;
   slot.points.textContent = formatPoints(player.points);
   slot.points.setAttribute('aria-label', `Points: ${player.points ?? 0}`);
 
