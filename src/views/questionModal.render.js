@@ -111,6 +111,8 @@ export function applyModeUI(view, refs) {
   }
 
   setHidden(refs.toggleAnswerBtn, isEdit);
+  setHidden(refs.btnIncorrect,   isEdit);
+  setHidden(refs.btnCorrect,     isEdit);
 }
 
 export function applyAnswerVisibility(view, refs) {
