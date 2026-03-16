@@ -154,6 +154,7 @@ function renderController(currentPlayer) {
           <button class="player-controller__scoreBtn player-controller__scoreBtn--minus" data-delta="-100" type="button">-100</button>
           <button class="player-controller__scoreBtn player-controller__scoreBtn--plus" data-delta="100" type="button">+100</button>
         </div>
+        <button id="playerPressBtn" class="player-controller__pressBtn" type="button">PRESS</button>
         <button id="playerDeleteBtn" class="player-controller__secondary player-controller__secondary--danger" type="button">Leave game</button>
         <p id="playerControllerStatus" class="player-controller__status" hidden></p>
       </section>
