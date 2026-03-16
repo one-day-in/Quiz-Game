@@ -204,6 +204,37 @@ function bindSwipeDelete(wrap, row) {
     isScrolling = false;
     closeRow();
   });
+
+  // ── Mouse drag (desktop) ─────────────────────────────────────────────────
+
+  wrap.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+
+    const startX    = e.clientX;
+    const baseOff   = isOpen ? -REVEAL_W : 0;
+    let   dragging  = false;
+
+    row.style.transition = 'none';
+
+    function onMove(e) {
+      const dx = e.clientX - startX;
+      if (!dragging && Math.abs(dx) < 5) return;
+      dragging = true;
+      const clamped = Math.max(-REVEAL_W, Math.min(0, baseOff + dx));
+      row.style.transform = `translateX(${clamped}px)`;
+    }
+
+    function onUp(e) {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup',   onUp);
+      if (!dragging) return;
+      const total = baseOff + (e.clientX - startX);
+      if (total < -(REVEAL_W / 2)) openRow(); else closeRow();
+    }
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup',   onUp);
+  });
 }
 
 function formatPoints(value) {
