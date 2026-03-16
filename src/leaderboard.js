@@ -62,7 +62,7 @@ async function renderLeaderboard(game) {
         <div class="leaderboard-page__joinCopy">
             <p class="leaderboard-page__eyebrow">Players</p>
             <h1 class="leaderboard-page__title">Connect a player controller</h1>
-            <p class="leaderboard-page__text">Scan this QR code on a phone to join the game, set a name, and use the buzzer.</p>
+            <p class="leaderboard-page__text">Scan this QR code on a phone to join the game, set a name, and manage your score.</p>
         </div>
         <div class="leaderboard-page__qrWrap">
             <img class="leaderboard-page__qr" alt="Player controller QR code">

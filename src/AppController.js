@@ -20,11 +20,6 @@ export function createAppController({ root, gameService, modalService, roundNavi
     if (picked !== null) roundNavigationService.setActiveRound(picked);
   }
 
-  async function handleToggleLiveMode() {
-    const nextValue = !gameService.getState().uiState.isLiveArmed;
-    await gameService.setLiveArmed(nextValue);
-  }
-
   function handleCellClick({ roundId, rowId, cellId, value }) {
     const { model } = gameService.getState();
     const cell = model?.getCell(roundId, rowId, cellId);
@@ -63,7 +58,6 @@ export function createAppController({ root, gameService, modalService, roundNavi
         onCellClick: handleCellClick,
         onBackToLobby,
         onRoundClick: handleRoundClick,
-        onToggleLiveMode: handleToggleLiveMode,
       });
       root.appendChild(appViewRef.el);
       return;

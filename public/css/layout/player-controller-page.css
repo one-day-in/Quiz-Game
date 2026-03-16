@@ -107,8 +107,7 @@ body {
 
 .player-controller__primary,
 .player-controller__scoreBtn,
-.player-controller__secondary,
-.player-controller__buzzBtn {
+.player-controller__secondary {
   min-height: 56px;
   border-radius: 18px;
   border: 1px solid var(--btn-outline);
@@ -188,45 +187,6 @@ body {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
-}
-
-.player-controller__buzzCard {
-  border-radius: 20px;
-  border: 1px solid var(--border-2);
-  background: linear-gradient(180deg, rgba(127, 29, 29, 0.4), rgba(15, 23, 42, 0.98));
-  padding: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.player-controller__buzzBtn {
-  min-height: 72px;
-  border-radius: 22px;
-  border: 1px solid rgba(248, 113, 113, 0.35);
-  background: radial-gradient(circle at 50% 30%, rgba(248, 113, 113, 0.85), rgba(153, 27, 27, 0.96));
-  color: #fff1f2;
-  font-size: clamp(24px, 6vw, 34px);
-  font-weight: 900;
-  letter-spacing: 0.04em;
-  cursor: pointer;
-  box-shadow: 0 14px 30px rgba(127, 29, 29, 0.32);
-  transition:
-    transform var(--t-fast) var(--ease),
-    box-shadow var(--t-fast) var(--ease),
-    filter var(--t-fast) var(--ease),
-    opacity var(--t-fast) var(--ease);
-}
-
-.player-controller__buzzBtn:hover:not(:disabled) {
-  transform: translateY(-1px) scale(1.01);
-  box-shadow: 0 18px 38px rgba(127, 29, 29, 0.42);
-  filter: brightness(1.04);
-}
-
-.player-controller__buzzBtn:disabled {
-  cursor: default;
-  opacity: 0.72;
 }
 
 .player-controller__secondary--danger {

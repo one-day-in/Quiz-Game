@@ -2,9 +2,8 @@ import {
   MAX_PLAYERS,
   adjustPlayerScore,
   claimPlayerSlot,
-  getPlayerByController,
   getGame,
-  claimBuzz,
+  getPlayerByController,
   removePlayer,
   subscribeToGame,
   updatePlayer,
@@ -18,8 +17,8 @@ const STORAGE_PREFIX = 'quiz-game:player-controller';
 let player = null;
 let controllerId = null;
 let stopPlayersSubscription = null;
-let buzzAttemptPending = false;
 let gameRefreshTimer = null;
+let lastTouchEndAt = 0;
 
 async function startPlayerController() {
   if (!gameId) {
@@ -35,8 +34,7 @@ async function startPlayerController() {
     bindRealtimePlayers();
     startGameRefreshLoop();
     if (player) {
-      const game = await getGame(gameId);
-      renderController(player, game.live?.buzz || null);
+      renderController(player);
       return;
     }
 
@@ -121,7 +119,7 @@ function renderJoin() {
   });
 }
 
-function renderController(currentPlayer, buzz = null) {
+function renderController(currentPlayer) {
   player = currentPlayer;
   root.innerHTML = `
     <main class="player-controller">
@@ -146,11 +144,6 @@ function renderController(currentPlayer, buzz = null) {
           <button class="player-controller__scoreBtn player-controller__scoreBtn--minus" data-delta="-100" type="button">-100</button>
           <button class="player-controller__scoreBtn player-controller__scoreBtn--plus" data-delta="100" type="button">+100</button>
         </div>
-        <div class="player-controller__buzzCard">
-          <span class="player-controller__scoreLabel">Buzz</span>
-          <button id="playerBuzzBtn" class="player-controller__buzzBtn" type="button" disabled>Waiting for question</button>
-          <p id="playerBuzzStatus" class="player-controller__hint">The button activates 1 second after the question opens.</p>
-        </div>
         <button id="playerDeleteBtn" class="player-controller__secondary player-controller__secondary--danger" type="button">Leave game</button>
         <p id="playerControllerStatus" class="player-controller__status" hidden></p>
       </section>
@@ -160,26 +153,7 @@ function renderController(currentPlayer, buzz = null) {
   const scoreEl = document.getElementById('playerScoreValue');
   const statusEl = document.getElementById('playerControllerStatus');
   const nameInput = document.getElementById('playerControllerName');
-  const buzzBtn = document.getElementById('playerBuzzBtn');
   const deleteBtn = document.getElementById('playerDeleteBtn');
-
-  updateBuzzUI(buzz, currentPlayer);
-
-  buzzBtn?.addEventListener('click', async () => {
-    if (!player || buzzAttemptPending || buzzBtn.disabled) return;
-    buzzAttemptPending = true;
-    buzzBtn.disabled = true;
-    buzzBtn.textContent = 'Sending...';
-
-    try {
-      await claimBuzz(gameId, player.id);
-    } catch (error) {
-      statusEl.textContent = error.message || 'Could not claim buzz';
-      statusEl.hidden = false;
-    } finally {
-      buzzAttemptPending = false;
-    }
-  });
 
   root.querySelectorAll('[data-delta]').forEach((button) => {
     button.addEventListener('click', async () => {
@@ -269,7 +243,7 @@ function syncControllerFromGame(game) {
   const scoreEl = document.getElementById('playerScoreValue');
   const nameInput = document.getElementById('playerControllerName');
   if (!scoreEl || !nameInput) {
-    renderController(nextPlayer, game.live?.buzz || null);
+    renderController(nextPlayer);
     return;
   }
 
@@ -278,42 +252,6 @@ function syncControllerFromGame(game) {
   if (document.activeElement !== nameInput) {
     nameInput.value = nextPlayer.name;
   }
-  updateBuzzUI(game.live?.buzz || null, nextPlayer);
-}
-
-function updateBuzzUI(buzz, currentPlayer) {
-  const buzzBtn = document.getElementById('playerBuzzBtn');
-  const buzzStatus = document.getElementById('playerBuzzStatus');
-  if (!buzzBtn || !buzzStatus) return;
-
-  if (!buzz) {
-    buzzBtn.disabled = true;
-    buzzBtn.textContent = 'Waiting for question';
-    buzzStatus.textContent = 'The button activates 1 second after the question opens.';
-    return;
-  }
-
-  const isWinner = buzz.winnerPlayerId && currentPlayer?.id === buzz.winnerPlayerId;
-  const enabledAt = buzz.enabledAt ? new Date(buzz.enabledAt).getTime() : 0;
-  const isOpen = !buzz.winnerPlayerId && Date.now() >= enabledAt;
-
-  if (buzz.status === 'buzzed') {
-    buzzBtn.disabled = true;
-    buzzBtn.textContent = isWinner ? 'You buzzed first' : 'Too late';
-    buzzStatus.textContent = isWinner ? 'Wait for the host to score your answer.' : 'Another player already locked the question.';
-    return;
-  }
-
-  if (isOpen) {
-    buzzBtn.disabled = buzzAttemptPending;
-    buzzBtn.textContent = buzzAttemptPending ? 'Sending...' : 'Buzz now';
-    buzzStatus.textContent = 'Tap as fast as you can.';
-    return;
-  }
-
-  buzzBtn.disabled = true;
-  buzzBtn.textContent = 'Get ready';
-  buzzStatus.textContent = 'Buzz opens 1 second after the question appears.';
 }
 
 function toggleJoinPending(isPending) {
@@ -371,6 +309,27 @@ function escapeHtml(value) {
     .replaceAll("'", '&#39;');
 }
 
+function disableZoomGestures() {
+  document.addEventListener('gesturestart', (event) => {
+    event.preventDefault();
+  }, { passive: false });
+
+  document.addEventListener('touchmove', (event) => {
+    if (event.touches.length > 1) {
+      event.preventDefault();
+    }
+  }, { passive: false });
+
+  document.addEventListener('touchend', (event) => {
+    const now = Date.now();
+    if (now - lastTouchEndAt <= 300) {
+      event.preventDefault();
+    }
+    lastTouchEndAt = now;
+  }, { passive: false });
+}
+
+disableZoomGestures();
 startPlayerController().catch((error) => {
   console.error('[player] start failed:', error);
   renderError('Failed to load controller', error.message || String(error));

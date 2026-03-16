@@ -93,7 +93,6 @@ export function applyModeUI(view, refs) {
   refs.root?.classList.toggle('qmodal--edit', isEdit);
 
   if (refs.title) refs.title.textContent = view._headerTitle || 'Question';
-  renderBuzzState(view, refs);
   setHidden(refs.headerQuizSpinner, !isEdit);
 
   // Toggle mode button: shows current mode and what clicking will do
@@ -108,34 +107,6 @@ export function applyModeUI(view, refs) {
   }
 
   setHidden(refs.toggleAnswerBtn, isEdit);
-}
-
-function renderBuzzState(view, refs) {
-  const buzzEl = refs.buzzStatus;
-  if (!buzzEl) return;
-
-  const buzz = view._buzzState;
-  if (!buzz?.status) {
-    setHidden(buzzEl, true);
-    buzzEl.textContent = '';
-    buzzEl.className = 'qmodal__buzzStatus';
-    return;
-  }
-
-  let label = '';
-  const stateClass = buzz.status === 'buzzed'
-    ? 'buzzed'
-    : Date.now() >= new Date(buzz.enabledAt || 0).getTime()
-      ? 'open'
-      : 'pending';
-
-  if (stateClass === 'pending') label = 'Buzz opens in 1s';
-  else if (stateClass === 'open') label = 'Buzz is live';
-  else if (stateClass === 'buzzed') label = buzz.winnerName ? `First: ${buzz.winnerName}` : 'First player locked';
-
-  buzzEl.textContent = label;
-  buzzEl.className = `qmodal__buzzStatus qmodal__buzzStatus--${stateClass}`;
-  setHidden(buzzEl, !label);
 }
 
 export function applyAnswerVisibility(view, refs) {

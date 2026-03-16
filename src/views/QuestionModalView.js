@@ -12,7 +12,6 @@ export class QuestionModalView {
         isQuizSpinner,
         question,
         answer,
-        buzzState,
         onClose,
         onToggleAnswered,
         onToggleQuizSpinner,
@@ -29,7 +28,6 @@ export class QuestionModalView {
         this._isQuizSpinner = !!isQuizSpinner;
         this._question      = { ...(question || {}), audioFiles: question?.audioFiles || [] };
         this._answer        = { ...(answer   || {}), audioFiles: answer?.audioFiles   || [] };
-        this._buzzState     = buzzState || null;
         this._isAnswerShown = mode === 'edit';
 
         this._cb = {
@@ -120,11 +118,6 @@ export class QuestionModalView {
     updateAnsweredState(isAnswered) {
         this._isAnswered = !!isAnswered;
         if (this._refs.answeredCheckbox) this._refs.answeredCheckbox.checked = this._isAnswered;
-    }
-
-    updateBuzzState(buzzState) {
-        this._buzzState = buzzState || null;
-        renderAll(this, this._refs);
     }
 
     _bindFullscreenEvents() {

@@ -18,7 +18,6 @@ export class ModalService {
     this._pendingAnswerText   = null;
     this._questionTimer       = null;
     this._answerTimer         = null;
-    this._stopGameSync        = null;
   }
 
   _ensureContainer() {
@@ -74,32 +73,6 @@ export class ModalService {
       cellId: cellData.cellId
     };
 
-    const isLiveArmed = !!this._game.getModel()?.live?.isArmed;
-    let enabledAt = null;
-
-    if (isLiveArmed) {
-      const buzzSessionId = `buzz_${cellData.roundId}_${cellData.rowId}_${cellData.cellId}_${Date.now()}`;
-      enabledAt = new Date(Date.now() + 1000).toISOString();
-
-      void this._game.setLiveState({
-        activeQuestion: {
-          roundId: cellData.roundId,
-          rowId: cellData.rowId,
-          cellId: cellData.cellId,
-          openedAt: new Date().toISOString(),
-        },
-        buzz: {
-          sessionId: buzzSessionId,
-          status: 'open',
-          enabledAt,
-          winnerPlayerId: null,
-          winnerAt: null,
-        },
-      }).catch((error) => {
-        console.error('[ModalService] Failed to set active question state:', error);
-      });
-    }
-
     const shouldMarkAsAnswered = mode === 'view' && !cellData.isAnswered;
     if (shouldMarkAsAnswered) {
       void this._updateCell({ isAnswered: true }, { silent: true });
@@ -123,13 +96,6 @@ export class ModalService {
 
       isAnswered: shouldMarkAsAnswered ? true : cellData.isAnswered,
       isQuizSpinner: isQuizSpinnerMedia(question.media),
-      buzzState: isLiveArmed ? {
-        status: 'open',
-        enabledAt,
-        winnerPlayerId: null,
-        winnerAt: null,
-        winnerName: null,
-      } : null,
       question,
       answer,
 
@@ -242,15 +208,6 @@ export class ModalService {
     });
 
     this.container.appendChild(this.view.el);
-    this._stopGameSync?.();
-    this._stopGameSync = this._game.subscribeToRemoteGameChanges((game) => {
-      const live = game?.live || {};
-      const buzz = live?.buzz || null;
-      const winner = buzz?.winnerPlayerId
-        ? (game.players || []).find((player) => player.id === buzz.winnerPlayerId)
-        : null;
-      this.view?.updateBuzzState(buzz ? { ...buzz, winnerName: winner?.name || null } : null);
-    });
     // ESC is handled inside QuestionModalView (properly cleaned up on destroy).
     // Do NOT add a document keydown listener here — ModalService._disposer is
     // long-lived and never destroyed between openings, so listeners would
@@ -295,16 +252,8 @@ export class ModalService {
       this.view.destroy();
       this.view = null;
     }
-    this._stopGameSync?.();
-    this._stopGameSync = null;
     this.activeCell = null;
     if (this.container?.isConnected) this.container.innerHTML = '';
-
-    if (this._game.getModel()?.live?.isArmed) {
-      void this._game.setLiveState({ activeQuestion: null, buzz: null }).catch((error) => {
-        console.error('[ModalService] Failed to clear active question state:', error);
-      });
-    }
 
     // Targeted patch — only the closed cell's is-answered state updates
     this._game.touch(lastCell);

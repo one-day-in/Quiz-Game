@@ -5,7 +5,7 @@ import { LeaderboardDrawerView } from './LeaderboardDrawerView.js';
 import { ViewDisposer } from '../utils/disposer.js';
 import { fitAllCells } from '../utils/fitText.js';
 
-export function AppView({ model, uiState, actions, gameId, gameName, onCellClick, onBackToLobby, onRoundClick, onToggleLiveMode }) {
+export function AppView({ model, uiState, actions, gameId, gameName, onCellClick, onBackToLobby, onRoundClick }) {
   const container = document.createElement('div');
   container.className = 'app-shell';
 
@@ -14,10 +14,6 @@ export function AppView({ model, uiState, actions, gameId, gameName, onCellClick
   let gridEl = null;
   let lastModel = model;
   let lastUiState = uiState;
-  let buzzOverlayHideTimer = null;
-  let activeBuzzSessionId = null;
-  let lastHandledBuzzSessionId = null;
-  let hasSyncedBuzzOverlay = false;
 
   // ResizeObserver — recalculate fitText on resize
   const ro = new ResizeObserver(() => {
@@ -37,31 +33,8 @@ export function AppView({ model, uiState, actions, gameId, gameName, onCellClick
     onLeaderboardClick: toggleLeaderboardDrawer,
     onBackToLobby,
     onRoundClick,
-    onToggleLiveMode,
   });
   container.appendChild(header.el);
-
-  const buzzOverlay = document.createElement('button');
-  buzzOverlay.type = 'button';
-  buzzOverlay.className = 'app-shell__buzzOverlay';
-  buzzOverlay.hidden = true;
-  buzzOverlay.setAttribute('aria-hidden', 'true');
-  buzzOverlay.innerHTML = `
-    <span class="app-shell__buzzEyebrow">First buzz</span>
-    <strong class="app-shell__buzzName"></strong>
-    <span class="app-shell__buzzHint">Tap anywhere to close</span>
-  `;
-  const closeBuzzOverlay = () => {
-    if (!activeBuzzSessionId) return;
-    lastHandledBuzzSessionId = activeBuzzSessionId;
-    hideBuzzOverlay();
-  };
-  buzzOverlay.addEventListener('click', closeBuzzOverlay);
-  buzzOverlay.addEventListener('pointerup', closeBuzzOverlay);
-  container.appendChild(buzzOverlay);
-  disposer.add(() => {
-    clearTimeout(buzzOverlayHideTimer);
-  });
 
   function renderGrid(m, ui) {
     const newGrid = GameGridView({
@@ -108,59 +81,11 @@ export function AppView({ model, uiState, actions, gameId, gameName, onCellClick
     leaderboardDrawerInstance.beginOpen();
   }
 
-  function syncBuzzOverlay(m) {
-    const players = m?.players ?? [];
-    const buzz = m?.live?.buzz ?? null;
-    const currentBuzzSessionId = buzz?.sessionId || null;
-    const shouldShowWinner = buzz?.status === 'buzzed' && buzz?.winnerPlayerId && currentBuzzSessionId;
-
-    if (!hasSyncedBuzzOverlay) {
-      hasSyncedBuzzOverlay = true;
-      if (shouldShowWinner) {
-        lastHandledBuzzSessionId = currentBuzzSessionId;
-      }
-      hideBuzzOverlay();
-      return;
-    }
-
-    if (!shouldShowWinner) {
-      if (!currentBuzzSessionId) {
-        lastHandledBuzzSessionId = null;
-      }
-      hideBuzzOverlay();
-      return;
-    }
-
-    if (lastHandledBuzzSessionId === currentBuzzSessionId || activeBuzzSessionId === currentBuzzSessionId) {
-      return;
-    }
-
-    const winner = players.find((player) => player.id === buzz.winnerPlayerId);
-    buzzOverlay.querySelector('.app-shell__buzzName').textContent = `${winner?.name || 'Player'} buzzed first`;
-    activeBuzzSessionId = currentBuzzSessionId;
-    lastHandledBuzzSessionId = currentBuzzSessionId;
-    buzzOverlay.hidden = false;
-    buzzOverlay.setAttribute('aria-hidden', 'false');
-    clearTimeout(buzzOverlayHideTimer);
-    buzzOverlayHideTimer = setTimeout(() => {
-      hideBuzzOverlay();
-    }, 5000);
-  }
-
-  function hideBuzzOverlay() {
-    clearTimeout(buzzOverlayHideTimer);
-    buzzOverlayHideTimer = null;
-    buzzOverlay.hidden = true;
-    buzzOverlay.setAttribute('aria-hidden', 'true');
-    activeBuzzSessionId = null;
-  }
-
   // Public update — called on every subsequent state change
   function update(m, ui) {
     lastModel = m;
     lastUiState = ui;
     header.update(ui);
-    syncBuzzOverlay(m);
     renderGrid(m, ui);
   }
 
@@ -168,7 +93,6 @@ export function AppView({ model, uiState, actions, gameId, gameName, onCellClick
     lastModel = m;
     lastUiState = ui;
     header.update(ui);
-    syncBuzzOverlay(m);
   }
 
   // Targeted patch for a single cell (avoids full grid rebuild)
@@ -178,7 +102,6 @@ export function AppView({ model, uiState, actions, gameId, gameName, onCellClick
   }
 
   renderGrid(model, uiState);
-  syncBuzzOverlay(model);
 
   return { el: container, update, patchCell, syncLive };
 }

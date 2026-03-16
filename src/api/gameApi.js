@@ -1,11 +1,6 @@
 import { supabase } from './supabaseClient.js';
 
 export const MAX_PLAYERS = 8;
-const LIVE_DEFAULTS = Object.freeze({
-    isArmed: false,
-    activeQuestion: null,
-    buzz: null,
-});
 
 // ================================================
 // DEFAULT GAME STATE
@@ -33,7 +28,6 @@ function makeDefaultGame() {
         meta: { updatedAt: new Date().toISOString() },
         rounds: Array.from({ length: 3 }, makeDefaultRound),
         players: [],
-        live: structuredClone(LIVE_DEFAULTS),
     };
 }
 
@@ -57,23 +51,15 @@ function normalizePlayers(players = []) {
         .map((player, idx) => normalizePlayer(player, idx));
 }
 
-function normalizeLive(live) {
-    return {
-        isArmed: !!live?.isArmed,
-        activeQuestion: live?.activeQuestion ?? null,
-        buzz: live?.buzz ?? null,
-    };
-}
-
 function normalizeGame(game = {}) {
+    const { live: _live, ...rest } = game || {};
     return {
-        ...game,
+        ...rest,
         meta: {
             updatedAt: game?.meta?.updatedAt || new Date().toISOString(),
         },
         rounds: Array.isArray(game?.rounds) ? game.rounds : Array.from({ length: 3 }, makeDefaultRound),
         players: normalizePlayers(game?.players),
-        live: normalizeLive(game?.live),
     };
 }
 
@@ -144,20 +130,6 @@ export async function getGame(gameId) {
 
     if (error) throw new Error(`[Game] getGame failed: ${error.message}`);
     return normalizeGame(data.data);
-}
-
-async function getGameRow(gameId) {
-    const { data, error } = await supabase
-        .from('games')
-        .select('data, updated_at')
-        .eq('id', gameId)
-        .single();
-
-    if (error) throw new Error(`[Game] getGame failed: ${error.message}`);
-    return {
-        data: normalizeGame(data.data),
-        updatedAt: data.updated_at,
-    };
 }
 
 export async function saveGame(gameId, gameData) {
@@ -325,71 +297,10 @@ export async function removePlayer(gameId, playerId) {
     const nextPlayers = players.filter((entry) => entry.id !== playerId);
     if (nextPlayers.length === players.length) throw new Error('Player not found');
 
-    const buzz = normalizeLive(game.live).buzz;
-    if (buzz?.winnerPlayerId === playerId) {
-        game.live = {
-            ...normalizeLive(game.live),
-            buzz: {
-                ...buzz,
-                winnerPlayerId: null,
-                winnerAt: null,
-                status: 'open',
-            },
-        };
-    }
-
     game.players = nextPlayers;
     game.meta.updatedAt = new Date().toISOString();
     await saveGame(gameId, game);
     return nextPlayers;
-}
-
-export async function setLiveState(gameId, patch = {}) {
-    const game = await getGame(gameId);
-    game.live = {
-        ...normalizeLive(game.live),
-        ...patch,
-    };
-    game.meta.updatedAt = new Date().toISOString();
-    await saveGame(gameId, game);
-    return game.live;
-}
-
-export async function claimBuzz(gameId, playerId) {
-    const { data: game, updatedAt } = await getGameRow(gameId);
-    const buzz = normalizeLive(game.live).buzz;
-    if (!buzz) throw new Error('Buzz is not active');
-
-    const now = new Date().toISOString();
-    const enabledAt = buzz.enabledAt ? new Date(buzz.enabledAt).getTime() : 0;
-    const nowMs = Date.now();
-
-    if (buzz.winnerPlayerId) throw new Error('Too late');
-    if (nowMs < enabledAt) throw new Error('Buzz is not open yet');
-
-    game.live = {
-        ...normalizeLive(game.live),
-        buzz: {
-            ...buzz,
-            status: 'buzzed',
-            winnerPlayerId: playerId,
-            winnerAt: now,
-        },
-    };
-    game.meta.updatedAt = now;
-
-    const { data, error } = await supabase
-        .from('games')
-        .update({ data: game, updated_at: now })
-        .eq('id', gameId)
-        .eq('updated_at', updatedAt)
-        .select('data')
-        .maybeSingle();
-
-    if (error) throw new Error(`[Game] claimBuzz failed: ${error.message}`);
-    if (!data) throw new Error('Too late');
-
-    return normalizeLive(data.data.live).buzz;
 }
 
 // ================================================
