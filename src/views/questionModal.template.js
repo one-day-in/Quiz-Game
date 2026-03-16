@@ -30,6 +30,9 @@ export function buildModalDom() {
         </div>
       </header>
 
+      <!-- PRESS WINNER BANNER — shown when a player claims the press -->
+      <div class="qmodal__pressBanner" hidden aria-live="polite"></div>
+
       <!-- BODY -->
       <section class="qmodal__body">
         <div class="qmodal__emptyState">✏️ is empty</div>
@@ -175,6 +178,7 @@ export function buildModalDom() {
       overlay:            qs('.qmodal__overlay'),
       title:              qs('.qmodal__headerTitle'),
       winner:             qs('.qmodal__headerWinner'),
+      pressBanner:        qs('.qmodal__pressBanner'),
       headerQuizSpinner:  qs('.qmodal__headerToggle'),
       quizSpinnerCheckbox: qs('.qmodal__quizSpinnerInput'),
       btnToggleMode:      qs('.qmodal__btnToggleMode'),

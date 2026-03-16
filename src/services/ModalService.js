@@ -290,10 +290,27 @@ export class ModalService {
     const gameId = this._game.getGameId();
     if (!gameId) return;
 
+    const emitRuntime = async () => {
+      try {
+        const runtime = await getGameRuntime(gameId);
+        this.view?.updateWinnerName(runtime?.winnerName || '');
+      } catch (_) {}
+    };
+
     this._stopRuntimeSubscription?.();
-    this._stopRuntimeSubscription = subscribeToGameRuntime(gameId, (runtime) => {
+
+    // Realtime fires instantly when DB changes (requires realtime enabled on game_runtime table)
+    const stopSub = subscribeToGameRuntime(gameId, (runtime) => {
       this.view?.updateWinnerName(runtime?.winnerName || '');
     });
+
+    // Polling fallback at 800ms in case realtime is not configured for game_runtime
+    const pollTimer = window.setInterval(emitRuntime, 800);
+
+    this._stopRuntimeSubscription = () => {
+      stopSub?.();
+      clearInterval(pollTimer);
+    };
   }
 
   destroy() {

@@ -123,10 +123,26 @@ export class QuestionModalView {
 
     updateWinnerName(name) {
         this._winnerName = (name || '').trim();
+
         const winnerEl = this._refs.winner;
-        if (!winnerEl) return;
-        winnerEl.textContent = this._winnerName;
-        winnerEl.hidden = !this._winnerName;
+        if (winnerEl) {
+            winnerEl.textContent = this._winnerName;
+            winnerEl.hidden = !this._winnerName;
+        }
+
+        const bannerEl = this._refs.pressBanner;
+        if (bannerEl) {
+            if (this._winnerName) {
+                bannerEl.textContent = `🔔 ${this._winnerName}`;
+                bannerEl.hidden = false;
+                bannerEl.classList.remove('is-visible');
+                void bannerEl.offsetWidth; // force reflow to restart animation
+                bannerEl.classList.add('is-visible');
+            } else {
+                bannerEl.hidden = true;
+                bannerEl.classList.remove('is-visible');
+            }
+        }
     }
 
     _bindFullscreenEvents() {

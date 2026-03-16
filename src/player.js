@@ -251,13 +251,19 @@ function bindRuntimeState() {
 
 function startGameRefreshLoop() {
   clearInterval(gameRefreshTimer);
-  gameRefreshTimer = window.setInterval(async () => {
-    try {
-      const players = await getPlayers(gameId);
-      syncControllerFromPlayers(players);
-    } catch (_) {
-      // Ignore transient refresh failures on mobile.
-    }
+  gameRefreshTimer = window.setInterval(() => {
+    void Promise.allSettled([
+      getPlayers(gameId)
+        .then((players) => syncControllerFromPlayers(players))
+        .catch(() => {}),
+      getGameRuntime(gameId)
+        .then((runtime) => {
+          isPressEnabled = !!runtime?.pressEnabled;
+          pressWinnerPlayerId = runtime?.winnerPlayerId || null;
+          syncPressButtonState();
+        })
+        .catch(() => {}),
+    ]);
   }, 1000);
 }
 

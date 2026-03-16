@@ -94,6 +94,27 @@
     white-space: nowrap;
 }
 
+/* Press winner banner — appears between header and body when a player claims the press */
+.qmodal__pressBanner {
+    padding: 10px 20px;
+    background: linear-gradient(90deg, rgba(234, 179, 8, 0.18), rgba(234, 179, 8, 0.08));
+    border-bottom: 2px solid rgba(234, 179, 8, 0.35);
+    color: rgb(234, 179, 8);
+    font-size: var(--fs-3);
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    text-align: center;
+    text-transform: uppercase;
+    opacity: 0;
+    transform: translateY(-6px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.qmodal__pressBanner.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
 /* Body */
 .qmodal__body {
     flex: 1 1 auto;
