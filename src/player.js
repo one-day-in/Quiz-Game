@@ -183,13 +183,14 @@ function renderController(currentPlayer) {
   });
 
   pressBtn?.addEventListener('click', () => {
-    if (!isPressEnabled || pressWinnerPlayerId) return;
+    // Always give tactile feedback so the button feels alive
     pressBtn.classList.remove('is-pressed');
     void pressBtn.offsetWidth;
     pressBtn.classList.add('is-pressed');
-    window.setTimeout(() => {
-      pressBtn.classList.remove('is-pressed');
-    }, 160);
+    window.setTimeout(() => pressBtn.classList.remove('is-pressed'), 160);
+
+    // Only actually claim the press when the host has opened a question
+    if (!isPressEnabled || pressWinnerPlayerId) return;
     void claimPress(statusEl);
   });
 
