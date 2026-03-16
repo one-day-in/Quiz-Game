@@ -20,6 +20,7 @@ export class ModalService {
     this._questionTimer       = null;
     this._answerTimer         = null;
     this._stopRuntimeSubscription = null;
+    this._pressEnableTimer = null;
   }
 
   _ensureContainer() {
@@ -237,8 +238,10 @@ export class ModalService {
     // Flush any pending debounced text saves before clearing activeCell
     clearTimeout(this._questionTimer);
     clearTimeout(this._answerTimer);
+    clearTimeout(this._pressEnableTimer);
     this._questionTimer = null;
     this._answerTimer   = null;
+    this._pressEnableTimer = null;
     const cell = this.activeCell;
     if (cell) {
       if (this._pendingQuestionText !== null) {
@@ -269,9 +272,15 @@ export class ModalService {
 
   async _resetPressRuntime() {
     try {
-      await this._game.setPressEnabled(true);
+      clearTimeout(this._pressEnableTimer);
+      this._pressEnableTimer = null;
+
+      await this._game.setPressEnabled(false);
       const runtime = await getGameRuntime(this._game.getGameId());
       this.view?.updateWinnerName(runtime?.winnerName || '');
+      this._pressEnableTimer = window.setTimeout(() => {
+        void this._game.setPressEnabled(true);
+      }, 2000);
     } catch (error) {
       console.error('[ModalService] Failed to reset press runtime:', error);
     }

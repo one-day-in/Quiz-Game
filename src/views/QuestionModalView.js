@@ -154,7 +154,8 @@ export class QuestionModalView {
 
         // ── Close ──────────────────────────────────────────────────────────────
         this._disposer.addEventListener(r.overlay,   'click', () => this._cb.onClose?.());
-        this._disposer.addEventListener(r.closeDone, 'click', () => this._cb.onClose?.());
+        this._disposer.addEventListener(r.btnIncorrect, 'click', () => {});
+        this._disposer.addEventListener(r.btnCorrect,   'click', () => {});
 
         // ── Toggle mode button (view ↔ edit) ──────────────────────────────────
         this._disposer.addEventListener(r.btnToggleMode, 'click', () => {

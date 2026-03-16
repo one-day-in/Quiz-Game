@@ -143,7 +143,7 @@ export function buildModalDom() {
 
       </section>
 
-      <!-- FOOTER — same in both modes: Answered + Show answer (view only) + Done -->
+      <!-- FOOTER — same in both modes: Answered + Show answer (view only) + result placeholders -->
       <footer class="qmodal__footer">
         <label class="qmodal__toggle">
           <input type="checkbox" class="qmodal__toggleInput">
@@ -154,8 +154,12 @@ export function buildModalDom() {
           👁️ Show answer
         </button>
 
-        <button type="button" class="qmodal__btn qmodal__btn--primary qmodal__btnClose">
-          ✅ Done
+        <button type="button" class="qmodal__btn qmodal__btn--danger qmodal__btnIncorrect">
+          ✕ Not Correct
+        </button>
+
+        <button type="button" class="qmodal__btn qmodal__btn--primary qmodal__btnCorrect">
+          ✓ Correct
         </button>
       </footer>
     </div>
@@ -174,7 +178,8 @@ export function buildModalDom() {
       headerQuizSpinner:  qs('.qmodal__headerToggle'),
       quizSpinnerCheckbox: qs('.qmodal__quizSpinnerInput'),
       btnToggleMode:      qs('.qmodal__btnToggleMode'),
-      closeDone:          qs('.qmodal__btnClose'),
+      btnIncorrect:       qs('.qmodal__btnIncorrect'),
+      btnCorrect:         qs('.qmodal__btnCorrect'),
       answeredCheckbox:   qs('.qmodal__toggleInput'),
       toggleAnswerBtn:    qs('.qmodal__btnToggleAnswer'),
       emptyState:         qs('.qmodal__emptyState'),
