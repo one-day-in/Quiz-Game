@@ -10,6 +10,7 @@ let leaderboardEl = null;
 let stopGameSubscription = null;
 let refreshTimer = null;
 let lastLeaderboardSnapshot = '';
+let isJoinPanelCollapsed = false;
 
 async function startLeaderboard() {
     if (!gameId) {
@@ -58,16 +59,32 @@ async function renderLeaderboard(game) {
 
     const joinPanel = document.createElement('section');
     joinPanel.className = 'leaderboard-page__joinPanel';
+    if (isJoinPanelCollapsed) {
+        joinPanel.classList.add('is-collapsed');
+    }
     joinPanel.innerHTML = `
-        <div class="leaderboard-page__joinCopy">
-            <p class="leaderboard-page__eyebrow">Players</p>
-            <h1 class="leaderboard-page__title">Connect a player controller</h1>
-            <p class="leaderboard-page__text">Scan this QR code on a phone to join the game, set a name, and manage your score.</p>
+        <div class="leaderboard-page__joinHeader">
+            <div class="leaderboard-page__joinCopy">
+                <p class="leaderboard-page__eyebrow">Players</p>
+                <h1 class="leaderboard-page__title">Connect a player controller</h1>
+                <p class="leaderboard-page__text">Scan this QR code on a phone to join the game, set a name, and manage your score.</p>
+            </div>
+            <button class="leaderboard-page__toggle" type="button" aria-expanded="${String(!isJoinPanelCollapsed)}">
+                ${isJoinPanelCollapsed ? 'Show join panel' : 'Hide join panel'}
+            </button>
         </div>
         <div class="leaderboard-page__qrWrap">
             <img class="leaderboard-page__qr" alt="Player controller QR code">
         </div>
     `;
+
+    const toggleBtn = joinPanel.querySelector('.leaderboard-page__toggle');
+    toggleBtn?.addEventListener('click', () => {
+        isJoinPanelCollapsed = !isJoinPanelCollapsed;
+        joinPanel.classList.toggle('is-collapsed', isJoinPanelCollapsed);
+        toggleBtn.textContent = isJoinPanelCollapsed ? 'Show join panel' : 'Hide join panel';
+        toggleBtn.setAttribute('aria-expanded', String(!isJoinPanelCollapsed));
+    });
 
     shell.appendChild(joinPanel);
     leaderboardEl = LeaderboardGridView({
