@@ -18,7 +18,6 @@ let player = null;
 let controllerId = null;
 let stopPlayersSubscription = null;
 let gameRefreshTimer = null;
-let lastTouchEndAt = 0;
 let confirmedScore = 0;
 let pendingScoreDelta = 0;
 let isScoreSyncInFlight = false;
@@ -361,14 +360,6 @@ function disableZoomGestures() {
     if (event.touches.length > 1) {
       event.preventDefault();
     }
-  }, { passive: false });
-
-  document.addEventListener('touchend', (event) => {
-    const now = Date.now();
-    if (now - lastTouchEndAt <= 300) {
-      event.preventDefault();
-    }
-    lastTouchEndAt = now;
   }, { passive: false });
 }
 
