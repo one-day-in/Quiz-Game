@@ -81,13 +81,13 @@ body {
   filter: brightness(1.08);
 }
 
-#leaderboard-app .leaderboard__grid {
+#leaderboard-app .leaderboard__list {
   flex: 1;
   min-height: 0;
-  grid-auto-rows: 1fr;
+  overflow: hidden;
 }
 
-#leaderboard-app .leaderboard__card {
+#leaderboard-app .leaderboard__row {
   min-height: 0;
 }
 
