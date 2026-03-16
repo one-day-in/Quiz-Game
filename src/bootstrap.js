@@ -103,9 +103,33 @@ async function renderGame(user, gameId, gameName) {
         const mediaService = createMediaService({ repo, gameService });
         const roundNavigationService = createRoundNavigationService(gameService);
         const modalService = createModalService(gameService, mediaService);
+        let liveModeDeactivation = null;
+        let isLeavingGame = false;
 
         await gameService.initialize();
         gameService.restoreUiState();
+
+        liveModeDeactivation = async () => {
+            if (isLeavingGame) return;
+            if (!gameService.getState().uiState.isLiveArmed) return;
+
+            isLeavingGame = true;
+            try {
+                await gameService.setLiveArmed(false);
+            } catch (error) {
+                console.error('[Bootstrap] Failed to disable live mode:', error);
+            } finally {
+                isLeavingGame = false;
+            }
+        };
+
+        const disableLiveModeOnExit = () => {
+            if (!gameService.getState().uiState.isLiveArmed || isLeavingGame) return;
+            void liveModeDeactivation?.();
+        };
+
+        window.addEventListener('pagehide', disableLiveModeOnExit);
+        window.addEventListener('beforeunload', disableLiveModeOnExit);
 
         if (IS_DEV) {
             window.gameService = gameService;
@@ -130,10 +154,15 @@ async function renderGame(user, gameId, gameName) {
             roundNavigationService,
             gameId,
             gameName,
-            onBackToLobby: () => renderLobby(user),
+            onBackToLobby: async () => {
+                await liveModeDeactivation?.();
+                renderLobby(user);
+            },
         });
 
         _currentCleanup = () => {
+            window.removeEventListener('pagehide', disableLiveModeOnExit);
+            window.removeEventListener('beforeunload', disableLiveModeOnExit);
             modalService?.destroy();
             app?.destroy();
             if (IS_DEV) {
