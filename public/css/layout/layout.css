@@ -31,6 +31,10 @@
   cursor: pointer;
 }
 
+.app-shell__buzzOverlay[hidden] {
+  display: none !important;
+}
+
 .app-shell__buzzEyebrow {
   font-size: 14px;
   font-weight: 900;
