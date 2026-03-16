@@ -121,10 +121,44 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 12px;
 
     padding: 18px 24px;
     border-top: 1px solid var(--border-2);
     background: var(--surface-2);
+}
+
+/* Left group: Answered toggle + Show answer button */
+.qmodal__footerLeft {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    flex: 0 1 auto;
+}
+
+/* Right group: Not Correct + Correct — equal-width side by side */
+.qmodal__footerRight {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    flex: 0 0 auto;
+}
+
+/* Narrow screens: stack the two groups vertically */
+@media (max-width: 480px) {
+    .qmodal__footer {
+        flex-wrap: wrap;
+    }
+
+    .qmodal__footerLeft,
+    .qmodal__footerRight {
+        width: 100%;
+    }
+
+    .qmodal__footerRight {
+        grid-template-columns: 1fr 1fr;
+    }
 }
 
 /* =========================================

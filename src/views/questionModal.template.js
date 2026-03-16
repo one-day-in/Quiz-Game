@@ -147,22 +147,30 @@ export function buildModalDom() {
 
       <!-- FOOTER — same in both modes: Answered + Show answer (view only) + result placeholders -->
       <footer class="qmodal__footer">
-        <label class="qmodal__toggle">
-          <input type="checkbox" class="qmodal__toggleInput">
-          <span>Answered</span>
-        </label>
 
-        <button type="button" class="qmodal__btn qmodal__btnToggleAnswer">
-          👁️ Show answer
-        </button>
+        <!-- Left: Answered toggle + Show answer -->
+        <div class="qmodal__footerLeft">
+          <label class="qmodal__toggle">
+            <input type="checkbox" class="qmodal__toggleInput">
+            <span>Answered</span>
+          </label>
 
-        <button type="button" class="qmodal__btn qmodal__btn--danger qmodal__btnIncorrect">
-          ✕ Not Correct
-        </button>
+          <button type="button" class="qmodal__btn qmodal__btnToggleAnswer">
+            👁️ Show answer
+          </button>
+        </div>
 
-        <button type="button" class="qmodal__btn qmodal__btn--primary qmodal__btnCorrect">
-          ✓ Correct
-        </button>
+        <!-- Right: result buttons (equal width, side by side) -->
+        <div class="qmodal__footerRight">
+          <button type="button" class="qmodal__btn qmodal__btn--danger qmodal__btnIncorrect">
+            ✕ Not Correct
+          </button>
+
+          <button type="button" class="qmodal__btn qmodal__btn--primary qmodal__btnCorrect">
+            ✓ Correct
+          </button>
+        </div>
+
       </footer>
     </div>
   `;
