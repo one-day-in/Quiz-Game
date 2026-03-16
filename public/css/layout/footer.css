@@ -236,7 +236,7 @@
 }
 
 .leaderboard__points {
-  font-size: clamp(30px, 3.2vh, 48px);
+  font-size: clamp(60px, 6.4vh, 96px);
   font-weight: 900;
 
   font-variant-numeric: tabular-nums;
