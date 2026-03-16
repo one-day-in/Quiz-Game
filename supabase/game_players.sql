@@ -171,7 +171,7 @@ set search_path = public
 as $$
 begin
     update public.game_players
-    set points = coalesce(points, 0) + coalesce(p_delta, 0),
+    set points = coalesce(game_players.points, 0) + coalesce(p_delta, 0),
         updated_at = timezone('utc', now())
     where game_players.game_id = p_game_id
       and game_players.controller_id = trim(coalesce(p_controller_id, ''))

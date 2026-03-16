@@ -19,6 +19,12 @@ let controllerId = null;
 let stopPlayersSubscription = null;
 let gameRefreshTimer = null;
 let lastTouchEndAt = 0;
+let confirmedScore = 0;
+let pendingScoreDelta = 0;
+let isScoreSyncInFlight = false;
+let scoreFlushTimer = null;
+
+const SCORE_FLUSH_DELAY_MS = 220;
 
 async function startPlayerController() {
   if (!gameId) {
@@ -121,6 +127,11 @@ function renderJoin() {
 
 function renderController(currentPlayer) {
   player = currentPlayer;
+  confirmedScore = Number(currentPlayer.points) || 0;
+  pendingScoreDelta = 0;
+  clearTimeout(scoreFlushTimer);
+  scoreFlushTimer = null;
+
   root.innerHTML = `
     <main class="player-controller">
       <section class="player-controller__card player-controller__card--controller">
@@ -158,17 +169,7 @@ function renderController(currentPlayer) {
   root.querySelectorAll('[data-delta]').forEach((button) => {
     button.addEventListener('click', async () => {
       const delta = Number(button.dataset.delta);
-      setControllerPending(true);
-      try {
-        player = await adjustPlayerScoreByController(gameId, controllerId, delta);
-        scoreEl.textContent = formatPoints(player.points);
-        statusEl.hidden = true;
-      } catch (error) {
-        statusEl.textContent = error.message || 'Could not update score';
-        statusEl.hidden = false;
-      } finally {
-        setControllerPending(false);
-      }
+      queueScoreDelta(delta, scoreEl, statusEl);
     });
   });
 
@@ -249,9 +250,50 @@ function syncControllerFromPlayers(players = []) {
   }
 
   player = nextPlayer;
-  scoreEl.textContent = formatPoints(nextPlayer.points);
+  confirmedScore = Number(nextPlayer.points) || 0;
+  scoreEl.textContent = formatPoints(confirmedScore + pendingScoreDelta);
   if (document.activeElement !== nameInput) {
     nameInput.value = nextPlayer.name;
+  }
+}
+
+function queueScoreDelta(delta, scoreEl, statusEl) {
+  pendingScoreDelta += Number(delta) || 0;
+  scoreEl.textContent = formatPoints(confirmedScore + pendingScoreDelta);
+  statusEl.hidden = true;
+
+  clearTimeout(scoreFlushTimer);
+  scoreFlushTimer = window.setTimeout(() => {
+    void flushQueuedScoreDelta(scoreEl, statusEl);
+  }, SCORE_FLUSH_DELAY_MS);
+}
+
+async function flushQueuedScoreDelta(scoreEl, statusEl) {
+  if (isScoreSyncInFlight || pendingScoreDelta === 0 || !controllerId) return;
+
+  const delta = pendingScoreDelta;
+  pendingScoreDelta = 0;
+  isScoreSyncInFlight = true;
+
+  try {
+    player = await adjustPlayerScoreByController(gameId, controllerId, delta);
+    confirmedScore = Number(player.points) || 0;
+    scoreEl.textContent = formatPoints(confirmedScore + pendingScoreDelta);
+    statusEl.hidden = true;
+  } catch (error) {
+    pendingScoreDelta += delta;
+    scoreEl.textContent = formatPoints(confirmedScore + pendingScoreDelta);
+    statusEl.textContent = error.message || 'Could not update score';
+    statusEl.hidden = false;
+  } finally {
+    isScoreSyncInFlight = false;
+
+    if (pendingScoreDelta !== 0) {
+      clearTimeout(scoreFlushTimer);
+      scoreFlushTimer = window.setTimeout(() => {
+        void flushQueuedScoreDelta(scoreEl, statusEl);
+      }, SCORE_FLUSH_DELAY_MS);
+    }
   }
 }
 
@@ -338,4 +380,5 @@ startPlayerController().catch((error) => {
 
 window.addEventListener('beforeunload', () => {
   stopPlayersSubscription?.();
+  clearTimeout(scoreFlushTimer);
 });
