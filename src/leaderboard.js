@@ -77,6 +77,7 @@ function ensureAddPlayerDrawer() {
 
     const drawer = document.createElement('div');
     drawer.className = 'leaderboard-drawer leaderboard-page__drawer';
+    drawer.hidden = true;
     drawer.innerHTML = `
         <div class="leaderboard-drawer__overlay"></div>
         <aside class="leaderboard-drawer__panel" role="dialog" aria-modal="true" aria-label="Add player">
@@ -113,13 +114,20 @@ function ensureAddPlayerDrawer() {
 
 function openAddPlayerDrawer() {
     const drawer = ensureAddPlayerDrawer();
+    drawer.hidden = false;
     requestAnimationFrame(() => {
         drawer.classList.add('is-open');
     });
 }
 
 function closeAddPlayerDrawer() {
-    addPlayerDrawer?.classList.remove('is-open');
+    if (!addPlayerDrawer) return;
+    addPlayerDrawer.classList.remove('is-open');
+    window.setTimeout(() => {
+        if (addPlayerDrawer && !addPlayerDrawer.classList.contains('is-open')) {
+            addPlayerDrawer.hidden = true;
+        }
+    }, 220);
 }
 
 function scheduleRefresh() {
