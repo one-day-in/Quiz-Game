@@ -19,15 +19,17 @@ body {
 #player-controller-app {
   min-height: 100dvh;
   height: 100dvh;
-  padding: 24px;
+  padding: max(12px, env(safe-area-inset-top)) 16px max(12px, env(safe-area-inset-bottom)) 16px;
   box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
 }
 
 .player-controller {
   width: min(100%, 520px);
+  max-height: 100%;
 }
 
 .player-controller__card {
@@ -35,14 +37,18 @@ body {
   border: 1px solid var(--border-2);
   background: linear-gradient(180deg, var(--surface), var(--surface-3));
   box-shadow: var(--shadow-lg);
-  padding: 28px 24px;
+  padding: clamp(16px, 2.2dvh, 24px) clamp(16px, 3vw, 24px);
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: clamp(10px, 1.6dvh, 16px);
+  max-height: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .player-controller__card--controller {
-  gap: 22px;
+  justify-content: space-between;
+  gap: clamp(12px, 1.8dvh, 18px);
 }
 
 .player-controller__eyebrow {
@@ -56,7 +62,7 @@ body {
 
 .player-controller__title {
   margin: 0;
-  font-size: clamp(28px, 6vw, 40px);
+  font-size: clamp(24px, 5vw, 36px);
   line-height: 1.05;
 }
 
@@ -102,14 +108,14 @@ body {
 .player-controller__joinForm {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
 
 .player-controller__primary,
 .player-controller__scoreBtn,
 .player-controller__secondary,
 .player-controller__pressBtn {
-  min-height: 56px;
+  min-height: clamp(48px, 6.4dvh, 56px);
   border-radius: 18px;
   border: 1px solid var(--btn-outline);
   color: var(--text);
@@ -134,11 +140,11 @@ body {
 .player-controller__secondary {
   background: var(--btn-bg);
   box-shadow: var(--shadow-sm);
-  font-size: clamp(18px, 4vw, 24px);
+  font-size: clamp(16px, 3.6vw, 22px);
 }
 
 .player-controller__pressBtn {
-  width: min(100%, 220px);
+  width: min(100%, min(200px, 24dvh));
   aspect-ratio: 1;
   min-height: 0;
   align-self: center;
@@ -153,7 +159,7 @@ body {
     inset 0 2px 0 rgba(255, 255, 255, 0.18),
     0 24px 44px rgba(127, 29, 29, 0.34),
     0 0 28px rgba(239, 68, 68, 0.24);
-  font-size: clamp(28px, 7vw, 42px);
+  font-size: clamp(24px, 5.8vw, 36px);
   letter-spacing: 0.14em;
 }
 
@@ -180,10 +186,10 @@ body {
   border-radius: 20px;
   border: 1px solid var(--border-2);
   background: linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.98));
-  padding: 20px;
+  padding: clamp(14px, 2dvh, 18px);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
 }
 
@@ -196,7 +202,7 @@ body {
 }
 
 .player-controller__scoreValue {
-  font-size: clamp(54px, 14vw, 84px);
+  font-size: clamp(42px, 10vw, 72px);
   line-height: 1;
   font-weight: 900;
   color: var(--danger);
@@ -209,7 +215,7 @@ body {
 .player-controller__actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+  gap: 12px;
 }
 
 .player-controller__secondary--danger {
@@ -237,7 +243,7 @@ body {
   }
 
   .player-controller__card {
-    padding: 18px 16px;
-    gap: 16px;
+    padding: 14px 14px;
+    gap: 12px;
   }
 }
