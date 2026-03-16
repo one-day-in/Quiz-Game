@@ -45,16 +45,19 @@ export function AppView({ model, uiState, actions, gameId, gameName, onCellClick
   buzzOverlay.type = 'button';
   buzzOverlay.className = 'app-shell__buzzOverlay';
   buzzOverlay.hidden = true;
+  buzzOverlay.setAttribute('aria-hidden', 'true');
   buzzOverlay.innerHTML = `
     <span class="app-shell__buzzEyebrow">First buzz</span>
     <strong class="app-shell__buzzName"></strong>
     <span class="app-shell__buzzHint">Tap anywhere to close</span>
   `;
-  buzzOverlay.addEventListener('click', () => {
+  const closeBuzzOverlay = () => {
     if (!activeBuzzSessionId) return;
     lastHandledBuzzSessionId = activeBuzzSessionId;
     hideBuzzOverlay();
-  });
+  };
+  buzzOverlay.addEventListener('click', closeBuzzOverlay);
+  buzzOverlay.addEventListener('pointerup', closeBuzzOverlay);
   container.appendChild(buzzOverlay);
   disposer.add(() => {
     clearTimeout(buzzOverlayHideTimer);
@@ -137,6 +140,7 @@ export function AppView({ model, uiState, actions, gameId, gameName, onCellClick
     activeBuzzSessionId = currentBuzzSessionId;
     lastHandledBuzzSessionId = currentBuzzSessionId;
     buzzOverlay.hidden = false;
+    buzzOverlay.setAttribute('aria-hidden', 'false');
     clearTimeout(buzzOverlayHideTimer);
     buzzOverlayHideTimer = setTimeout(() => {
       hideBuzzOverlay();
@@ -147,6 +151,7 @@ export function AppView({ model, uiState, actions, gameId, gameName, onCellClick
     clearTimeout(buzzOverlayHideTimer);
     buzzOverlayHideTimer = null;
     buzzOverlay.hidden = true;
+    buzzOverlay.setAttribute('aria-hidden', 'true');
     activeBuzzSessionId = null;
   }
 
