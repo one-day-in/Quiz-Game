@@ -1,4 +1,4 @@
-import { getPlayers, subscribeToPlayers } from './api/gameApi.js';
+import { getPlayers, subscribeToPlayers, removePlayer } from './api/gameApi.js';
 import { LeaderboardGridView } from './views/LeaderboardGridView.js';
 import QRCode from 'qrcode';
 
@@ -61,6 +61,15 @@ async function renderLeaderboard(players = []) {
             players,
             maxPlayers: 8,
             onAddPlayer: openAddPlayerDrawer,
+            onDeletePlayer: async (playerId) => {
+                try {
+                    const updatedPlayers = await removePlayer(gameId, playerId);
+                    lastLeaderboardSnapshot = '';
+                    await renderLeaderboard(updatedPlayers);
+                } catch (e) {
+                    console.error('[leaderboard] removePlayer failed:', e);
+                }
+            },
         });
         leaderboardShell.appendChild(leaderboardEl);
         root.appendChild(leaderboardShell);

@@ -1,6 +1,7 @@
 export function LeaderboardGridView({
   players = [],
   onAddPlayer = null,
+  onDeletePlayer = null,
 } = {}) {
   const el = document.createElement('footer');
   el.className = 'app-footer';
@@ -47,7 +48,7 @@ export function LeaderboardGridView({
     }
 
     for (const player of sortedPlayers) {
-      list.appendChild(buildRow(player));
+      list.appendChild(buildRow(player, onDeletePlayer));
     }
   }
 
@@ -58,7 +59,7 @@ export function LeaderboardGridView({
   return el;
 }
 
-function buildRow(player) {
+function buildRow(player, onDeletePlayer) {
   const row = document.createElement('div');
   row.className = 'leaderboard__row';
 
@@ -72,6 +73,21 @@ function buildRow(player) {
   points.setAttribute('aria-label', `Points: ${player?.points ?? 0}`);
 
   row.append(name, points);
+
+  if (typeof onDeletePlayer === 'function') {
+    const deleteBtn = document.createElement('button');
+    deleteBtn.type = 'button';
+    deleteBtn.className = 'leaderboard__deleteBtn';
+    deleteBtn.textContent = '🗑️';
+    deleteBtn.title = 'Remove player';
+    deleteBtn.setAttribute('aria-label', `Remove ${player?.name || 'Player'}`);
+    deleteBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      onDeletePlayer(player.id);
+    });
+    row.appendChild(deleteBtn);
+  }
+
   return row;
 }
 

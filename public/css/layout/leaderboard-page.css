@@ -123,6 +123,39 @@ body {
   text-align: center;
 }
 
+/* ── Delete player button ───────────────────────────────────────────────── */
+
+#leaderboard-app .leaderboard__deleteBtn {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  border: 1px solid rgba(248, 113, 113, 0.22);
+  background: rgba(127, 29, 29, 0.18);
+  color: #fca5a5;
+  font-size: 18px;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease),
+    filter var(--t-fast) var(--ease);
+}
+
+#leaderboard-app .leaderboard__deleteBtn:hover {
+  background: rgba(185, 28, 28, 0.40);
+  border-color: rgba(248, 113, 113, 0.50);
+  filter: brightness(1.1);
+}
+
+#leaderboard-app .leaderboard__deleteBtn:active {
+  filter: brightness(0.9);
+}
+
 @media (max-width: 860px) {
   #leaderboard-app {
     padding: 16px;
