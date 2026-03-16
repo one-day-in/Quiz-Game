@@ -294,7 +294,8 @@ function updateBuzzUI(buzz, currentPlayer) {
   }
 
   const isWinner = buzz.winnerPlayerId && currentPlayer?.id === buzz.winnerPlayerId;
-  const isOpen = buzz.status === 'open' || (buzz.status === 'pending' && Date.now() >= new Date(buzz.enabledAt).getTime());
+  const enabledAt = buzz.enabledAt ? new Date(buzz.enabledAt).getTime() : 0;
+  const isOpen = !buzz.winnerPlayerId && Date.now() >= enabledAt;
 
   if (buzz.status === 'buzzed') {
     buzzBtn.disabled = true;

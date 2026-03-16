@@ -15,8 +15,9 @@ export function AppView({ model, uiState, actions, gameId, gameName, onCellClick
   let lastModel = model;
   let lastUiState = uiState;
   let buzzOverlayHideTimer = null;
-  let activeBuzzOverlayToken = null;
-  let dismissedBuzzOverlayToken = null;
+  let activeBuzzSessionId = null;
+  let lastHandledBuzzSessionId = null;
+  let hasSyncedBuzzOverlay = false;
 
   // ResizeObserver — recalculate fitText on resize
   const ro = new ResizeObserver(() => {
@@ -50,8 +51,8 @@ export function AppView({ model, uiState, actions, gameId, gameName, onCellClick
     <span class="app-shell__buzzHint">Tap anywhere to close</span>
   `;
   buzzOverlay.addEventListener('click', () => {
-    if (!activeBuzzOverlayToken) return;
-    dismissedBuzzOverlayToken = activeBuzzOverlayToken;
+    if (!activeBuzzSessionId) return;
+    lastHandledBuzzSessionId = activeBuzzSessionId;
     hideBuzzOverlay();
   });
   container.appendChild(buzzOverlay);
@@ -107,35 +108,46 @@ export function AppView({ model, uiState, actions, gameId, gameName, onCellClick
   function syncBuzzOverlay(m) {
     const players = m?.players ?? [];
     const buzz = m?.live?.buzz ?? null;
-    const overlayToken = buzz?.status === 'buzzed' && buzz?.winnerPlayerId
-      ? `${buzz.sessionId || 'buzz'}:${buzz.winnerPlayerId}`
-      : null;
+    const currentBuzzSessionId = buzz?.sessionId || null;
+    const shouldShowWinner = buzz?.status === 'buzzed' && buzz?.winnerPlayerId && currentBuzzSessionId;
 
-    if (!overlayToken) {
-      dismissedBuzzOverlayToken = null;
+    if (!hasSyncedBuzzOverlay) {
+      hasSyncedBuzzOverlay = true;
+      if (shouldShowWinner) {
+        lastHandledBuzzSessionId = currentBuzzSessionId;
+      }
       hideBuzzOverlay();
       return;
     }
 
-    if (dismissedBuzzOverlayToken === overlayToken || activeBuzzOverlayToken === overlayToken) {
+    if (!shouldShowWinner) {
+      if (!currentBuzzSessionId) {
+        lastHandledBuzzSessionId = null;
+      }
+      hideBuzzOverlay();
+      return;
+    }
+
+    if (lastHandledBuzzSessionId === currentBuzzSessionId || activeBuzzSessionId === currentBuzzSessionId) {
       return;
     }
 
     const winner = players.find((player) => player.id === buzz.winnerPlayerId);
     buzzOverlay.querySelector('.app-shell__buzzName').textContent = `${winner?.name || 'Player'} buzzed first`;
-    activeBuzzOverlayToken = overlayToken;
+    activeBuzzSessionId = currentBuzzSessionId;
+    lastHandledBuzzSessionId = currentBuzzSessionId;
     buzzOverlay.hidden = false;
     clearTimeout(buzzOverlayHideTimer);
     buzzOverlayHideTimer = setTimeout(() => {
       hideBuzzOverlay();
-    }, 10000);
+    }, 5000);
   }
 
   function hideBuzzOverlay() {
     clearTimeout(buzzOverlayHideTimer);
     buzzOverlayHideTimer = null;
     buzzOverlay.hidden = true;
-    activeBuzzOverlayToken = null;
+    activeBuzzSessionId = null;
   }
 
   // Public update — called on every subsequent state change

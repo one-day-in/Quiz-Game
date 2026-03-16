@@ -18,7 +18,6 @@ export class ModalService {
     this._pendingAnswerText   = null;
     this._questionTimer       = null;
     this._answerTimer         = null;
-    this._buzzOpenTimer       = null;
     this._stopGameSync        = null;
   }
 
@@ -91,7 +90,7 @@ export class ModalService {
         },
         buzz: {
           sessionId: buzzSessionId,
-          status: 'pending',
+          status: 'open',
           enabledAt,
           winnerPlayerId: null,
           winnerAt: null,
@@ -99,22 +98,6 @@ export class ModalService {
       }).catch((error) => {
         console.error('[ModalService] Failed to set active question state:', error);
       });
-
-      clearTimeout(this._buzzOpenTimer);
-      this._buzzOpenTimer = setTimeout(() => {
-        if (!this.activeCell) return;
-        void this._game.setLiveState({
-          buzz: {
-            sessionId: buzzSessionId,
-            status: 'open',
-            enabledAt,
-            winnerPlayerId: null,
-            winnerAt: null,
-          },
-        }).catch((error) => {
-          console.error('[ModalService] Failed to open buzz state:', error);
-        });
-      }, 1000);
     }
 
     const shouldMarkAsAnswered = mode === 'view' && !cellData.isAnswered;
@@ -141,7 +124,7 @@ export class ModalService {
       isAnswered: shouldMarkAsAnswered ? true : cellData.isAnswered,
       isQuizSpinner: isQuizSpinnerMedia(question.media),
       buzzState: isLiveArmed ? {
-        status: 'pending',
+        status: 'open',
         enabledAt,
         winnerPlayerId: null,
         winnerAt: null,
@@ -294,9 +277,6 @@ export class ModalService {
     clearTimeout(this._answerTimer);
     this._questionTimer = null;
     this._answerTimer   = null;
-    clearTimeout(this._buzzOpenTimer);
-    this._buzzOpenTimer = null;
-
     const cell = this.activeCell;
     if (cell) {
       if (this._pendingQuestionText !== null) {

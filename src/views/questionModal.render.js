@@ -123,13 +123,18 @@ function renderBuzzState(view, refs) {
   }
 
   let label = '';
-  if (buzz.status === 'pending') label = 'Buzz opens in 1s';
-  else if (buzz.status === 'open') label = 'Buzz is live';
-  else if (buzz.status === 'buzzed') label = buzz.winnerName ? `First: ${buzz.winnerName}` : 'First player locked';
-  else if (buzz.status === 'closed') label = 'Buzz closed';
+  const stateClass = buzz.status === 'buzzed'
+    ? 'buzzed'
+    : Date.now() >= new Date(buzz.enabledAt || 0).getTime()
+      ? 'open'
+      : 'pending';
+
+  if (stateClass === 'pending') label = 'Buzz opens in 1s';
+  else if (stateClass === 'open') label = 'Buzz is live';
+  else if (stateClass === 'buzzed') label = buzz.winnerName ? `First: ${buzz.winnerName}` : 'First player locked';
 
   buzzEl.textContent = label;
-  buzzEl.className = `qmodal__buzzStatus qmodal__buzzStatus--${buzz.status}`;
+  buzzEl.className = `qmodal__buzzStatus qmodal__buzzStatus--${stateClass}`;
   setHidden(buzzEl, !label);
 }
 

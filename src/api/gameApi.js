@@ -333,7 +333,7 @@ export async function removePlayer(gameId, playerId) {
                 ...buzz,
                 winnerPlayerId: null,
                 winnerAt: null,
-                status: Date.now() >= new Date(buzz.enabledAt || 0).getTime() ? 'open' : 'pending',
+                status: 'open',
             },
         };
     }
@@ -365,8 +365,7 @@ export async function claimBuzz(gameId, playerId) {
     const nowMs = Date.now();
 
     if (buzz.winnerPlayerId) throw new Error('Too late');
-    if (buzz.status === 'closed') throw new Error('Buzz is closed');
-    if (buzz.status === 'pending' && nowMs < enabledAt) throw new Error('Buzz is not open yet');
+    if (nowMs < enabledAt) throw new Error('Buzz is not open yet');
 
     game.live = {
         ...normalizeLive(game.live),
