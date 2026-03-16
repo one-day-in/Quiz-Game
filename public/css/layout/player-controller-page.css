@@ -162,6 +162,7 @@ body {
   font-size: clamp(24px, 5.8vw, 36px);
   letter-spacing: 0.14em;
   user-select: none;
+  -webkit-user-select: none;
 }
 
 /* Not yet enabled by host — still clickable, just slightly dimmed */
