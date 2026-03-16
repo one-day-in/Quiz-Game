@@ -94,7 +94,6 @@ function ensureAddPlayerDrawer() {
                     <div class="leaderboard-drawer__qr-wrap">
                         <div class="leaderboard-drawer__qr-glow"></div>
                         <img class="leaderboard-drawer__qr-img leaderboard-page__qr" alt="Player controller QR code">
-                        <a class="leaderboard-drawer__qr-link leaderboard-page__qrLink" target="_blank" rel="noopener noreferrer">Open player controller ↗</a>
                     </div>
                 </div>
             </div>
@@ -147,9 +146,7 @@ function scheduleRefresh() {
 async function renderPlayerJoinQr(joinPanel) {
     const url = `${window.location.origin}${import.meta.env.BASE_URL}player.html?gameId=${gameId}`;
     const qrImg = joinPanel.querySelector('.leaderboard-page__qr');
-    const qrLink = joinPanel.querySelector('.leaderboard-page__qrLink');
     if (!qrImg) return;
-    if (qrLink) qrLink.href = url;
 
     try {
         qrImg.src = await QRCode.toDataURL(url, {
