@@ -1,62 +1,73 @@
 /* leaderboard-page.css — Full-page layout overrides for leaderboard.html */
 
+html,
 body {
-  overflow: auto; /* base.css sets overflow: hidden; allow scroll on this page */
+  height: 100%;
+}
+
+body {
+  overflow: hidden;
 }
 
 #leaderboard-app {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+  height: 100dvh;
   padding: var(--app-pad);
   box-sizing: border-box;
   background: var(--bg), var(--bg-2);
+  overflow: hidden;
 }
 
 .leaderboard-page {
-  flex: 1;
+  height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 20px;
   min-height: 0;
 }
 
-.leaderboard-page__joinPanel {
-  display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(220px, 280px);
-  gap: 18px;
-  align-items: center;
-  padding: 18px 20px;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-2);
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.96));
-  box-shadow: var(--shadow-md);
-}
-
-.leaderboard-page__joinHeader {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.leaderboard-page__joinCopy {
+/* Override card-like footer appearance — this is now a full-page section */
+#leaderboard-app .app-footer {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  height: 100%;
+  min-height: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  overflow: hidden;
 }
 
-.leaderboard-page__toggle {
+#leaderboard-app .app-footer::before {
+  display: none;
+}
+
+#leaderboard-app .leaderboard__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+#leaderboard-app .leaderboard__title {
+  margin: 0;
+  font-size: var(--fs-4);
+}
+
+#leaderboard-app .leaderboard__addPlayerBtn {
   flex: 0 0 auto;
-  min-height: 44px;
-  padding: 0 16px;
+  min-height: 48px;
+  padding: 0 18px;
   border-radius: 999px;
   border: 1px solid var(--btn-outline);
   background: var(--btn-bg);
   color: var(--text);
   font-size: 14px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   cursor: pointer;
   transition:
     transform var(--t-fast) var(--ease),
@@ -64,10 +75,34 @@ body {
     box-shadow var(--t-fast) var(--ease);
 }
 
-.leaderboard-page__toggle:hover {
+#leaderboard-app .leaderboard__addPlayerBtn:hover {
   transform: translateY(calc(-1 * (var(--lift-y) / 2)));
   border-color: var(--btn-outline-hover);
   box-shadow: var(--shadow-sm);
+}
+
+#leaderboard-app .leaderboard__grid {
+  flex: 1;
+  min-height: 0;
+  grid-auto-rows: 1fr;
+}
+
+#leaderboard-app .leaderboard__card {
+  min-height: 0;
+}
+
+.leaderboard-page__drawer {
+  z-index: 1000000;
+}
+
+.leaderboard-page__drawerBody {
+  justify-content: space-between;
+}
+
+.leaderboard-page__drawerCopy {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .leaderboard-page__eyebrow {
@@ -79,94 +114,32 @@ body {
   color: var(--muted);
 }
 
-.leaderboard-page__title {
-  margin: 0;
-  font-size: clamp(24px, 4vw, 34px);
-  line-height: 1.05;
-}
-
 .leaderboard-page__text {
   margin: 0;
   color: var(--text-soft);
-  max-width: 56ch;
 }
 
-.leaderboard-page__qrWrap {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.leaderboard-page__qr {
-  width: min(100%, 240px);
-  aspect-ratio: 1 / 1;
-  object-fit: contain;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-2);
-  background: var(--surface-3);
-}
-
-.leaderboard-page__joinPanel.is-collapsed {
-  grid-template-columns: 1fr;
-  padding: 14px 18px;
-}
-
-.leaderboard-page__joinPanel.is-collapsed .leaderboard-page__joinCopy {
-  gap: 4px;
-}
-
-.leaderboard-page__joinPanel.is-collapsed .leaderboard-page__text,
-.leaderboard-page__joinPanel.is-collapsed .leaderboard-page__qrWrap {
-  display: none;
-}
-
-/* Override card-like footer appearance — this is now a full-page section */
-#leaderboard-app .app-footer {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  height: auto;
-  min-height: 0;
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  padding: 0;
-  overflow: visible;
-}
-
-#leaderboard-app .app-footer::before {
-  display: none;
-}
-
-/* Bigger title */
-#leaderboard-app .leaderboard__title {
-  font-size: var(--fs-4);
-  margin-bottom: 24px;
-}
-
-/* Grid expands to fill available height */
-#leaderboard-app .leaderboard__grid {
-  flex: 1;
-  grid-auto-rows: 1fr;
-}
-
-/* Cards fill their grid cell */
-#leaderboard-app .leaderboard__card {
-  min-height: unset;
+.leaderboard-page__qrLink {
+  text-align: center;
 }
 
 @media (max-width: 860px) {
-  .leaderboard-page__joinPanel {
-    grid-template-columns: 1fr;
+  #leaderboard-app {
+    padding: 16px;
   }
 
-  .leaderboard-page__joinHeader {
-    flex-direction: column;
-    align-items: stretch;
+  #leaderboard-app .leaderboard__header {
+    gap: 12px;
+    margin-bottom: 14px;
   }
 
-  .leaderboard-page__qrWrap {
-    justify-content: flex-start;
+  #leaderboard-app .leaderboard__title {
+    font-size: clamp(30px, 6vw, 42px);
+  }
+
+  #leaderboard-app .leaderboard__addPlayerBtn {
+    min-height: 42px;
+    padding: 0 14px;
+    font-size: 12px;
   }
 }

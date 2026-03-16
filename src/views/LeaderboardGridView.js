@@ -4,13 +4,28 @@ export function LeaderboardGridView({
   players = [],
   maxPlayers = 8,
   onRemovePlayer = null,
+  onAddPlayer = null,
 } = {}) {
   const el = document.createElement('footer');
   el.className = 'app-footer';
 
+  const header = document.createElement('div');
+  header.className = 'leaderboard__header';
+
   const title = document.createElement('div');
   title.className = 'leaderboard__title';
   title.textContent = 'Leaderboard';
+
+  header.appendChild(title);
+
+  if (typeof onAddPlayer === 'function') {
+    const addButton = document.createElement('button');
+    addButton.type = 'button';
+    addButton.className = 'leaderboard__addPlayerBtn';
+    addButton.textContent = 'Add player';
+    addButton.addEventListener('click', () => onAddPlayer());
+    header.appendChild(addButton);
+  }
 
   const grid = document.createElement('div');
   grid.className = 'leaderboard__grid';
@@ -18,7 +33,7 @@ export function LeaderboardGridView({
   const slots = Array.from({ length: maxPlayers }, () => createSlot(onRemovePlayer));
   for (const slot of slots) grid.appendChild(slot.card);
 
-  el.append(title, grid);
+  el.append(header, grid);
 
   let lastNameSignature = '';
 

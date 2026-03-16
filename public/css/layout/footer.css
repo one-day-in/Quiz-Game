@@ -34,8 +34,7 @@
 .leaderboard__title {
   position: relative;
   z-index: 1;
-
-  margin: 0 0 10px 0;
+  margin: 0;
 
   font-size: var(--fs-1);
   font-weight: 900;
@@ -43,6 +42,18 @@
   text-transform: uppercase;
 
   color: var(--muted);
+}
+
+.leaderboard__header {
+  position: relative;
+  z-index: 1;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  margin: 0 0 10px 0;
 }
 
 /* 2 rows x 4 cols */
@@ -59,11 +70,11 @@
 .leaderboard__card {
   position: relative;
 
-  display: grid;
-  grid-template-rows: minmax(0, 4fr) minmax(0, 1fr);
-  align-items: center;
-  justify-items: stretch;
-  gap: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: stretch;
+  gap: 10px;
 
   border-radius: var(--radius-md);
   border: 1px solid var(--border-2);
@@ -99,6 +110,7 @@
 /* Name */
 .leaderboard__nameWrap {
   width: 100%;
+  flex: 1 1 auto;
   min-height: 0;
   display: flex;
   align-items: center;
@@ -191,10 +203,11 @@
   justify-content: center;
   gap: 0;
 
+  flex: 0 0 clamp(88px, 18%, 132px);
   width: 100%;
   box-sizing: border-box;
   white-space: nowrap;
-  min-height: 0;
+  min-height: clamp(88px, 18%, 132px);
 }
 
 .leaderboard__scoreBtn {

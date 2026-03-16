@@ -11,8 +11,7 @@ let stopGameSubscription = null;
 let refreshTimer = null;
 let lastLeaderboardSnapshot = '';
 let leaderboardShell = null;
-let leaderboardJoinPanel = null;
-let isJoinPanelCollapsed = false;
+let addPlayerDrawer = null;
 
 async function startLeaderboard() {
     if (!gameId) {
@@ -58,51 +57,69 @@ async function renderLeaderboard(players = []) {
         leaderboardShell = document.createElement('div');
         leaderboardShell.className = 'leaderboard-page';
 
-        leaderboardJoinPanel = document.createElement('section');
-        leaderboardJoinPanel.className = 'leaderboard-page__joinPanel';
-        leaderboardJoinPanel.innerHTML = `
-            <div class="leaderboard-page__joinHeader">
-                <div class="leaderboard-page__joinCopy">
-                    <p class="leaderboard-page__eyebrow">Players</p>
-                    <h1 class="leaderboard-page__title">Connect a player controller</h1>
-                    <p class="leaderboard-page__text">Scan this QR code on a phone to join the game, set a name, and manage your score.</p>
-                </div>
-                <button class="leaderboard-page__toggle" type="button"></button>
-            </div>
-            <div class="leaderboard-page__qrWrap">
-                <img class="leaderboard-page__qr" alt="Player controller QR code">
-            </div>
-        `;
-
-        const toggleBtn = leaderboardJoinPanel.querySelector('.leaderboard-page__toggle');
-        toggleBtn?.addEventListener('click', () => {
-            isJoinPanelCollapsed = !isJoinPanelCollapsed;
-            syncJoinPanelState();
-        });
-
-        leaderboardShell.appendChild(leaderboardJoinPanel);
         leaderboardEl = LeaderboardGridView({
             players,
             maxPlayers: 8,
+            onAddPlayer: openAddPlayerDrawer,
         });
         leaderboardShell.appendChild(leaderboardEl);
         root.appendChild(leaderboardShell);
 
-        syncJoinPanelState();
-        await renderPlayerJoinQr(leaderboardJoinPanel);
+        ensureAddPlayerDrawer();
         return;
     }
 
     leaderboardEl?.update?.(players);
 }
 
-function syncJoinPanelState() {
-    if (!leaderboardJoinPanel) return;
-    leaderboardJoinPanel.classList.toggle('is-collapsed', isJoinPanelCollapsed);
-    const toggleBtn = leaderboardJoinPanel.querySelector('.leaderboard-page__toggle');
-    if (!toggleBtn) return;
-    toggleBtn.textContent = isJoinPanelCollapsed ? 'Show join panel' : 'Hide join panel';
-    toggleBtn.setAttribute('aria-expanded', String(!isJoinPanelCollapsed));
+function ensureAddPlayerDrawer() {
+    if (addPlayerDrawer) return addPlayerDrawer;
+
+    const drawer = document.createElement('div');
+    drawer.className = 'leaderboard-drawer leaderboard-page__drawer';
+    drawer.innerHTML = `
+        <div class="leaderboard-drawer__overlay"></div>
+        <aside class="leaderboard-drawer__panel" role="dialog" aria-modal="true" aria-label="Add player">
+            <header class="leaderboard-drawer__header">
+                <h3 class="leaderboard-drawer__title">Add player</h3>
+                <button class="leaderboard-drawer__close" type="button" aria-label="Close">&times;</button>
+            </header>
+            <div class="leaderboard-drawer__body leaderboard-page__drawerBody">
+                <div class="leaderboard-page__drawerCopy">
+                    <p class="leaderboard-page__eyebrow">Players</p>
+                    <p class="leaderboard-page__text">Scan this QR code on a phone to join the game, set a name, and manage your score.</p>
+                </div>
+                <div class="leaderboard-drawer__section leaderboard-drawer__section--qr">
+                    <div class="leaderboard-drawer__qr-wrap">
+                        <div class="leaderboard-drawer__qr-glow"></div>
+                        <img class="leaderboard-drawer__qr-img leaderboard-page__qr" alt="Player controller QR code">
+                        <a class="leaderboard-drawer__qr-link leaderboard-page__qrLink" target="_blank" rel="noopener noreferrer">Open player controller ↗</a>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    `;
+
+    const overlay = drawer.querySelector('.leaderboard-drawer__overlay');
+    const closeBtn = drawer.querySelector('.leaderboard-drawer__close');
+    overlay?.addEventListener('click', closeAddPlayerDrawer);
+    closeBtn?.addEventListener('click', closeAddPlayerDrawer);
+
+    document.body.appendChild(drawer);
+    addPlayerDrawer = drawer;
+    void renderPlayerJoinQr(drawer);
+    return drawer;
+}
+
+function openAddPlayerDrawer() {
+    const drawer = ensureAddPlayerDrawer();
+    requestAnimationFrame(() => {
+        drawer.classList.add('is-open');
+    });
+}
+
+function closeAddPlayerDrawer() {
+    addPlayerDrawer?.classList.remove('is-open');
 }
 
 function scheduleRefresh() {
@@ -120,10 +137,11 @@ function scheduleRefresh() {
 }
 
 async function renderPlayerJoinQr(joinPanel) {
-    const qrImg = joinPanel.querySelector('.leaderboard-page__qr');
-    if (!qrImg) return;
-
     const url = `${window.location.origin}${import.meta.env.BASE_URL}player.html?gameId=${gameId}`;
+    const qrImg = joinPanel.querySelector('.leaderboard-page__qr');
+    const qrLink = joinPanel.querySelector('.leaderboard-page__qrLink');
+    if (!qrImg) return;
+    if (qrLink) qrLink.href = url;
 
     try {
         qrImg.src = await QRCode.toDataURL(url, {
@@ -141,4 +159,5 @@ startLeaderboard();
 window.addEventListener('beforeunload', () => {
     stopGameSubscription?.();
     clearTimeout(refreshTimer);
+    addPlayerDrawer?.remove();
 });
