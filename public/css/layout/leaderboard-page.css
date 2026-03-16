@@ -70,15 +70,15 @@ body {
   text-transform: uppercase;
   cursor: pointer;
   transition:
-    transform var(--t-fast) var(--ease),
+    filter var(--t-fast) var(--ease),
     border-color var(--t-fast) var(--ease),
     box-shadow var(--t-fast) var(--ease);
 }
 
 #leaderboard-app .leaderboard__addPlayerBtn:hover {
-  transform: translateY(calc(-1 * (var(--lift-y) / 2)));
   border-color: var(--btn-outline-hover);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 0 0 1px var(--brand-a35), 0 0 22px var(--brand-a18);
+  filter: brightness(1.08);
 }
 
 #leaderboard-app .leaderboard__grid {
