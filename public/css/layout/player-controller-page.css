@@ -251,6 +251,7 @@ body {
 
 .player-controller__secondary--danger {
   color: #fecaca;
+  margin-top: clamp(8px, 2dvh, 20px);
 }
 
 .player-controller__scoreBtn--minus {
