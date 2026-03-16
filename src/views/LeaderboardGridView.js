@@ -15,69 +15,111 @@ export function LeaderboardGridView({
   const grid = document.createElement('div');
   grid.className = 'leaderboard__grid';
 
+  const slots = Array.from({ length: maxPlayers }, () => createSlot(onRemovePlayer));
+  for (const slot of slots) grid.appendChild(slot.card);
+
   el.append(title, grid);
 
-  const normalizedPlayers = (Array.isArray(players) ? players : []).slice(0, maxPlayers);
+  let lastNameSignature = '';
 
-  for (const player of normalizedPlayers) {
-    grid.appendChild(buildPlayerCard(player, onRemovePlayer));
+  function update(nextPlayers = []) {
+    const normalizedPlayers = (Array.isArray(nextPlayers) ? nextPlayers : []).slice(0, maxPlayers);
+    const nextNameSignature = normalizedPlayers
+      .map((player) => `${player.id}:${player.name}`)
+      .join('|');
+
+    slots.forEach((slot, idx) => {
+      const player = normalizedPlayers[idx] ?? null;
+      updateSlot(slot, player);
+    });
+
+    if (nextNameSignature !== lastNameSignature) {
+      fitPlayerNames(grid);
+      lastNameSignature = nextNameSignature;
+    }
   }
 
-  for (let i = normalizedPlayers.length; i < maxPlayers; i += 1) {
-    const ghost = document.createElement('div');
-    ghost.className = 'leaderboard__card leaderboard__card--ghost';
-    grid.appendChild(ghost);
-  }
-
-  fitPlayerNames(grid);
   const ro = new ResizeObserver(() => {
     requestAnimationFrame(() => fitPlayerNames(grid));
   });
   ro.observe(grid);
 
+  update(players);
+
+  el.update = update;
   el.destroy = () => ro.disconnect();
   return el;
 }
 
-function buildPlayerCard(player, onRemovePlayer) {
+function createSlot(onRemovePlayer) {
   const card = document.createElement('div');
-  card.className = 'leaderboard__card leaderboard__card--readonly';
-  card.dataset.playerId = player.id;
+  card.className = 'leaderboard__card leaderboard__card--ghost';
 
   const nameWrap = document.createElement('div');
   nameWrap.className = 'leaderboard__nameWrap';
 
   const name = document.createElement('div');
   name.className = 'leaderboard__name leaderboard__name--static';
-  name.textContent = player.name || 'Player';
 
   const scoreWrap = document.createElement('div');
   scoreWrap.className = 'leaderboard__scoreWrap leaderboard__scoreWrap--readonly';
 
   const points = document.createElement('div');
   points.className = 'leaderboard__points';
-  points.textContent = formatPoints(player.points);
-  points.setAttribute('aria-label', `Points: ${player.points ?? 0}`);
+  points.textContent = '000';
+  points.setAttribute('aria-label', 'Points: 0');
 
-  const removeBtn = document.createElement('button');
   nameWrap.appendChild(name);
   scoreWrap.appendChild(points);
   card.append(nameWrap, scoreWrap);
 
+  let removeBtn = null;
   if (typeof onRemovePlayer === 'function') {
+    removeBtn = document.createElement('button');
     removeBtn.type = 'button';
     removeBtn.className = 'leaderboard__remove';
     removeBtn.textContent = '✕';
     removeBtn.title = 'Remove player';
-    removeBtn.setAttribute('aria-label', `Remove ${player.name || 'player'}`);
+    removeBtn.hidden = true;
     removeBtn.addEventListener('click', (event) => {
       event.stopPropagation();
-      onRemovePlayer(player);
+      const payload = removeBtn._player;
+      if (payload) onRemovePlayer(payload);
     });
     card.appendChild(removeBtn);
   }
 
-  return card;
+  return { card, name, points, removeBtn };
+}
+
+function updateSlot(slot, player) {
+  if (!player) {
+    slot.card.className = 'leaderboard__card leaderboard__card--ghost';
+    delete slot.card.dataset.playerId;
+    slot.name.textContent = '';
+    slot.name.style.fontSize = '';
+    slot.points.textContent = '000';
+    slot.points.setAttribute('aria-label', 'Points: 0');
+    if (slot.removeBtn) {
+      slot.removeBtn.hidden = true;
+      slot.removeBtn._player = null;
+      slot.removeBtn.removeAttribute('aria-label');
+    }
+    return;
+  }
+
+  slot.card.className = 'leaderboard__card leaderboard__card--readonly';
+  slot.card.dataset.playerId = player.id;
+  slot.name.textContent = player.name || 'Player';
+  slot.points.textContent = formatPoints(player.points);
+  slot.points.setAttribute('aria-label', `Points: ${player.points ?? 0}`);
+
+  if (slot.removeBtn) {
+    slot.removeBtn.hidden = false;
+    slot.removeBtn.title = 'Remove player';
+    slot.removeBtn.setAttribute('aria-label', `Remove ${player.name || 'player'}`);
+    slot.removeBtn._player = player;
+  }
 }
 
 function fitPlayerNames(grid) {
