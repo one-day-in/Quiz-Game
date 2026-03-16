@@ -7,6 +7,10 @@ export class GameRepository {
     this._gameId = gameId;
   }
 
+  getGameId() {
+    return this._gameId;
+  }
+
   // ---------- lobby (static helpers, no gameId needed) ----------
   static listGames() {
     return gameApi.listGames();

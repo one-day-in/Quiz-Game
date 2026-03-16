@@ -61,6 +61,7 @@ class GameService {
     }
 
     getModel() { return this.model; }
+    getGameId() { return this.repo.getGameId(); }
     isInitialized() { return this.model !== null; }
 
     _flashAnnouncement(label, sub = '') {

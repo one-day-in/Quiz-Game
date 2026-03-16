@@ -24,6 +24,7 @@ export class QuestionModalView {
     }) {
         this._mode          = mode;
         this._headerTitle   = (headerTitle || '').trim();
+        this._winnerName    = '';
         this._isAnswered    = !!isAnswered;
         this._isQuizSpinner = !!isQuizSpinner;
         this._question      = { ...(question || {}), audioFiles: question?.audioFiles || [] };
@@ -118,6 +119,14 @@ export class QuestionModalView {
     updateAnsweredState(isAnswered) {
         this._isAnswered = !!isAnswered;
         if (this._refs.answeredCheckbox) this._refs.answeredCheckbox.checked = this._isAnswered;
+    }
+
+    updateWinnerName(name) {
+        this._winnerName = (name || '').trim();
+        const winnerEl = this._refs.winner;
+        if (!winnerEl) return;
+        winnerEl.textContent = this._winnerName;
+        winnerEl.hidden = !this._winnerName;
     }
 
     _bindFullscreenEvents() {

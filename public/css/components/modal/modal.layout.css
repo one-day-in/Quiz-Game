@@ -82,6 +82,18 @@
     white-space: nowrap;
 }
 
+.qmodal__headerWinner {
+    min-width: 0;
+    font-size: var(--fs-2);
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--brand);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 /* Body */
 .qmodal__body {
     flex: 1 1 auto;

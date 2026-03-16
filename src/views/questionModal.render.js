@@ -93,6 +93,10 @@ export function applyModeUI(view, refs) {
   refs.root?.classList.toggle('qmodal--edit', isEdit);
 
   if (refs.title) refs.title.textContent = view._headerTitle || 'Question';
+  if (refs.winner) {
+    refs.winner.textContent = view._winnerName || '';
+    refs.winner.hidden = !view._winnerName;
+  }
   setHidden(refs.headerQuizSpinner, !isEdit);
 
   // Toggle mode button: shows current mode and what clicking will do

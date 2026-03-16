@@ -2,6 +2,7 @@ import {
   MAX_PLAYERS,
   adjustPlayerScoreByController,
   claimPlayerSlot,
+  claimGamePress,
   getGameRuntime,
   getPlayerByController,
   getPlayers,
@@ -26,6 +27,7 @@ let pendingScoreDelta = 0;
 let isScoreSyncInFlight = false;
 let scoreFlushTimer = null;
 let isPressEnabled = false;
+let pressWinnerPlayerId = null;
 
 const SCORE_FLUSH_DELAY_MS = 220;
 
@@ -160,7 +162,7 @@ function renderController(currentPlayer) {
           <button class="player-controller__scoreBtn player-controller__scoreBtn--minus" data-delta="-100" type="button">-100</button>
           <button class="player-controller__scoreBtn player-controller__scoreBtn--plus" data-delta="100" type="button">+100</button>
         </div>
-        <button id="playerPressBtn" class="player-controller__pressBtn" type="button" ${isPressEnabled ? '' : 'disabled'}>PRESS</button>
+        <button id="playerPressBtn" class="player-controller__pressBtn" type="button" ${(isPressEnabled && !pressWinnerPlayerId) ? '' : 'disabled'}>PRESS</button>
         <button id="playerDeleteBtn" class="player-controller__secondary player-controller__secondary--danger" type="button">Leave game</button>
         <p id="playerControllerStatus" class="player-controller__status" hidden></p>
       </section>
@@ -181,13 +183,14 @@ function renderController(currentPlayer) {
   });
 
   pressBtn?.addEventListener('click', () => {
-    if (!isPressEnabled) return;
+    if (!isPressEnabled || pressWinnerPlayerId) return;
     pressBtn.classList.remove('is-pressed');
     void pressBtn.offsetWidth;
     pressBtn.classList.add('is-pressed');
     window.setTimeout(() => {
       pressBtn.classList.remove('is-pressed');
     }, 160);
+    void claimPress(statusEl);
   });
 
   nameInput?.addEventListener('change', async () => {
@@ -240,6 +243,7 @@ function bindRuntimeState() {
   stopRuntimeSubscription?.();
   stopRuntimeSubscription = subscribeToGameRuntime(gameId, (runtime) => {
     isPressEnabled = !!runtime?.pressEnabled;
+    pressWinnerPlayerId = runtime?.winnerPlayerId || null;
     syncPressButtonState();
   });
 }
@@ -285,16 +289,32 @@ function syncControllerFromPlayers(players = []) {
 function syncPressButtonState() {
   const pressBtn = document.getElementById('playerPressBtn');
   if (!pressBtn) return;
-  pressBtn.disabled = !isPressEnabled;
-  pressBtn.classList.toggle('is-enabled', isPressEnabled);
+  const canPress = !!isPressEnabled && !pressWinnerPlayerId;
+  pressBtn.disabled = !canPress;
+  pressBtn.classList.toggle('is-enabled', canPress);
 }
 
 async function syncPressRuntime() {
   try {
     const runtime = await getGameRuntime(gameId);
     isPressEnabled = !!runtime?.pressEnabled;
+    pressWinnerPlayerId = runtime?.winnerPlayerId || null;
   } catch (_) {
     isPressEnabled = false;
+    pressWinnerPlayerId = null;
+  }
+}
+
+async function claimPress(statusEl) {
+  try {
+    const runtime = await claimGamePress(gameId, controllerId);
+    isPressEnabled = !!runtime?.pressEnabled;
+    pressWinnerPlayerId = runtime?.winnerPlayerId || null;
+    syncPressButtonState();
+    statusEl.hidden = true;
+  } catch (error) {
+    statusEl.textContent = error.message || 'Could not claim press';
+    statusEl.hidden = false;
   }
 }
 

@@ -1,8 +1,16 @@
 create table if not exists public.game_runtime (
     game_id uuid primary key references public.games(id) on delete cascade,
     press_enabled boolean not null default false,
+    winner_player_id uuid references public.game_players(id) on delete set null,
+    pressed_at timestamptz null,
     updated_at timestamptz not null default timezone('utc', now())
 );
+
+alter table public.game_runtime
+    add column if not exists winner_player_id uuid references public.game_players(id) on delete set null;
+
+alter table public.game_runtime
+    add column if not exists pressed_at timestamptz null;
 
 alter table public.game_runtime enable row level security;
 
@@ -35,3 +43,63 @@ with check (
           and games.created_by = auth.uid()
     )
 );
+
+create or replace function public.claim_game_press(
+    p_game_id uuid,
+    p_controller_id text
+)
+returns table (
+    game_id uuid,
+    press_enabled boolean,
+    winner_player_id uuid,
+    winner_name text,
+    pressed_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+    v_controller_id text := trim(coalesce(p_controller_id, ''));
+    v_player_id uuid;
+    v_player_name text;
+begin
+    if v_controller_id = '' then
+        raise exception 'Controller ID is required';
+    end if;
+
+    insert into public.game_runtime (game_id, press_enabled, winner_player_id, pressed_at, updated_at)
+    values (p_game_id, false, null, null, timezone('utc', now()))
+    on conflict (game_id) do nothing;
+
+    select gp.id, gp.name
+    into v_player_id, v_player_name
+    from public.game_players gp
+    where gp.game_id = p_game_id
+      and gp.controller_id = v_controller_id
+    limit 1;
+
+    if v_player_id is null then
+        raise exception 'Player not found';
+    end if;
+
+    update public.game_runtime gr
+    set winner_player_id = v_player_id,
+        pressed_at = timezone('utc', now()),
+        updated_at = timezone('utc', now())
+    where gr.game_id = p_game_id
+      and gr.press_enabled = true
+      and gr.winner_player_id is null;
+
+    if not found then
+        raise exception 'Press is closed';
+    end if;
+
+    return query
+    select gr.game_id, gr.press_enabled, gr.winner_player_id, v_player_name, gr.pressed_at
+    from public.game_runtime gr
+    where gr.game_id = p_game_id;
+end;
+$$;
+
+grant execute on function public.claim_game_press(uuid, text) to anon, authenticated;

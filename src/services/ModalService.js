@@ -2,6 +2,7 @@ import { isQuizSpinnerMedia } from '../constants/quizSpinnerMedia.js';
 import { QuestionModalView } from '../views/QuestionModalView.js';
 import { Disposer } from '../utils/disposer.js';
 import { showConfirm } from '../utils/confirm.js';
+import { getGameRuntime, subscribeToGameRuntime } from '../api/gameApi.js';
 
 export class ModalService {
   constructor(gameService, mediaService) {
@@ -18,6 +19,7 @@ export class ModalService {
     this._pendingAnswerText   = null;
     this._questionTimer       = null;
     this._answerTimer         = null;
+    this._stopRuntimeSubscription = null;
   }
 
   _ensureContainer() {
@@ -73,7 +75,7 @@ export class ModalService {
       cellId: cellData.cellId
     };
 
-    void this._game.setPressEnabled(true);
+    void this._resetPressRuntime();
 
     const shouldMarkAsAnswered = mode === 'view' && !cellData.isAnswered;
     if (shouldMarkAsAnswered) {
@@ -210,6 +212,7 @@ export class ModalService {
     });
 
     this.container.appendChild(this.view.el);
+    this._bindPressRuntime();
     // ESC is handled inside QuestionModalView (properly cleaned up on destroy).
     // Do NOT add a document keydown listener here — ModalService._disposer is
     // long-lived and never destroyed between openings, so listeners would
@@ -254,12 +257,34 @@ export class ModalService {
       this.view.destroy();
       this.view = null;
     }
+    this._stopRuntimeSubscription?.();
+    this._stopRuntimeSubscription = null;
     this.activeCell = null;
     void this._game.setPressEnabled(false);
     if (this.container?.isConnected) this.container.innerHTML = '';
 
     // Targeted patch — only the closed cell's is-answered state updates
     this._game.touch(lastCell);
+  }
+
+  async _resetPressRuntime() {
+    try {
+      await this._game.setPressEnabled(true);
+      const runtime = await getGameRuntime(this._game.getGameId());
+      this.view?.updateWinnerName(runtime?.winnerName || '');
+    } catch (error) {
+      console.error('[ModalService] Failed to reset press runtime:', error);
+    }
+  }
+
+  _bindPressRuntime() {
+    const gameId = this._game.getGameId();
+    if (!gameId) return;
+
+    this._stopRuntimeSubscription?.();
+    this._stopRuntimeSubscription = subscribeToGameRuntime(gameId, (runtime) => {
+      this.view?.updateWinnerName(runtime?.winnerName || '');
+    });
   }
 
   destroy() {
