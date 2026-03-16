@@ -243,8 +243,7 @@ function bindRealtimePlayers() {
 function bindRuntimeState() {
   stopRuntimeSubscription?.();
   stopRuntimeSubscription = subscribeToGameRuntime(gameId, (runtime) => {
-    isPressEnabled = !!runtime?.pressEnabled;
-    pressWinnerPlayerId = runtime?.winnerPlayerId || null;
+    applyRuntimeState(runtime);
     syncPressButtonState();
   });
 }
@@ -257,11 +256,7 @@ function startGameRefreshLoop() {
         .then((players) => syncControllerFromPlayers(players))
         .catch(() => {}),
       getGameRuntime(gameId)
-        .then((runtime) => {
-          isPressEnabled = !!runtime?.pressEnabled;
-          pressWinnerPlayerId = runtime?.winnerPlayerId || null;
-          syncPressButtonState();
-        })
+        .then((runtime) => { applyRuntimeState(runtime); syncPressButtonState(); })
         .catch(() => {}),
     ]);
   }, 1000);
@@ -293,18 +288,20 @@ function syncControllerFromPlayers(players = []) {
   }
 }
 
+function applyRuntimeState(runtime) {
+  isPressEnabled = !!runtime?.pressEnabled;
+  pressWinnerPlayerId = runtime?.winnerPlayerId || null;
+}
+
 function syncPressButtonState() {
   const pressBtn = document.getElementById('playerPressBtn');
   if (!pressBtn) return;
-  const canPress = !!isPressEnabled && !pressWinnerPlayerId;
-  pressBtn.classList.toggle('is-enabled', canPress);
+  pressBtn.classList.toggle('is-enabled', !!isPressEnabled && !pressWinnerPlayerId);
 }
 
 async function syncPressRuntime() {
   try {
-    const runtime = await getGameRuntime(gameId);
-    isPressEnabled = !!runtime?.pressEnabled;
-    pressWinnerPlayerId = runtime?.winnerPlayerId || null;
+    applyRuntimeState(await getGameRuntime(gameId));
   } catch (_) {
     isPressEnabled = false;
     pressWinnerPlayerId = null;
@@ -313,9 +310,7 @@ async function syncPressRuntime() {
 
 async function claimPress(statusEl) {
   try {
-    const runtime = await claimGamePress(gameId, controllerId);
-    isPressEnabled = !!runtime?.pressEnabled;
-    pressWinnerPlayerId = runtime?.winnerPlayerId || null;
+    applyRuntimeState(await claimGamePress(gameId, controllerId));
     syncPressButtonState();
     statusEl.hidden = true;
   } catch (error) {

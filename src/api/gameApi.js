@@ -111,35 +111,6 @@ async function fetchPlayerRows(gameId, { includeControllerId = false } = {}) {
     return normalizePlayerRows(data, { includeControllerId });
 }
 
-async function fetchGameRuntime(gameId) {
-    const { data, error } = await supabase
-        .from('game_runtime')
-        .select(GAME_RUNTIME_COLUMNS)
-        .eq('game_id', gameId)
-        .maybeSingle();
-
-    if (error) throw new Error(`[Game] getGameRuntime failed: ${error.message}`);
-    let winnerName = null;
-    if (data?.winner_player_id) {
-        const { data: winnerRow, error: winnerError } = await supabase
-            .from('game_players')
-            .select('name')
-            .eq('id', data.winner_player_id)
-            .maybeSingle();
-
-        if (winnerError) throw new Error(`[Game] getGameRuntime winner failed: ${winnerError.message}`);
-        winnerName = winnerRow?.name || null;
-    }
-
-    return {
-        gameId,
-        pressEnabled: !!data?.press_enabled,
-        winnerPlayerId: data?.winner_player_id || null,
-        winnerName,
-        pressedAt: data?.pressed_at || null,
-        updatedAt: data?.updated_at || null,
-    };
-}
 
 function mapPlayerRpcResult(data) {
     const row = Array.isArray(data) ? data[0] : data;
@@ -307,7 +278,33 @@ export function subscribeToPlayers(gameId, onPlayersChange) {
 }
 
 export async function getGameRuntime(gameId) {
-    return fetchGameRuntime(gameId);
+    const { data, error } = await supabase
+        .from('game_runtime')
+        .select(GAME_RUNTIME_COLUMNS)
+        .eq('game_id', gameId)
+        .maybeSingle();
+
+    if (error) throw new Error(`[Game] getGameRuntime failed: ${error.message}`);
+    let winnerName = null;
+    if (data?.winner_player_id) {
+        const { data: winnerRow, error: winnerError } = await supabase
+            .from('game_players')
+            .select('name')
+            .eq('id', data.winner_player_id)
+            .maybeSingle();
+
+        if (winnerError) throw new Error(`[Game] getGameRuntime winner failed: ${winnerError.message}`);
+        winnerName = winnerRow?.name || null;
+    }
+
+    return {
+        gameId,
+        pressEnabled: !!data?.press_enabled,
+        winnerPlayerId: data?.winner_player_id || null,
+        winnerName,
+        pressedAt: data?.pressed_at || null,
+        updatedAt: data?.updated_at || null,
+    };
 }
 
 export async function setPressEnabled(gameId, enabled) {
