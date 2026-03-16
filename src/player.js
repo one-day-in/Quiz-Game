@@ -164,6 +164,7 @@ function renderController(currentPlayer) {
   const scoreEl = document.getElementById('playerScoreValue');
   const statusEl = document.getElementById('playerControllerStatus');
   const nameInput = document.getElementById('playerControllerName');
+  const pressBtn = document.getElementById('playerPressBtn');
   const deleteBtn = document.getElementById('playerDeleteBtn');
 
   root.querySelectorAll('[data-delta]').forEach((button) => {
@@ -171,6 +172,15 @@ function renderController(currentPlayer) {
       const delta = Number(button.dataset.delta);
       queueScoreDelta(delta, scoreEl, statusEl);
     });
+  });
+
+  pressBtn?.addEventListener('click', () => {
+    pressBtn.classList.remove('is-pressed');
+    void pressBtn.offsetWidth;
+    pressBtn.classList.add('is-pressed');
+    window.setTimeout(() => {
+      pressBtn.classList.remove('is-pressed');
+    }, 160);
   });
 
   nameInput?.addEventListener('change', async () => {

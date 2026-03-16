@@ -161,6 +161,7 @@ body {
     0 0 28px rgba(239, 68, 68, 0.24);
   font-size: clamp(24px, 5.8vw, 36px);
   letter-spacing: 0.14em;
+  user-select: none;
 }
 
 .player-controller__primary:hover,
@@ -171,6 +172,23 @@ body {
   border-color: var(--btn-outline-hover);
   box-shadow: var(--shadow-md);
   filter: brightness(1.05);
+}
+
+.player-controller__pressBtn:hover {
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.22),
+    0 24px 44px rgba(127, 29, 29, 0.38),
+    0 0 42px rgba(239, 68, 68, 0.34);
+}
+
+.player-controller__pressBtn:active,
+.player-controller__pressBtn.is-pressed {
+  transform: translateY(2px) scale(0.985);
+  filter: brightness(0.96);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.12),
+    0 12px 24px rgba(127, 29, 29, 0.26),
+    0 0 18px rgba(239, 68, 68, 0.18);
 }
 
 .player-controller__primary:disabled,
