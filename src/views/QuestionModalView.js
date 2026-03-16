@@ -124,12 +124,6 @@ export class QuestionModalView {
     updateWinnerName(name) {
         this._winnerName = (name || '').trim();
 
-        const winnerEl = this._refs.winner;
-        if (winnerEl) {
-            winnerEl.textContent = this._winnerName;
-            winnerEl.hidden = !this._winnerName;
-        }
-
         const bannerEl = this._refs.pressBanner;
         if (bannerEl) {
             if (this._winnerName) {

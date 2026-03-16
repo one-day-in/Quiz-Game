@@ -13,7 +13,6 @@ export function buildModalDom() {
         <!-- Center: title -->
         <div class="qmodal__headerMain">
           <div class="qmodal__headerTitle"></div>
-          <div class="qmodal__headerWinner" hidden></div>
         </div>
 
         <div class="qmodal__headerActions">
@@ -177,7 +176,6 @@ export function buildModalDom() {
       body:               qs('.qmodal__body'),
       overlay:            qs('.qmodal__overlay'),
       title:              qs('.qmodal__headerTitle'),
-      winner:             qs('.qmodal__headerWinner'),
       pressBanner:        qs('.qmodal__pressBanner'),
       headerQuizSpinner:  qs('.qmodal__headerToggle'),
       quizSpinnerCheckbox: qs('.qmodal__quizSpinnerInput'),
