@@ -123,37 +123,53 @@ body {
   text-align: center;
 }
 
-/* ── Delete player button ───────────────────────────────────────────────── */
+/* ── Swipe-to-delete ─────────────────────────────────────────────────────── */
 
-#leaderboard-app .leaderboard__deleteBtn {
-  flex: 0 0 auto;
+/* Wrapper clips the sliding row and positions the reveal behind it */
+#leaderboard-app .leaderboard__rowWrap {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm); /* shadow lives here so it isn't clipped */
+}
+
+/* Row slides on top of the reveal; shadow moved to wrapper */
+#leaderboard-app .leaderboard__rowWrap .leaderboard__row {
+  position: relative;
+  z-index: 1;
+  box-shadow: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Red strip that appears as the row slides left */
+#leaderboard-app .leaderboard__deleteReveal {
+  position: absolute;
+  inset: 0 0 0 auto; /* full height, anchored to right */
+  width: 80px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
-  border: 1px solid rgba(248, 113, 113, 0.22);
-  background: rgba(127, 29, 29, 0.18);
-  color: #fca5a5;
-  font-size: 18px;
+  background: linear-gradient(180deg, rgba(220, 38, 38, 0.96), rgba(127, 29, 29, 1));
+}
+
+#leaderboard-app .leaderboard__deleteRevealBtn {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: #fff5f5;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   cursor: pointer;
-  touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
-  transition:
-    background var(--t-fast) var(--ease),
-    border-color var(--t-fast) var(--ease),
-    filter var(--t-fast) var(--ease);
+  transition: background var(--t-fast) var(--ease);
 }
 
-#leaderboard-app .leaderboard__deleteBtn:hover {
-  background: rgba(185, 28, 28, 0.40);
-  border-color: rgba(248, 113, 113, 0.50);
-  filter: brightness(1.1);
-}
-
-#leaderboard-app .leaderboard__deleteBtn:active {
-  filter: brightness(0.9);
+#leaderboard-app .leaderboard__deleteRevealBtn:hover {
+  background: rgba(255, 255, 255, 0.12);
 }
 
 @media (max-width: 860px) {
