@@ -13,6 +13,8 @@ export class QuestionModalView {
         question,
         answer,
         onClose,
+        onIncorrect,
+        onCorrect,
         onToggleAnswered,
         onToggleQuizSpinner,
         onQuestionChange,
@@ -32,7 +34,8 @@ export class QuestionModalView {
         this._isAnswerShown = mode === 'edit';
 
         this._cb = {
-            onClose, onToggleAnswered, onToggleQuizSpinner, onQuestionChange, onAnswerChange,
+            onClose, onIncorrect, onCorrect,
+            onToggleAnswered, onToggleQuizSpinner, onQuestionChange, onAnswerChange,
             onUploadMedia, onDeleteMedia, onAddAudio, onDeleteAudio,
         };
 
@@ -52,6 +55,10 @@ export class QuestionModalView {
 
         applyModeUI(this, this._refs);
         renderAll(this, this._refs);
+
+        // Result buttons start disabled — enabled only when a player claims the press
+        if (this._refs.btnIncorrect) this._refs.btnIncorrect.disabled = true;
+        if (this._refs.btnCorrect)   this._refs.btnCorrect.disabled   = true;
 
         this._prefetchMedia(this._question.media);
         this._prefetchMedia(this._answer.media);
@@ -137,6 +144,11 @@ export class QuestionModalView {
                 bannerEl.classList.remove('is-visible');
             }
         }
+
+        // Enable/disable result buttons based on whether there is a winner
+        const hasWinner = !!this._winnerName;
+        if (this._refs.btnIncorrect) this._refs.btnIncorrect.disabled = !hasWinner;
+        if (this._refs.btnCorrect)   this._refs.btnCorrect.disabled   = !hasWinner;
     }
 
     _bindFullscreenEvents() {
@@ -164,8 +176,8 @@ export class QuestionModalView {
 
         // ── Close ──────────────────────────────────────────────────────────────
         this._disposer.addEventListener(r.overlay,   'click', () => this._cb.onClose?.());
-        this._disposer.addEventListener(r.btnIncorrect, 'click', () => {});
-        this._disposer.addEventListener(r.btnCorrect,   'click', () => {});
+        this._disposer.addEventListener(r.btnIncorrect, 'click', () => this._cb.onIncorrect?.());
+        this._disposer.addEventListener(r.btnCorrect,   'click', () => this._cb.onCorrect?.());
 
         // ── Toggle mode button (view ↔ edit) ──────────────────────────────────
         this._disposer.addEventListener(r.btnToggleMode, 'click', () => {

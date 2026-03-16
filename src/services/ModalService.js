@@ -2,7 +2,7 @@ import { isQuizSpinnerMedia } from '../constants/quizSpinnerMedia.js';
 import { QuestionModalView } from '../views/QuestionModalView.js';
 import { Disposer } from '../utils/disposer.js';
 import { showConfirm } from '../utils/confirm.js';
-import { getGameRuntime, subscribeToGameRuntime } from '../api/gameApi.js';
+import { adjustPlayerScore, getGameRuntime, subscribeToGameRuntime } from '../api/gameApi.js';
 
 export class ModalService {
   constructor(gameService, mediaService) {
@@ -21,6 +21,8 @@ export class ModalService {
     this._answerTimer         = null;
     this._stopRuntimeSubscription = null;
     this._pressEnableTimer = null;
+    this._pressWinnerId = null;
+    this._cellValue = 0;
   }
 
   _ensureContainer() {
@@ -75,6 +77,7 @@ export class ModalService {
       rowId: cellData.rowId,
       cellId: cellData.cellId
     };
+    this._cellValue = Number(cellData.value) || 0;
 
     void this._resetPressRuntime();
 
@@ -104,7 +107,9 @@ export class ModalService {
       question,
       answer,
 
-      onClose: () => this.close(),
+      onClose:     () => this.close(),
+      onIncorrect: () => void this._handleIncorrect(),
+      onCorrect:   () => void this._handleCorrect(),
 
       onToggleAnswered: (checked) => {
         void this._updateCell({ isAnswered: checked });
@@ -263,11 +268,34 @@ export class ModalService {
     this._stopRuntimeSubscription?.();
     this._stopRuntimeSubscription = null;
     this.activeCell = null;
+    this._pressWinnerId = null;
+    this._cellValue = 0;
     void this._game.setPressEnabled(false);
     if (this.container?.isConnected) this.container.innerHTML = '';
 
     // Targeted patch — only the closed cell's is-answered state updates
     this._game.touch(lastCell);
+  }
+
+  async _handleIncorrect() {
+    if (!this._pressWinnerId) return;
+    try {
+      await adjustPlayerScore(this._game.getGameId(), this._pressWinnerId, -this._cellValue);
+    } catch (e) {
+      console.error('[ModalService] adjustPlayerScore (incorrect) failed:', e);
+    }
+    // Reset press — modal stays open, another player can press
+    await this._resetPressRuntime();
+  }
+
+  async _handleCorrect() {
+    if (!this._pressWinnerId) return;
+    try {
+      await adjustPlayerScore(this._game.getGameId(), this._pressWinnerId, this._cellValue);
+    } catch (e) {
+      console.error('[ModalService] adjustPlayerScore (correct) failed:', e);
+    }
+    this.close();
   }
 
   async _resetPressRuntime() {
@@ -277,6 +305,7 @@ export class ModalService {
 
       await this._game.setPressEnabled(false);
       const runtime = await getGameRuntime(this._game.getGameId());
+      this._pressWinnerId = runtime?.winnerPlayerId || null;
       this.view?.updateWinnerName(runtime?.winnerName || '');
       this._pressEnableTimer = window.setTimeout(() => {
         void this._game.setPressEnabled(true);
@@ -293,6 +322,7 @@ export class ModalService {
     const emitRuntime = async () => {
       try {
         const runtime = await getGameRuntime(gameId);
+        this._pressWinnerId = runtime?.winnerPlayerId || null;
         this.view?.updateWinnerName(runtime?.winnerName || '');
       } catch (_) {}
     };
@@ -301,6 +331,7 @@ export class ModalService {
 
     // Realtime fires instantly when DB changes (requires realtime enabled on game_runtime table)
     const stopSub = subscribeToGameRuntime(gameId, (runtime) => {
+      this._pressWinnerId = runtime?.winnerPlayerId || null;
       this.view?.updateWinnerName(runtime?.winnerName || '');
     });
 
