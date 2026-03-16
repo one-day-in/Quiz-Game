@@ -43,6 +43,10 @@ export class GameRepository {
     return gameApi.subscribeToGame(this._gameId, onGameChange);
   }
 
+  setPressEnabled(enabled) {
+    return gameApi.setPressEnabled(this._gameId, enabled);
+  }
+
   resetRound(roundId) {
     return gameApi.resetRound(this._gameId, roundId);
   }

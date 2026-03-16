@@ -3,6 +3,7 @@ import { supabase } from './supabaseClient.js';
 export const MAX_PLAYERS = 8;
 const PUBLIC_PLAYER_COLUMNS = 'id, game_id, name, points, joined_at';
 const PRIVATE_PLAYER_COLUMNS = `${PUBLIC_PLAYER_COLUMNS}, controller_id`;
+const GAME_RUNTIME_COLUMNS = 'game_id, press_enabled, updated_at';
 
 // ================================================
 // DEFAULT GAME STATE
@@ -108,6 +109,21 @@ async function fetchPlayerRows(gameId, { includeControllerId = false } = {}) {
 
     if (error) throw new Error(`[Game] getPlayers failed: ${error.message}`);
     return normalizePlayerRows(data, { includeControllerId });
+}
+
+async function fetchGameRuntime(gameId) {
+    const { data, error } = await supabase
+        .from('game_runtime')
+        .select(GAME_RUNTIME_COLUMNS)
+        .eq('game_id', gameId)
+        .maybeSingle();
+
+    if (error) throw new Error(`[Game] getGameRuntime failed: ${error.message}`);
+    return {
+        gameId,
+        pressEnabled: !!data?.press_enabled,
+        updatedAt: data?.updated_at || null,
+    };
 }
 
 function mapPlayerRpcResult(data) {
@@ -266,6 +282,62 @@ export function subscribeToPlayers(gameId, onPlayersChange) {
                 filter: `game_id=eq.${gameId}`,
             },
             () => { void emitPlayers(); }
+        )
+        .subscribe();
+
+    return () => {
+        disposed = true;
+        supabase.removeChannel(channel);
+    };
+}
+
+export async function getGameRuntime(gameId) {
+    return fetchGameRuntime(gameId);
+}
+
+export async function setPressEnabled(gameId, enabled) {
+    const { data, error } = await supabase
+        .from('game_runtime')
+        .upsert({
+            game_id: gameId,
+            press_enabled: !!enabled,
+            updated_at: new Date().toISOString(),
+        }, { onConflict: 'game_id' })
+        .select(GAME_RUNTIME_COLUMNS)
+        .single();
+
+    if (error) throw new Error(`[Game] setPressEnabled failed: ${error.message}`);
+    return {
+        gameId: data.game_id,
+        pressEnabled: !!data.press_enabled,
+        updatedAt: data.updated_at,
+    };
+}
+
+export function subscribeToGameRuntime(gameId, onRuntimeChange) {
+    let disposed = false;
+
+    async function emitRuntime() {
+        if (disposed) return;
+        try {
+            const runtime = await getGameRuntime(gameId);
+            if (!disposed) onRuntimeChange(runtime);
+        } catch (error) {
+            console.error('[Game] subscribeToGameRuntime refresh failed:', error);
+        }
+    }
+
+    const channel = supabase
+        .channel(`game-runtime:${gameId}`)
+        .on(
+            'postgres_changes',
+            {
+                event: '*',
+                schema: 'public',
+                table: 'game_runtime',
+                filter: `game_id=eq.${gameId}`,
+            },
+            () => { void emitRuntime(); }
         )
         .subscribe();
 

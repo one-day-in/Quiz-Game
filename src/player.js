@@ -2,9 +2,11 @@ import {
   MAX_PLAYERS,
   adjustPlayerScoreByController,
   claimPlayerSlot,
+  getGameRuntime,
   getPlayerByController,
   getPlayers,
   removePlayerByController,
+  subscribeToGameRuntime,
   subscribeToPlayers,
   updatePlayerByController,
 } from './api/gameApi.js';
@@ -17,11 +19,13 @@ const STORAGE_PREFIX = 'quiz-game:player-controller';
 let player = null;
 let controllerId = null;
 let stopPlayersSubscription = null;
+let stopRuntimeSubscription = null;
 let gameRefreshTimer = null;
 let confirmedScore = 0;
 let pendingScoreDelta = 0;
 let isScoreSyncInFlight = false;
 let scoreFlushTimer = null;
+let isPressEnabled = false;
 
 const SCORE_FLUSH_DELAY_MS = 220;
 
@@ -36,7 +40,9 @@ async function startPlayerController() {
 
   try {
     player = await getPlayerByController(gameId, controllerId);
+    await syncPressRuntime();
     bindRealtimePlayers();
+    bindRuntimeState();
     startGameRefreshLoop();
     if (player) {
       renderController(player);
@@ -154,7 +160,7 @@ function renderController(currentPlayer) {
           <button class="player-controller__scoreBtn player-controller__scoreBtn--minus" data-delta="-100" type="button">-100</button>
           <button class="player-controller__scoreBtn player-controller__scoreBtn--plus" data-delta="100" type="button">+100</button>
         </div>
-        <button id="playerPressBtn" class="player-controller__pressBtn" type="button">PRESS</button>
+        <button id="playerPressBtn" class="player-controller__pressBtn" type="button" ${isPressEnabled ? '' : 'disabled'}>PRESS</button>
         <button id="playerDeleteBtn" class="player-controller__secondary player-controller__secondary--danger" type="button">Leave game</button>
         <p id="playerControllerStatus" class="player-controller__status" hidden></p>
       </section>
@@ -175,6 +181,7 @@ function renderController(currentPlayer) {
   });
 
   pressBtn?.addEventListener('click', () => {
+    if (!isPressEnabled) return;
     pressBtn.classList.remove('is-pressed');
     void pressBtn.offsetWidth;
     pressBtn.classList.add('is-pressed');
@@ -229,6 +236,14 @@ function bindRealtimePlayers() {
   });
 }
 
+function bindRuntimeState() {
+  stopRuntimeSubscription?.();
+  stopRuntimeSubscription = subscribeToGameRuntime(gameId, (runtime) => {
+    isPressEnabled = !!runtime?.pressEnabled;
+    syncPressButtonState();
+  });
+}
+
 function startGameRefreshLoop() {
   clearInterval(gameRefreshTimer);
   gameRefreshTimer = window.setInterval(async () => {
@@ -264,6 +279,22 @@ function syncControllerFromPlayers(players = []) {
   scoreEl.textContent = formatPoints(confirmedScore + pendingScoreDelta);
   if (document.activeElement !== nameInput) {
     nameInput.value = nextPlayer.name;
+  }
+}
+
+function syncPressButtonState() {
+  const pressBtn = document.getElementById('playerPressBtn');
+  if (!pressBtn) return;
+  pressBtn.disabled = !isPressEnabled;
+  pressBtn.classList.toggle('is-enabled', isPressEnabled);
+}
+
+async function syncPressRuntime() {
+  try {
+    const runtime = await getGameRuntime(gameId);
+    isPressEnabled = !!runtime?.pressEnabled;
+  } catch (_) {
+    isPressEnabled = false;
   }
 }
 
@@ -382,5 +413,6 @@ startPlayerController().catch((error) => {
 
 window.addEventListener('beforeunload', () => {
   stopPlayersSubscription?.();
+  stopRuntimeSubscription?.();
   clearTimeout(scoreFlushTimer);
 });

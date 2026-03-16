@@ -73,6 +73,8 @@ export class ModalService {
       cellId: cellData.cellId
     };
 
+    void this._game.setPressEnabled(true);
+
     const shouldMarkAsAnswered = mode === 'view' && !cellData.isAnswered;
     if (shouldMarkAsAnswered) {
       void this._updateCell({ isAnswered: true }, { silent: true });
@@ -253,6 +255,7 @@ export class ModalService {
       this.view = null;
     }
     this.activeCell = null;
+    void this._game.setPressEnabled(false);
     if (this.container?.isConnected) this.container.innerHTML = '';
 
     // Targeted patch — only the closed cell's is-answered state updates
