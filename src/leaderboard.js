@@ -1,4 +1,4 @@
-import { getGame, removePlayer, subscribeToGame } from './api/gameApi.js';
+import { getPlayers, subscribeToPlayers } from './api/gameApi.js';
 import { LeaderboardGridView } from './views/LeaderboardGridView.js';
 import QRCode from 'qrcode';
 
@@ -29,11 +29,11 @@ async function startLeaderboard() {
         </div>`;
 
     try {
-        const game = await getGame(gameId);
-        await renderLeaderboard(game);
+        const players = await getPlayers(gameId);
+        await renderLeaderboard(players);
         stopGameSubscription?.();
-        stopGameSubscription = subscribeToGame(gameId, (nextGame) => {
-            void renderLeaderboard(nextGame);
+        stopGameSubscription = subscribeToPlayers(gameId, (nextPlayers) => {
+            void renderLeaderboard(nextPlayers);
         });
         scheduleRefresh();
     } catch (e) {
@@ -45,8 +45,7 @@ async function startLeaderboard() {
     }
 }
 
-async function renderLeaderboard(game) {
-    const players = game?.players ?? [];
+async function renderLeaderboard(players = []) {
     const snapshot = JSON.stringify(players);
     if (snapshot === lastLeaderboardSnapshot) return;
     lastLeaderboardSnapshot = snapshot;
@@ -90,15 +89,6 @@ async function renderLeaderboard(game) {
     leaderboardEl = LeaderboardGridView({
         players,
         maxPlayers: 8,
-        onRemovePlayer: async (player) => {
-            if (!window.confirm(`Remove ${player.name}?`)) return;
-            try {
-                await removePlayer(gameId, player.id);
-            } catch (error) {
-                console.error('[leaderboard] remove player failed:', error);
-                window.alert(error.message || 'Could not remove player');
-            }
-        },
     });
     shell.appendChild(leaderboardEl);
     root.appendChild(shell);
@@ -110,8 +100,8 @@ function scheduleRefresh() {
     clearTimeout(refreshTimer);
     refreshTimer = window.setTimeout(async () => {
         try {
-            const game = await getGame(gameId);
-            await renderLeaderboard(game);
+            const players = await getPlayers(gameId);
+            await renderLeaderboard(players);
         } catch (error) {
             console.error('[leaderboard] fallback refresh failed:', error);
         } finally {

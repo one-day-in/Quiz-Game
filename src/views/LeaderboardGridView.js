@@ -60,20 +60,22 @@ function buildPlayerCard(player, onRemovePlayer) {
   points.setAttribute('aria-label', `Points: ${player.points ?? 0}`);
 
   const removeBtn = document.createElement('button');
-  removeBtn.type = 'button';
-  removeBtn.className = 'leaderboard__remove';
-  removeBtn.textContent = '✕';
-  removeBtn.title = 'Remove player';
-  removeBtn.setAttribute('aria-label', `Remove ${player.name || 'player'}`);
-
   nameWrap.appendChild(name);
   scoreWrap.appendChild(points);
-  card.append(nameWrap, scoreWrap, removeBtn);
+  card.append(nameWrap, scoreWrap);
 
-  removeBtn.addEventListener('click', (event) => {
-    event.stopPropagation();
-    onRemovePlayer?.(player);
-  });
+  if (typeof onRemovePlayer === 'function') {
+    removeBtn.type = 'button';
+    removeBtn.className = 'leaderboard__remove';
+    removeBtn.textContent = '✕';
+    removeBtn.title = 'Remove player';
+    removeBtn.setAttribute('aria-label', `Remove ${player.name || 'player'}`);
+    removeBtn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      onRemovePlayer(player);
+    });
+    card.appendChild(removeBtn);
+  }
 
   return card;
 }
@@ -87,11 +89,11 @@ function fitPlayerNames(grid) {
     nameEl.style.width = '100%';
     nameEl.style.fontSize = '';
     fitTextToBox(nameWrap, nameEl, {
-      widthRatio: 0.96,
-      heightRatio: 0.82,
-      minSize: 24,
+      widthRatio: 0.92,
+      heightRatio: 0.58,
+      minSize: 18,
       step: 0.5,
-      noWrap: true,
+      noWrap: false,
     });
   });
 }

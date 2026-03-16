@@ -59,11 +59,11 @@
 .leaderboard__card {
   position: relative;
 
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: minmax(0, 4fr) minmax(0, 1fr);
   align-items: center;
-  justify-content: center;
-  gap: clamp(20px, 4vh, 40px);
+  justify-items: stretch;
+  gap: 12px;
 
   border-radius: var(--radius-md);
   border: 1px solid var(--border-2);
@@ -99,7 +99,7 @@
 /* Name */
 .leaderboard__nameWrap {
   width: 100%;
-  min-height: clamp(48px, 7vh, 92px);
+  min-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -119,15 +119,17 @@
 
   color: var(--text);
 
-  font-size: clamp(42px, 4vw, 68px);
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  line-height: 1;
+  line-height: 0.95;
 
-  white-space: nowrap;
+  white-space: normal;
   overflow: hidden;
-  text-overflow: ellipsis;
+  text-overflow: clip;
+  word-break: normal;
+  overflow-wrap: normal;
+  text-wrap: balance;
 
   transition: opacity var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
 }
@@ -186,11 +188,13 @@
 .leaderboard__scoreWrap {
   display: flex;
   align-items: center;
-  gap: clamp(6px, 1vw, 14px);
+  justify-content: center;
+  gap: 0;
 
   width: 100%;
   box-sizing: border-box;
   white-space: nowrap;
+  min-height: 0;
 }
 
 .leaderboard__scoreBtn {
@@ -232,7 +236,7 @@
 }
 
 .leaderboard__points {
-  font-size: clamp(38px, 4.5vh, 60px);
+  font-size: clamp(30px, 3.2vh, 48px);
   font-weight: 900;
 
   font-variant-numeric: tabular-nums;
@@ -249,10 +253,6 @@
     0 0 10px var(--danger-a35),
     0 0 22px var(--danger-a35),
     0 0 36px var(--danger-a18);
-}
-
-.leaderboard__scoreWrap--readonly {
-  justify-content: center;
 }
 
 /* Remove — absolute top-right corner */

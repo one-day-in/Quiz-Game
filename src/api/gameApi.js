@@ -1,6 +1,8 @@
 import { supabase } from './supabaseClient.js';
 
 export const MAX_PLAYERS = 8;
+const PUBLIC_PLAYER_COLUMNS = 'id, game_id, name, points, joined_at';
+const PRIVATE_PLAYER_COLUMNS = `${PUBLIC_PLAYER_COLUMNS}, controller_id`;
 
 // ================================================
 // DEFAULT GAME STATE
@@ -63,6 +65,57 @@ function normalizeGame(game = {}) {
     };
 }
 
+function serializeGameForStorage(game = {}) {
+    const normalized = normalizeGame(game);
+    return {
+        ...normalized,
+        players: [],
+    };
+}
+
+function normalizePlayerRow(row, idx = 0, { includeControllerId = false } = {}) {
+    return normalizePlayer({
+        id: row?.id,
+        name: row?.name,
+        points: row?.points,
+        controllerId: includeControllerId ? row?.controller_id : null,
+        joinedAt: row?.joined_at,
+    }, idx);
+}
+
+function normalizePlayerRows(rows = [], options = {}) {
+    return (Array.isArray(rows) ? rows : []).map((row, idx) => normalizePlayerRow(row, idx, options));
+}
+
+async function fetchGameRecord(gameId) {
+    const { data, error } = await supabase
+        .from('games')
+        .select('data')
+        .eq('id', gameId)
+        .single();
+
+    if (error) throw new Error(`[Game] getGame failed: ${error.message}`);
+    return normalizeGame(data.data);
+}
+
+async function fetchPlayerRows(gameId, { includeControllerId = false } = {}) {
+    const columns = includeControllerId ? PRIVATE_PLAYER_COLUMNS : PUBLIC_PLAYER_COLUMNS;
+    const { data, error } = await supabase
+        .from('game_players')
+        .select(columns)
+        .eq('game_id', gameId)
+        .order('joined_at', { ascending: true });
+
+    if (error) throw new Error(`[Game] getPlayers failed: ${error.message}`);
+    return normalizePlayerRows(data, { includeControllerId });
+}
+
+function mapPlayerRpcResult(data) {
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row) throw new Error('Player not found');
+    return normalizePlayerRow(row, 0, { includeControllerId: false });
+}
+
 function extractGameFromRealtimePayload(payload) {
     const data = payload?.new?.data ?? payload?.record?.data ?? payload?.data ?? null;
     return data ? normalizeGame(data) : null;
@@ -122,18 +175,16 @@ export async function deleteGame(gameId) {
 // READ / WRITE
 // ================================================
 export async function getGame(gameId) {
-    const { data, error } = await supabase
-        .from('games')
-        .select('data')
-        .eq('id', gameId)
-        .single();
-
-    if (error) throw new Error(`[Game] getGame failed: ${error.message}`);
-    return normalizeGame(data.data);
+    const [game, players] = await Promise.all([
+        fetchGameRecord(gameId),
+        fetchPlayerRows(gameId),
+    ]);
+    game.players = players;
+    return game;
 }
 
 export async function saveGame(gameId, gameData) {
-    const normalized = normalizeGame(gameData);
+    const normalized = serializeGameForStorage(gameData);
     const { error } = await supabase
         .from('games')
         .update({ data: normalized, updated_at: new Date().toISOString() })
@@ -144,7 +195,19 @@ export async function saveGame(gameId, gameData) {
 }
 
 export function subscribeToGame(gameId, onGameChange) {
-    const channel = supabase
+    let disposed = false;
+
+    async function emitSnapshot() {
+        if (disposed) return;
+        try {
+            const game = await getGame(gameId);
+            if (!disposed) onGameChange(game);
+        } catch (error) {
+            console.error('[Game] subscribeToGame refresh failed:', error);
+        }
+    }
+
+    const gameChannel = supabase
         .channel(`game:${gameId}`)
         .on(
             'postgres_changes',
@@ -154,20 +217,62 @@ export function subscribeToGame(gameId, onGameChange) {
                 table: 'games',
                 filter: `id=eq.${gameId}`,
             },
-            (payload) => {
-                const game = extractGameFromRealtimePayload(payload);
-                if (game) onGameChange(game);
-            }
+            () => { void emitSnapshot(); }
+        )
+        .subscribe();
+
+    const playersChannel = supabase
+        .channel(`game-players:${gameId}`)
+        .on(
+            'postgres_changes',
+            {
+                event: '*',
+                schema: 'public',
+                table: 'game_players',
+                filter: `game_id=eq.${gameId}`,
+            },
+            () => { void emitSnapshot(); }
         )
         .subscribe();
 
     return () => {
-        supabase.removeChannel(channel);
+        disposed = true;
+        supabase.removeChannel(gameChannel);
+        supabase.removeChannel(playersChannel);
     };
 }
 
 export function subscribeToPlayers(gameId, onPlayersChange) {
-    return subscribeToGame(gameId, (game) => onPlayersChange(game.players ?? []));
+    let disposed = false;
+
+    async function emitPlayers() {
+        if (disposed) return;
+        try {
+            const players = await getPlayers(gameId);
+            if (!disposed) onPlayersChange(players);
+        } catch (error) {
+            console.error('[Game] subscribeToPlayers refresh failed:', error);
+        }
+    }
+
+    const channel = supabase
+        .channel(`game-players:list:${gameId}`)
+        .on(
+            'postgres_changes',
+            {
+                event: '*',
+                schema: 'public',
+                table: 'game_players',
+                filter: `game_id=eq.${gameId}`,
+            },
+            () => { void emitPlayers(); }
+        )
+        .subscribe();
+
+    return () => {
+        disposed = true;
+        supabase.removeChannel(channel);
+    };
 }
 
 // ================================================
@@ -201,106 +306,142 @@ export async function updateTopic(gameId, roundId, rowId, topic) {
 // PLAYERS (leaderboard)
 // ================================================
 export async function getPlayers(gameId) {
-    const game = await getGame(gameId);
-    return normalizePlayers(game.players);
+    return fetchPlayerRows(gameId);
 }
 
 export async function savePlayers(gameId, players) {
-    const game = await getGame(gameId);
-    game.players = normalizePlayers(players);
-    game.meta.updatedAt = new Date().toISOString();
-    return saveGame(gameId, game);
+    const normalizedPlayers = normalizePlayers(players);
+    const { error: deleteError } = await supabase
+        .from('game_players')
+        .delete()
+        .eq('game_id', gameId);
+
+    if (deleteError) throw new Error(`[Game] savePlayers failed: ${deleteError.message}`);
+
+    if (!normalizedPlayers.length) return [];
+
+    const rows = normalizedPlayers.map((player, idx) => ({
+        id: player.id,
+        game_id: gameId,
+        name: player.name,
+        points: player.points,
+        controller_id: player.controllerId || `ctrl_seed_${idx}_${Math.random().toString(16).slice(2, 10)}`,
+        joined_at: player.joinedAt || new Date().toISOString(),
+    }));
+
+    const { error: insertError } = await supabase
+        .from('game_players')
+        .insert(rows);
+
+    if (insertError) throw new Error(`[Game] savePlayers failed: ${insertError.message}`);
+    return normalizedPlayers;
 }
 
 export async function getPlayerByController(gameId, controllerId) {
     if (!controllerId) return null;
-    const players = await getPlayers(gameId);
-    return players.find((player) => player.controllerId === controllerId) ?? null;
+    const { data, error } = await supabase
+        .from('game_players')
+        .select(PRIVATE_PLAYER_COLUMNS)
+        .eq('game_id', gameId)
+        .eq('controller_id', controllerId)
+        .maybeSingle();
+
+    if (error) throw new Error(`[Game] getPlayerByController failed: ${error.message}`);
+    return data ? normalizePlayerRow(data, 0, { includeControllerId: true }) : null;
 }
 
 export async function claimPlayerSlot(gameId, { name, controllerId }) {
-    const game = await getGame(gameId);
-    const players = normalizePlayers(game.players);
     const nextName = (name || '').trim();
     if (!nextName) throw new Error('Player name is required');
     if (!controllerId) throw new Error('Controller ID is required');
 
-    const existing = players.find((player) => player.controllerId === controllerId);
-    if (existing) {
-        existing.name = nextName;
-        game.players = players;
-        game.meta.updatedAt = new Date().toISOString();
-        await saveGame(gameId, game);
-        return existing;
-    }
+    const { data, error } = await supabase.rpc('claim_game_player', {
+        p_game_id: gameId,
+        p_name: nextName,
+        p_controller_id: controllerId,
+    });
 
-    if (players.length >= MAX_PLAYERS) {
-        throw new Error('No free player slots');
-    }
-
-    const player = normalizePlayer({
-        id: createPlayerId(),
-        name: nextName,
-        points: 0,
-        controllerId,
-        joinedAt: new Date().toISOString(),
-    }, players.length);
-
-    players.push(player);
-    game.players = players;
-    game.meta.updatedAt = new Date().toISOString();
-    await saveGame(gameId, game);
-    return player;
+    if (error) throw new Error(`[Game] claimPlayerSlot failed: ${error.message}`);
+    return mapPlayerRpcResult(data);
 }
 
 export async function updatePlayer(gameId, playerId, updates = {}) {
-    const game = await getGame(gameId);
-    const players = normalizePlayers(game.players);
-    const player = players.find((entry) => entry.id === playerId);
-    if (!player) throw new Error('Player not found');
+    const patch = {};
+    if (typeof updates.name === 'string' && updates.name.trim()) patch.name = updates.name.trim();
+    if (Number.isFinite(updates.points)) patch.points = updates.points;
+    if (typeof updates.controllerId === 'string' && updates.controllerId.trim()) patch.controller_id = updates.controllerId.trim();
+    patch.updated_at = new Date().toISOString();
 
-    if (typeof updates.name === 'string') {
-        const nextName = updates.name.trim();
-        player.name = nextName || player.name;
-    }
+    const { data, error } = await supabase
+        .from('game_players')
+        .update(patch)
+        .eq('game_id', gameId)
+        .eq('id', playerId)
+        .select(PUBLIC_PLAYER_COLUMNS)
+        .single();
 
-    if (Number.isFinite(updates.points)) {
-        player.points = updates.points;
-    }
-
-    if (typeof updates.controllerId === 'string') {
-        player.controllerId = updates.controllerId;
-    }
-
-    game.players = players;
-    game.meta.updatedAt = new Date().toISOString();
-    await saveGame(gameId, game);
-    return player;
+    if (error) throw new Error(`[Game] updatePlayer failed: ${error.message}`);
+    return normalizePlayerRow(data);
 }
 
 export async function adjustPlayerScore(gameId, playerId, delta) {
-    const game = await getGame(gameId);
-    const players = normalizePlayers(game.players);
-    const player = players.find((entry) => entry.id === playerId);
-    if (!player) throw new Error('Player not found');
+    const { data: current, error: loadError } = await supabase
+        .from('game_players')
+        .select(PUBLIC_PLAYER_COLUMNS)
+        .eq('game_id', gameId)
+        .eq('id', playerId)
+        .single();
 
-    player.points = (Number(player.points) || 0) + (Number(delta) || 0);
-    game.players = players;
-    game.meta.updatedAt = new Date().toISOString();
-    await saveGame(gameId, game);
-    return player;
+    if (loadError) throw new Error(`[Game] adjustPlayerScore failed: ${loadError.message}`);
+
+    const nextPoints = (Number(current.points) || 0) + (Number(delta) || 0);
+    return updatePlayer(gameId, playerId, { points: nextPoints });
 }
 
 export async function removePlayer(gameId, playerId) {
-    const game = await getGame(gameId);
-    const players = normalizePlayers(game.players);
-    const nextPlayers = players.filter((entry) => entry.id !== playerId);
-    if (nextPlayers.length === players.length) throw new Error('Player not found');
+    const { error } = await supabase
+        .from('game_players')
+        .delete()
+        .eq('game_id', gameId)
+        .eq('id', playerId);
 
-    game.players = nextPlayers;
-    game.meta.updatedAt = new Date().toISOString();
-    await saveGame(gameId, game);
-    return nextPlayers;
+    if (error) throw new Error(`[Game] removePlayer failed: ${error.message}`);
+    return getPlayers(gameId);
+}
+
+export async function updatePlayerByController(gameId, controllerId, updates = {}) {
+    const nextName = typeof updates.name === 'string' ? updates.name.trim() : null;
+    if (!nextName) throw new Error('Player name is required');
+
+    const { data, error } = await supabase.rpc('rename_game_player', {
+        p_game_id: gameId,
+        p_controller_id: controllerId,
+        p_name: nextName,
+    });
+
+    if (error) throw new Error(`[Game] updatePlayerByController failed: ${error.message}`);
+    return mapPlayerRpcResult(data);
+}
+
+export async function adjustPlayerScoreByController(gameId, controllerId, delta) {
+    const { data, error } = await supabase.rpc('adjust_game_player_score', {
+        p_game_id: gameId,
+        p_controller_id: controllerId,
+        p_delta: Number(delta) || 0,
+    });
+
+    if (error) throw new Error(`[Game] adjustPlayerScoreByController failed: ${error.message}`);
+    return mapPlayerRpcResult(data);
+}
+
+export async function removePlayerByController(gameId, controllerId) {
+    const { error } = await supabase.rpc('leave_game_player', {
+        p_game_id: gameId,
+        p_controller_id: controllerId,
+    });
+
+    if (error) throw new Error(`[Game] removePlayerByController failed: ${error.message}`);
+    return true;
 }
 
 // ================================================

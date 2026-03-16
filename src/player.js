@@ -1,12 +1,12 @@
 import {
   MAX_PLAYERS,
-  adjustPlayerScore,
+  adjustPlayerScoreByController,
   claimPlayerSlot,
-  getGame,
   getPlayerByController,
-  removePlayer,
-  subscribeToGame,
-  updatePlayer,
+  getPlayers,
+  removePlayerByController,
+  subscribeToPlayers,
+  updatePlayerByController,
 } from './api/gameApi.js';
 
 const root = document.getElementById('player-controller-app');
@@ -160,7 +160,7 @@ function renderController(currentPlayer) {
       const delta = Number(button.dataset.delta);
       setControllerPending(true);
       try {
-        player = await adjustPlayerScore(gameId, currentPlayer.id, delta);
+        player = await adjustPlayerScoreByController(gameId, controllerId, delta);
         scoreEl.textContent = formatPoints(player.points);
         statusEl.hidden = true;
       } catch (error) {
@@ -181,7 +181,7 @@ function renderController(currentPlayer) {
 
     setControllerPending(true);
     try {
-      player = await updatePlayer(gameId, player.id, { name: nextName });
+      player = await updatePlayerByController(gameId, controllerId, { name: nextName });
       nameInput.value = player.name;
       statusEl.hidden = true;
     } catch (error) {
@@ -198,7 +198,7 @@ function renderController(currentPlayer) {
 
     setControllerPending(true);
     try {
-      await removePlayer(gameId, player.id);
+      await removePlayerByController(gameId, controllerId);
       clearPlayerBinding(gameId);
       player = null;
       renderJoin();
@@ -213,8 +213,8 @@ function renderController(currentPlayer) {
 
 function bindRealtimePlayers() {
   stopPlayersSubscription?.();
-  stopPlayersSubscription = subscribeToGame(gameId, (game) => {
-    syncControllerFromGame(game);
+  stopPlayersSubscription = subscribeToPlayers(gameId, (players) => {
+    syncControllerFromPlayers(players);
   });
 }
 
@@ -222,16 +222,15 @@ function startGameRefreshLoop() {
   clearInterval(gameRefreshTimer);
   gameRefreshTimer = window.setInterval(async () => {
     try {
-      const game = await getGame(gameId);
-      syncControllerFromGame(game);
+      const players = await getPlayers(gameId);
+      syncControllerFromPlayers(players);
     } catch (_) {
       // Ignore transient refresh failures on mobile.
     }
   }, 1000);
 }
 
-function syncControllerFromGame(game) {
-  const players = game.players || [];
+function syncControllerFromPlayers(players = []) {
   const nextPlayer = players.find((entry) => entry.controllerId === controllerId || entry.id === player?.id) ?? null;
   if (!nextPlayer) {
     if (player) {
