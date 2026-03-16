@@ -19,7 +19,7 @@ body {
 #player-controller-app {
   min-height: 100dvh;
   height: 100dvh;
-  padding: max(12px, env(safe-area-inset-top)) 16px max(12px, env(safe-area-inset-bottom)) 16px;
+  padding: max(12px, env(safe-area-inset-top)) 16px max(36px, env(safe-area-inset-bottom)) 16px;
   box-sizing: border-box;
   display: flex;
   align-items: center;
