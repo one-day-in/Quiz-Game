@@ -248,7 +248,6 @@ export function renderAll(view, refs) {
   if (refs.quizSpinnerCheckbox) {
     refs.quizSpinnerCheckbox.checked = !!view._isQuizSpinner;
   }
-  renderBuzzState(view, refs);
 
   // Gather content state for both sections
   const sections = {
