@@ -6,6 +6,7 @@ const DEFAULTS = {
   minSize:     6,
   step:        0.5,
   noWrap:      true,
+  respectMinSizeOnStart: false,
 };
 
 /**
@@ -16,7 +17,7 @@ export function fitTextToBox(box, textEl, options = {}) {
   if (!box || !textEl) return;
 
   const opts = { ...DEFAULTS, ...options };
-  const { widthRatio, heightRatio, minSize, step, noWrap } = opts;
+  const { widthRatio, heightRatio, minSize, step, noWrap, respectMinSizeOnStart } = opts;
 
   textEl.style.whiteSpace = noWrap ? 'nowrap' : '';
 
@@ -26,7 +27,8 @@ export function fitTextToBox(box, textEl, options = {}) {
   // Element not in DOM yet — skip
   if (maxW <= 0 || maxH <= 0) return;
 
-  let size = box.clientHeight * heightRatio;
+  const startSize = box.clientHeight * heightRatio;
+  let size = respectMinSizeOnStart ? Math.max(startSize, minSize) : startSize;
   textEl.style.fontSize = size + 'px';
 
   while (

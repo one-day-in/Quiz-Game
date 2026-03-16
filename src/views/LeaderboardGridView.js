@@ -94,6 +94,7 @@ function fitPlayerNames(grid) {
       minSize: 18,
       step: 0.5,
       noWrap: false,
+      respectMinSizeOnStart: true,
     });
   });
 }
