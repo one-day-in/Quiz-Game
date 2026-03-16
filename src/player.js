@@ -162,7 +162,7 @@ function renderController(currentPlayer) {
           <button class="player-controller__scoreBtn player-controller__scoreBtn--minus" data-delta="-100" type="button">-100</button>
           <button class="player-controller__scoreBtn player-controller__scoreBtn--plus" data-delta="100" type="button">+100</button>
         </div>
-        <button id="playerPressBtn" class="player-controller__pressBtn" type="button" ${(isPressEnabled && !pressWinnerPlayerId) ? '' : 'disabled'}>PRESS</button>
+        <button id="playerPressBtn" class="player-controller__pressBtn" type="button">PRESS</button>
         <button id="playerDeleteBtn" class="player-controller__secondary player-controller__secondary--danger" type="button">Leave game</button>
         <p id="playerControllerStatus" class="player-controller__status" hidden></p>
       </section>
@@ -290,7 +290,6 @@ function syncPressButtonState() {
   const pressBtn = document.getElementById('playerPressBtn');
   if (!pressBtn) return;
   const canPress = !!isPressEnabled && !pressWinnerPlayerId;
-  pressBtn.disabled = !canPress;
   pressBtn.classList.toggle('is-enabled', canPress);
 }
 
