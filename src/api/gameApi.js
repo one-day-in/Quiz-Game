@@ -74,7 +74,7 @@ function extractGameFromRealtimePayload(payload) {
 export async function listGames() {
     const { data, error } = await supabase
         .from('games')
-        .select('id, name, created_at, updated_at')
+        .select('id, name, created_at, updated_at, created_by')
         .order('updated_at', { ascending: false });
 
     if (error) throw new Error(`[Game] listGames failed: ${error.message}`);

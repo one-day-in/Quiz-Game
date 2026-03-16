@@ -27,19 +27,36 @@
 }
 
 .lobby__logout-btn {
-    padding: 10px 22px;
+    width: 48px;
+    height: 48px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     background: var(--btn-bg);
     color: var(--text-soft);
     border: 1px solid var(--btn-border);
-    border-radius: var(--radius-sm);
-    font-size: var(--fs-1);
-    font-weight: 600;
+    border-radius: 999px;
     cursor: pointer;
-    transition: opacity var(--t-fast) var(--ease);
+    transition:
+        opacity var(--t-fast) var(--ease),
+        transform var(--t-fast) var(--ease),
+        border-color var(--t-fast) var(--ease);
 }
 
 .lobby__logout-btn:hover {
     opacity: 0.8;
+    transform: translateY(-1px);
+    border-color: var(--btn-outline-hover);
+}
+
+.lobby__logout-btn svg {
+    width: 22px;
+    height: 22px;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
 /* ── Body ── */
@@ -84,80 +101,144 @@
 }
 
 /* ── Game Cards Grid ── */
-.lobby__grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-    gap: 16px;
+.lobby__groups {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
 }
 
-.lobby__card {
-    position: relative;
-    background: var(--surface-2);
+.lobby__group {
+    border-radius: var(--radius-lg);
     border: 1px solid var(--border-2);
-    border-radius: var(--radius-md);
-    padding: 24px 20px 20px;
-    cursor: pointer;
-    transition:
-        transform var(--t-fast) var(--ease),
-        box-shadow var(--t-fast) var(--ease),
-        border-color var(--t-fast) var(--ease);
+    background: linear-gradient(180deg, var(--surface-2), var(--surface-3));
+    box-shadow: var(--shadow-sm);
     overflow: hidden;
 }
 
-.lobby__card::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: var(--cell-overlay-top);
-    pointer-events: none;
+.lobby__groupHead {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 18px 20px;
+    border-bottom: 1px solid var(--border-2);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent);
 }
 
-.lobby__card:hover {
-    transform: translateY(-3px);
-    box-shadow: var(--shadow-cell-hover);
-    border-color: var(--border-4);
+.lobby__groupAvatar {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    font-size: 16px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    color: white;
+    background:
+        radial-gradient(circle at 30% 30%, hsla(var(--avatar-hue), 90%, 72%, 0.95), transparent 45%),
+        linear-gradient(135deg, hsla(var(--avatar-hue), 75%, 52%, 1), hsla(calc(var(--avatar-hue) + 40), 72%, 40%, 1));
+    box-shadow: var(--shadow-sm);
 }
 
-.lobby__card-name {
+.lobby__groupMeta {
+    min-width: 0;
+}
+
+.lobby__groupEyebrow {
+    margin: 0 0 4px;
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.lobby__groupTitle {
+    margin: 0;
     font-size: var(--fs-3);
     font-weight: 800;
     color: var(--text);
-    margin-bottom: 10px;
-    word-break: break-word;
-    line-height: var(--lh);
+    line-height: 1.1;
 }
 
-.lobby__card-date {
+.lobby__list {
+    display: flex;
+    flex-direction: column;
+}
+
+.lobby__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 20px;
+    cursor: pointer;
+    transition: background var(--t-fast) var(--ease);
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.lobby__row:first-child {
+    border-top: 0;
+}
+
+.lobby__row:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.lobby__rowMain {
+    min-width: 0;
+}
+
+.lobby__rowName {
+    font-size: var(--fs-3);
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1.15;
+    word-break: break-word;
+}
+
+.lobby__rowDate {
+    margin-top: 6px;
     font-size: 14px;
     color: var(--muted-2);
     line-height: var(--lh);
 }
 
-/* ── Rename button (✏) — appears on hover, to the left of delete ── */
-.lobby__card-rename {
-    position: absolute;
-    top: 8px;
-    right: 42px; /* sits left of the delete button (8px + ~26px + 8px gap) */
+.lobby__rowActions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
+}
+
+.lobby__rowRename,
+.lobby__rowDelete {
     background: none;
     border: none;
     cursor: pointer;
-    font-size: 0.9rem;
+    font-size: 1rem;
     padding: 4px 6px;
     border-radius: 6px;
-    opacity: 0;
+    opacity: 0.72;
     transition: opacity var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
     line-height: 1;
 }
 
-.lobby__card:hover .lobby__card-rename {
+.lobby__row:hover .lobby__rowRename,
+.lobby__row:hover .lobby__rowDelete {
     opacity: 1;
 }
 
-.lobby__card-rename:hover {
+.lobby__rowRename:hover {
     background: var(--surface-3);
 }
 
-/* ── Inline name input (shown during rename editing) ── */
+.lobby__rowDelete:hover {
+    background: var(--danger-a18);
+}
+
 .lobby__card-name-input {
     width: 100%;
     background: var(--surface-3);
@@ -171,28 +252,23 @@
     line-height: var(--lh);
     outline: none;
     box-shadow: var(--ring);
-    /* prevent hover lift while editing */
 }
 
-.lobby__card-delete {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 1rem;
-    padding: 4px 6px;
-    border-radius: 6px;
-    opacity: 0;
-    transition: opacity var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
-    line-height: 1;
-}
+@media (max-width: 760px) {
+    .lobby {
+        padding: 20px 16px;
+    }
 
-.lobby__card:hover .lobby__card-delete {
-    opacity: 1;
-}
+    .lobby__row {
+        align-items: flex-start;
+        flex-direction: column;
+    }
 
-.lobby__card-delete:hover {
-    background: var(--danger-a18);
+    .lobby__rowActions {
+        align-self: flex-end;
+    }
+
+    .lobby__groupHead {
+        padding: 16px;
+    }
 }

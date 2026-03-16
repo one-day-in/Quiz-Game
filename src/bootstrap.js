@@ -72,6 +72,7 @@ function renderLobby(user) {
     clearRoot();
 
     const lobby = new LobbyView({
+        currentUser: user,
         onOpen: (gameId, gameName) => renderGame(user, gameId, gameName),
         onCreate: async (name) => {
             try {

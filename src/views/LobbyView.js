@@ -15,8 +15,9 @@ function formatDate(isoStr) {
 }
 
 export class LobbyView {
-    constructor({ onOpen, onCreate, onLogout }) {
+    constructor({ currentUser, onOpen, onCreate, onLogout }) {
         this._cb = { onOpen, onCreate, onLogout };
+        this._currentUser = currentUser || null;
         this._root = document.createElement('div');
         this._root.className = 'lobby';
         this._games = [];
@@ -117,11 +118,18 @@ export class LobbyView {
 
     _render() {
         const { onOpen, onCreate, onLogout } = this._cb;
+        const gameGroups = this._groupGamesByCreator();
 
         this._root.innerHTML = `
             <div class="lobby__header">
                 <h1 class="lobby__title">🎮 Quiz Games</h1>
-                <button class="lobby__logout-btn" type="button">↪ Logout</button>
+                <button class="lobby__logout-btn" type="button" aria-label="Logout" title="Logout">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M14 3h-4a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h4" />
+                        <path d="M10 12h10" />
+                        <path d="m17 7 5 5-5 5" />
+                    </svg>
+                </button>
             </div>
 
             <div class="lobby__body">
@@ -139,27 +147,44 @@ export class LobbyView {
                     <div class="lobby__empty">No saved games yet. Create your first one!</div>
                 ` : ''}
 
-                <div class="lobby__grid">
-                    ${this._games.map(game => `
-                        <div class="lobby__card" data-id="${escapeHtml(game.id)}">
-                            <div class="lobby__card-name">${escapeHtml(game.name)}</div>
-                            <div class="lobby__card-date">
-                                Updated: ${formatDate(game.updated_at)}
+                <div class="lobby__groups">
+                    ${gameGroups.map(({ ownerId, ownerLabel, avatarLabel, games }) => `
+                        <section class="lobby__group" data-owner-id="${escapeHtml(ownerId)}">
+                            <div class="lobby__groupHead">
+                                <div class="lobby__groupAvatar" style="${escapeHtml(this._buildAvatarStyle(ownerId))}">
+                                    ${escapeHtml(avatarLabel)}
+                                </div>
+                                <div class="lobby__groupMeta">
+                                    <p class="lobby__groupEyebrow">Created by</p>
+                                    <h2 class="lobby__groupTitle">${escapeHtml(ownerLabel)}</h2>
+                                </div>
                             </div>
-                            <button
-                                class="lobby__card-rename"
-                                data-id="${escapeHtml(game.id)}"
-                                type="button"
-                                title="Rename game"
-                            >✏</button>
-                            <button
-                                class="lobby__card-delete"
-                                data-id="${escapeHtml(game.id)}"
-                                data-name="${escapeHtml(game.name)}"
-                                type="button"
-                                title="Delete game"
-                            >🗑️</button>
-                        </div>
+                            <div class="lobby__list">
+                                ${games.map(game => `
+                                    <div class="lobby__row" data-id="${escapeHtml(game.id)}">
+                                        <div class="lobby__rowMain">
+                                            <div class="lobby__rowName">${escapeHtml(game.name)}</div>
+                                            <div class="lobby__rowDate">Updated: ${formatDate(game.updated_at)}</div>
+                                        </div>
+                                        <div class="lobby__rowActions">
+                                            <button
+                                                class="lobby__rowRename"
+                                                data-id="${escapeHtml(game.id)}"
+                                                type="button"
+                                                title="Rename game"
+                                            >✏</button>
+                                            <button
+                                                class="lobby__rowDelete"
+                                                data-id="${escapeHtml(game.id)}"
+                                                data-name="${escapeHtml(game.name)}"
+                                                type="button"
+                                                title="Delete game"
+                                            >🗑️</button>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </section>
                     `).join('')}
                 </div>
             </div>
@@ -181,35 +206,75 @@ export class LobbyView {
             });
 
         // Open game (click on card body, not action buttons)
-        this._root.querySelectorAll('.lobby__card').forEach(card => {
-            const id = card.dataset.id;
+        this._root.querySelectorAll('.lobby__row').forEach(row => {
+            const id = row.dataset.id;
             const game = this._games.find(g => g.id === id);
-            card.addEventListener('click', (e) => {
-                if (e.target.closest('.lobby__card-delete')) return;
-                if (e.target.closest('.lobby__card-rename')) return;
+            row.addEventListener('click', (e) => {
+                if (e.target.closest('.lobby__rowDelete')) return;
+                if (e.target.closest('.lobby__rowRename')) return;
                 if (e.target.closest('.lobby__card-name-input')) return;
                 onOpen?.(id, game?.name || 'Game');
             });
         });
 
         // Rename game
-        this._root.querySelectorAll('.lobby__card-rename').forEach(btn => {
+        this._root.querySelectorAll('.lobby__rowRename').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                const card = btn.closest('.lobby__card');
-                const nameEl = card?.querySelector('.lobby__card-name');
+                const row = btn.closest('.lobby__row');
+                const nameEl = row?.querySelector('.lobby__rowName');
                 const game = this._games.find(g => g.id === btn.dataset.id);
                 if (game && nameEl) this._openRenameEditor(nameEl, game);
             });
         });
 
         // Delete game
-        this._root.querySelectorAll('.lobby__card-delete').forEach(btn => {
+        this._root.querySelectorAll('.lobby__rowDelete').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const { id, name } = btn.dataset;
                 this._handleDelete(id, name);
             });
         });
+    }
+
+    _groupGamesByCreator() {
+        const groups = new Map();
+        const currentUserId = this._currentUser?.id || null;
+
+        for (const game of this._games) {
+            const ownerId = game.created_by || 'unknown';
+            if (!groups.has(ownerId)) groups.set(ownerId, []);
+            groups.get(ownerId).push(game);
+        }
+
+        return Array.from(groups.entries()).map(([ownerId, games], index) => {
+            const isCurrentUser = currentUserId && ownerId === currentUserId;
+            const ownerLabel = isCurrentUser
+                ? (this._currentUser?.user_metadata?.full_name || this._currentUser?.email || 'You')
+                : `Creator ${index + 1} • ${ownerId.slice(0, 4)}`;
+            const avatarLabel = isCurrentUser
+                ? this._getInitials(this._currentUser?.user_metadata?.full_name || this._currentUser?.email || 'You')
+                : `C${index + 1}`;
+
+            return { ownerId, ownerLabel, avatarLabel, games };
+        });
+    }
+
+    _getInitials(label) {
+        return String(label || '')
+            .trim()
+            .split(/\s+/)
+            .slice(0, 2)
+            .map((part) => part[0] || '')
+            .join('')
+            .toUpperCase() || 'U';
+    }
+
+    _buildAvatarStyle(seed) {
+        const value = Array.from(String(seed || 'seed'))
+            .reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+        const hue = value % 360;
+        return `--avatar-hue:${hue};`;
     }
 }
