@@ -74,8 +74,8 @@
 ========================= */
 
 .game-grid .cell.cell-topic {
-    --topic-cell-bg: linear-gradient(180deg, rgba(100, 116, 139, 0.96), rgba(51, 65, 85, 0.98));
-    --topic-cell-border: rgba(203, 213, 225, 0.4);
+    --topic-cell-bg: linear-gradient(160deg, rgba(92, 112, 132, 0.98) 0%, rgba(59, 75, 95, 0.98) 52%, rgba(26, 35, 49, 0.99) 100%);
+    --topic-cell-border: rgba(226, 232, 240, 0.28);
 
     position: relative;
     display: flex;
