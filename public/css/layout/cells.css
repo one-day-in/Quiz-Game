@@ -73,7 +73,7 @@
    TOPIC CELL
 ========================= */
 
-.cell-topic {
+.game-grid .cell.cell-topic {
     --topic-cell-bg: linear-gradient(180deg, rgba(100, 116, 139, 0.96), rgba(51, 65, 85, 0.98));
     --topic-cell-border: rgba(203, 213, 225, 0.4);
 
@@ -97,13 +97,13 @@
         0 18px 28px rgba(15, 23, 42, 0.24);
 }
 
-.cell-topic::before {
+.game-grid .cell.cell-topic::before {
     background:
         linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent 42%),
         linear-gradient(90deg, rgba(226, 232, 240, 0.08), transparent 28%, transparent 72%, rgba(226, 232, 240, 0.05));
 }
 
-.cell-topic::after {
+.game-grid .cell.cell-topic::after {
     background:
         radial-gradient(520px 180px at 50% -10%, rgba(255, 255, 255, 0.18), transparent 62%),
         linear-gradient(180deg, transparent 68%, rgba(15, 23, 42, 0.18));
@@ -120,7 +120,7 @@
 }
 
 /* Empty topic */
-.cell-topic.is-empty {
+.game-grid .cell.cell-topic.is-empty {
     --topic-cell-bg: var(--cell-empty-bg);
     --topic-cell-border: var(--cell-empty-border);
 
