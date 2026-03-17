@@ -2,15 +2,16 @@
 // Promise-based custom dialogs — replaces window.confirm() and window.prompt().
 
 import { escapeHtml } from './utils.js';
+import { t } from '../i18n.js';
 
 /**
  * showConfirm({ message, confirmText, cancelText, danger })
  * Returns Promise<boolean> — true if confirmed, false if cancelled.
  */
 export function showConfirm({
-  message     = 'Are you sure?',
-  confirmText = 'Confirm',
-  cancelText  = 'Cancel',
+  message     = t('are_you_sure'),
+  confirmText = t('confirm'),
+  cancelText  = t('cancel'),
   danger      = true,
 } = {}) {
   return new Promise((resolve) => {
@@ -84,7 +85,7 @@ export function showRoundPicker({ rounds = [], currentRound = 0 } = {}) {
     root.className = 'cfdialog cfdialog--round-picker';
     root.setAttribute('role', 'dialog');
     root.setAttribute('aria-modal', 'true');
-    root.setAttribute('aria-label', 'Select round');
+    root.setAttribute('aria-label', t('select_round'));
 
     const tiles = rounds.map((name, i) => `
       <button type="button" class="round-tile${i === currentRound ? ' is-active' : ''}" data-round="${i}">
@@ -94,8 +95,8 @@ export function showRoundPicker({ rounds = [], currentRound = 0 } = {}) {
 
     root.innerHTML = `
       <div class="cfdialog__box">
-        <p class="cfdialog__msg">Select round</p>
-        <div class="round-grid" role="group" aria-label="Select round">
+        <p class="cfdialog__msg">${escapeHtml(t('select_round'))}</p>
+        <div class="round-grid" role="group" aria-label="${escapeHtml(t('select_round'))}">
           ${tiles}
         </div>
       </div>
@@ -138,10 +139,10 @@ export function showRoundPicker({ rounds = [], currentRound = 0 } = {}) {
  * Returns Promise<string | null> — trimmed string if confirmed, null if cancelled.
  */
 export function showPrompt({
-  message      = 'Enter a value:',
+  message      = t('enter_value'),
   placeholder  = '',
-  confirmText  = 'OK',
-  cancelText   = 'Cancel',
+  confirmText  = t('ok'),
+  cancelText   = t('cancel'),
   defaultValue = '',
 } = {}) {
   return new Promise((resolve) => {

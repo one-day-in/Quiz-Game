@@ -11,8 +11,10 @@ import {
   subscribeToPlayers,
   updatePlayerByController,
 } from './api/gameApi.js';
+import { initLanguageFromUrl, t } from './i18n.js';
 
 const root = document.getElementById('player-controller-app');
+initLanguageFromUrl();
 const params = new URLSearchParams(window.location.search);
 const gameId = params.get('gameId');
 const STORAGE_PREFIX = 'quiz-game:player-controller';
@@ -34,12 +36,12 @@ const CONTROLLER_DISABLED_SELECTOR = '.player-controller__input, .player-control
 
 async function startPlayerController() {
   if (!gameId) {
-    renderError('No game selected', 'Scan the QR code from the game screen.');
+    renderError(t('no_game_selected'), t('scan_qr_from_game_screen'));
     return;
   }
 
   controllerId = getOrCreateControllerId(gameId);
-  renderLoading('Loading player controller...');
+  renderLoading(t('loading_player_controller'));
 
   try {
     player = await getPlayerByController(gameId, controllerId);
@@ -54,7 +56,7 @@ async function startPlayerController() {
 
     renderJoin();
   } catch (error) {
-    renderError('Failed to load player', error.message);
+    renderError(t('failed_to_load_player'), error.message);
   }
 }
 
@@ -84,23 +86,23 @@ function renderJoin() {
   root.innerHTML = `
     <main class="player-controller">
       <section class="player-controller__card">
-        <p class="player-controller__eyebrow">Join game</p>
-        <h1 class="player-controller__title">Choose your player name</h1>
-        <p class="player-controller__copy">Up to ${MAX_PLAYERS} players can connect to this game.</p>
+        <p class="player-controller__eyebrow">${t('join_game')}</p>
+        <h1 class="player-controller__title">${t('choose_player_name')}</h1>
+        <p class="player-controller__copy">${t('players_can_connect', { count: MAX_PLAYERS })}</p>
         <form class="player-controller__joinForm" id="playerJoinForm">
           <label class="player-controller__field">
-            <span class="player-controller__label">Player name</span>
+            <span class="player-controller__label">${t('player_name')}</span>
             <input
               id="playerNameInput"
               class="player-controller__input"
               type="text"
               maxlength="24"
               autocomplete="nickname"
-              placeholder="Your name"
+              placeholder="${t('your_name')}"
               required
             >
           </label>
-          <button class="player-controller__primary" type="submit">Join controller</button>
+          <button class="player-controller__primary" type="submit">${t('join_controller')}</button>
         </form>
         <p id="playerJoinError" class="player-controller__error" hidden></p>
       </section>
@@ -126,7 +128,7 @@ function renderJoin() {
       renderController(player);
       bindRealtimePlayers();
     } catch (error) {
-      errorEl.textContent = error.message || 'Could not join the game';
+      errorEl.textContent = error.message || t('could_not_join_game');
       errorEl.hidden = false;
       toggleJoinPending(false);
     }
@@ -143,10 +145,10 @@ function renderController(currentPlayer) {
   root.innerHTML = `
     <main class="player-controller">
       <section class="player-controller__card player-controller__card--controller">
-        <p class="player-controller__eyebrow">Player controller</p>
-        <h1 class="player-controller__title">Manage your score</h1>
+        <p class="player-controller__eyebrow">${t('player_controller')}</p>
+        <h1 class="player-controller__title">${t('manage_score')}</h1>
         <label class="player-controller__field">
-          <span class="player-controller__label">Your name</span>
+          <span class="player-controller__label">${t('your_name')}</span>
           <input
             id="playerControllerName"
             class="player-controller__input"
@@ -156,7 +158,7 @@ function renderController(currentPlayer) {
           >
         </label>
         <div class="player-controller__scoreCard">
-          <span class="player-controller__scoreLabel">Current score</span>
+          <span class="player-controller__scoreLabel">${t('current_score')}</span>
           <strong id="playerScoreValue" class="player-controller__scoreValue">${formatPoints(currentPlayer.points)}</strong>
         </div>
         <div class="player-controller__actions">
@@ -164,7 +166,7 @@ function renderController(currentPlayer) {
           <button class="player-controller__scoreBtn player-controller__scoreBtn--plus" data-delta="100" type="button">+100</button>
         </div>
         <button id="playerPressBtn" class="player-controller__pressBtn" type="button">PRESS</button>
-        <button id="playerDeleteBtn" class="player-controller__secondary player-controller__secondary--danger" type="button">Leave game</button>
+        <button id="playerDeleteBtn" class="player-controller__secondary player-controller__secondary--danger" type="button">${t('leave_game')}</button>
         <p id="playerControllerStatus" class="player-controller__status" hidden></p>
       </section>
     </main>
@@ -208,7 +210,7 @@ function renderController(currentPlayer) {
       nameInput.value = player.name;
       statusEl.hidden = true;
     } catch (error) {
-      statusEl.textContent = error.message || 'Could not update name';
+      statusEl.textContent = error.message || t('could_not_update_name');
       statusEl.hidden = false;
       nameInput.value = player.name;
     } finally {
@@ -217,7 +219,7 @@ function renderController(currentPlayer) {
   });
 
   deleteBtn?.addEventListener('click', async () => {
-    if (!player || !window.confirm(`Remove ${player.name} from this game?`)) return;
+    if (!player || !window.confirm(t('remove_player_confirm', { name: player.name }))) return;
 
     setControllerPending(true);
     try {
@@ -226,7 +228,7 @@ function renderController(currentPlayer) {
       player = null;
       renderJoin();
     } catch (error) {
-      statusEl.textContent = error.message || 'Could not leave the game';
+      statusEl.textContent = error.message || t('could_not_leave_game');
       statusEl.hidden = false;
     } finally {
       setControllerPending(false);
@@ -310,7 +312,7 @@ async function claimPress(statusEl) {
     applyRuntimeState(await claimGamePress(gameId, controllerId));
     hideStatus(statusEl);
   } catch (error) {
-    statusEl.textContent = error.message || 'Could not claim press';
+    statusEl.textContent = error.message || t('could_not_claim_press');
     statusEl.hidden = false;
   }
 }
@@ -341,7 +343,7 @@ async function flushQueuedScoreDelta(scoreEl, statusEl) {
   } catch (error) {
     pendingScoreDelta += delta;
     updateScoreDisplay(scoreEl);
-    statusEl.textContent = error.message || 'Could not update score';
+    statusEl.textContent = error.message || t('could_not_update_score');
     statusEl.hidden = false;
   } finally {
     isScoreSyncInFlight = false;
@@ -433,7 +435,7 @@ function disableZoomGestures() {
 disableZoomGestures();
 startPlayerController().catch((error) => {
   console.error('[player] start failed:', error);
-  renderError('Failed to load controller', error.message || String(error));
+  renderError(t('failed_to_load_controller'), error.message || String(error));
 });
 
 window.addEventListener('beforeunload', () => {

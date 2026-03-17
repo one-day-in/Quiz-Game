@@ -92,12 +92,12 @@ export function applyModeUI(view, refs) {
 
   refs.root?.classList.toggle('qmodal--edit', isEdit);
 
-  if (refs.title) refs.title.textContent = view._headerTitle || 'Question';
+  if (refs.title) refs.title.textContent = view._headerTitle || t('question');
   setHidden(refs.headerQuizSpinner, !isEdit);
 
   // Toggle mode button: shows current mode and what clicking will do
   if (refs.btnToggleMode) {
-    refs.btnToggleMode.textContent = isEdit ? '👁 View' : '✏ Edit';
+    refs.btnToggleMode.textContent = isEdit ? `👁 ${t('view')}` : `✏ ${t('edit')}`;
   }
 
   for (const t of ['question', 'answer']) {
@@ -124,8 +124,8 @@ export function applyAnswerVisibility(view, refs) {
 
   if (refs.toggleAnswerBtn) {
     refs.toggleAnswerBtn.textContent = view._isAnswerShown
-      ? '👁️ Show question'
-      : '👁️ Show answer';
+      ? `👁️ ${t('show_question')}`
+      : `👁️ ${t('show_answer')}`;
   }
 }
 
@@ -140,7 +140,7 @@ export function renderMedia(view, refs, type) {
 
   if (view._mode === 'edit') {
     const uploadBtn = refs[`${type}UploadBtn`];
-    if (uploadBtn) uploadBtn.textContent = hasMedia ? '🔄 replace' : '⬆️ image/video';
+    if (uploadBtn) uploadBtn.textContent = hasMedia ? `🔄 ${t('replace')}` : `⬆️ ${t('image_video')}`;
     setHidden(refs[`${type}DeleteBtn`], !hasMedia);
   }
 }
@@ -182,7 +182,7 @@ export function renderAudioList(view, refs, type) {
       delBtn.dataset.filename = audio.filename;
       delBtn.dataset.target   = type;
       delBtn.textContent      = '🗑️';
-      delBtn.title            = 'Delete audio track';
+      delBtn.title            = t('delete_audio_track');
       item.appendChild(delBtn);
     }
 
@@ -237,7 +237,7 @@ function checkMediaCollapse(view, refs, type) {
   if (available < MEDIA_COLLAPSE_THRESHOLD) {
     mediaRow.hidden     = true;
     peekBtn.hidden      = false;
-    peekBtn.textContent = '📷 Show media';
+    peekBtn.textContent = `📷 ${t('show_media')}`;
   }
 }
 
@@ -291,7 +291,7 @@ export function renderAll(view, refs) {
     setHidden(refs.answerMediaHostWrap,   true);
     if (refs.toggleAnswerBtn) {
       refs.toggleAnswerBtn.disabled    = true;
-      refs.toggleAnswerBtn.textContent = '👁️ Show answer';
+      refs.toggleAnswerBtn.textContent = `👁️ ${t('show_answer')}`;
     }
     return;
   }
@@ -342,3 +342,4 @@ export function renderAll(view, refs) {
     });
   }
 }
+import { t } from '../i18n.js';

@@ -16,6 +16,7 @@
     align-items: center;
     justify-content: space-between;
     flex-shrink: 0;
+    gap: 16px;
 }
 
 .lobby__title {
@@ -24,6 +25,42 @@
     font-weight: 900;
     color: var(--text);
     letter-spacing: -0.02em;
+}
+
+.lobby__langSwitch {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+    margin-right: 8px;
+    padding: 4px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-2);
+}
+
+.lobby__langBtn {
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    padding: 8px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+}
+
+.lobby__langBtn:hover {
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.lobby__langBtn.is-active {
+    color: var(--btn-brand-text);
+    background: var(--btn-brand-bg);
 }
 
 .lobby__logout-btn {
@@ -262,6 +299,17 @@
     .lobby__row {
         align-items: flex-start;
         flex-direction: column;
+    }
+
+    .lobby__header {
+        flex-wrap: wrap;
+    }
+
+    .lobby__langSwitch {
+        order: 3;
+        width: 100%;
+        margin: 0;
+        justify-content: center;
     }
 
     .lobby__rowActions {

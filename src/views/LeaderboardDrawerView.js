@@ -1,6 +1,7 @@
 // src/views/LeaderboardDrawerView.js
 import QRCode from 'qrcode';
 import { ViewDisposer } from '../utils/disposer.js';
+import { t, withLanguageParam } from '../i18n.js';
 
 export class LeaderboardDrawerView {
   constructor({ gameId, onClose } = {}) {
@@ -70,18 +71,18 @@ export class LeaderboardDrawerView {
     root.innerHTML = `
       <div class="leaderboard-drawer__overlay"></div>
 
-      <aside class="leaderboard-drawer__panel" role="dialog" aria-label="Leaderboard">
+      <aside class="leaderboard-drawer__panel" role="dialog" aria-label="${t('leaderboard')}">
         <header class="leaderboard-drawer__header">
-          <h3 class="leaderboard-drawer__title">Leaderboard</h3>
-          <button class="leaderboard-drawer__close" type="button" aria-label="Close">&times;</button>
+          <h3 class="leaderboard-drawer__title">${t('leaderboard')}</h3>
+          <button class="leaderboard-drawer__close" type="button" aria-label="${t('close')}">&times;</button>
         </header>
 
         <div class="leaderboard-drawer__body">
           <div class="leaderboard-drawer__section leaderboard-drawer__section--qr">
             <div class="leaderboard-drawer__qr-wrap">
               <div class="leaderboard-drawer__qr-glow"></div>
-              <img class="leaderboard-drawer__qr-img" alt="Leaderboard QR code">
-              <a class="leaderboard-drawer__qr-link" target="_blank" rel="noopener noreferrer">Open leaderboard ↗</a>
+              <img class="leaderboard-drawer__qr-img" alt="${t('leaderboard_qr_alt')}">
+              <a class="leaderboard-drawer__qr-link" target="_blank" rel="noopener noreferrer">${t('open_leaderboard')}</a>
             </div>
           </div>
         </div>
@@ -104,10 +105,10 @@ export class LeaderboardDrawerView {
     // BASE_URL is injected by Vite: '/' in dev, '/Quiz-Game/' on GitHub Pages.
     // This ensures the QR code points to the correct public URL regardless of
     // whether the user scans it on the same network or a different one.
-    const url = `${window.location.origin}${import.meta.env.BASE_URL}leaderboard.html?gameId=${this._gameId}`;
+    const url = withLanguageParam(`${import.meta.env.BASE_URL}leaderboard.html?gameId=${this._gameId}`);
 
     this._qrLink.href = url;
-    this._qrLink.textContent = 'Open leaderboard ↗';
+    this._qrLink.textContent = t('open_leaderboard');
 
     try {
       const dataUrl = await QRCode.toDataURL(url, {

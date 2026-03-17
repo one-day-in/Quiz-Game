@@ -13,12 +13,15 @@ import { createMediaService } from './services/MediaService.js';
 
 import { renderLogin } from './views/LoginView.js';
 import { LobbyView } from './views/LobbyView.js';
+import { initLanguageFromUrl, t } from './i18n.js';
 
 const root = document.getElementById('app');
 const IS_DEV = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
 const LAST_GAME_ID_KEY   = 'lastGameId';
 const LAST_GAME_NAME_KEY = 'lastGameName';
+
+initLanguageFromUrl();
 
 function saveLastGame(gameId, gameName) {
     localStorage.setItem(LAST_GAME_ID_KEY, gameId);
@@ -33,7 +36,7 @@ function clearLastGame() {
 function getLastGame() {
     const id = localStorage.getItem(LAST_GAME_ID_KEY);
     if (!id) return null;
-    return { id, name: localStorage.getItem(LAST_GAME_NAME_KEY) || 'Game' };
+    return { id, name: localStorage.getItem(LAST_GAME_NAME_KEY) || t('new_game') };
 }
 
 // Track current view/app cleanup
@@ -47,7 +50,7 @@ function clearRoot() {
     root.innerHTML = '';
 }
 
-function renderLoading(msg = 'Loading...') {
+function renderLoading(msg = t('loading')) {
     root.innerHTML = `
         <div class="page-loader">
             <div class="page-loader__ring"></div>
@@ -59,9 +62,9 @@ function renderLoading(msg = 'Loading...') {
 function renderError(error, onRetry) {
     root.innerHTML = `
         <div class="page-error">
-            <h2 class="page-error__title">Failed to load</h2>
+            <h2 class="page-error__title">${escapeHtml(t('failed_to_load'))}</h2>
             <pre class="page-error__detail">${escapeHtml(String(error?.message || error))}</pre>
-            <button class="page-error__retry" id="retryBtn">Try again</button>
+            <button class="page-error__retry" id="retryBtn">${escapeHtml(t('try_again'))}</button>
         </div>
     `;
     document.getElementById('retryBtn')?.addEventListener('click', onRetry);
@@ -80,7 +83,7 @@ function renderLobby(user) {
                 renderGame(user, game.id, game.name);
             } catch (err) {
                 console.error('[Bootstrap] createGame failed:', err);
-                alert(`Error creating game: ${err.message}`);
+                alert(`${t('error_prefix')}: ${err.message}`);
             }
         },
         onLogout: async () => {
@@ -96,7 +99,7 @@ function renderLobby(user) {
 async function renderGame(user, gameId, gameName) {
     saveLastGame(gameId, gameName);
     clearRoot();
-    renderLoading('Loading game...');
+    renderLoading(t('loading_game'));
 
     try {
         const repo = createGameRepository(gameId);
@@ -163,7 +166,7 @@ async function startApp() {
     _starting = true;
 
     try {
-        renderLoading('Checking session...');
+        renderLoading(t('checking_session'));
 
         const session = await getSession();
 

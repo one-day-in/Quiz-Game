@@ -2,6 +2,7 @@ const REVEAL_W = 80; // px — width of the delete action strip
 let _activeSwipeState = null;
 
 import { sortPlayersByScore } from './leaderboardSort.js';
+import { t } from '../i18n.js';
 
 function closeActiveSwipeRow() {
   _activeSwipeState?.close();
@@ -20,14 +21,14 @@ export function LeaderboardGridView({
 
   const title = document.createElement('div');
   title.className = 'leaderboard__title';
-  title.textContent = 'Leaderboard';
+  title.textContent = t('leaderboard');
   header.appendChild(title);
 
   if (typeof onAddPlayer === 'function') {
     const addButton = document.createElement('button');
     addButton.type = 'button';
     addButton.className = 'leaderboard__addPlayerBtn';
-    addButton.textContent = 'Add player';
+    addButton.textContent = t('add_player');
     addButton.addEventListener('click', () => onAddPlayer());
     header.appendChild(addButton);
   }
@@ -55,7 +56,7 @@ export function LeaderboardGridView({
     if (!sortedPlayers.length) {
       const empty = document.createElement('div');
       empty.className = 'leaderboard__empty';
-      empty.textContent = 'No players yet';
+      empty.textContent = t('no_players_yet');
       list.appendChild(empty);
       return;
     }
@@ -81,7 +82,7 @@ function buildRow(player, onDeletePlayer) {
 
   const name = document.createElement('div');
   name.className = 'leaderboard__nameLabel';
-  name.textContent = player?.name || 'Player';
+  name.textContent = player?.name || t('player_fallback');
 
   const points = document.createElement('div');
   points.className = 'leaderboard__scoreValue';
@@ -103,8 +104,8 @@ function buildRow(player, onDeletePlayer) {
   const deleteBtn = document.createElement('button');
   deleteBtn.type = 'button';
   deleteBtn.className = 'leaderboard__deleteRevealBtn';
-  deleteBtn.setAttribute('aria-label', `Remove ${player?.name || 'Player'}`);
-  deleteBtn.textContent = 'Delete';
+  deleteBtn.setAttribute('aria-label', t('remove_player_aria', { name: player?.name || t('player_fallback') }));
+  deleteBtn.textContent = t('delete');
   deleteBtn.addEventListener('click', () => onDeletePlayer(player.id));
 
   reveal.appendChild(deleteBtn);

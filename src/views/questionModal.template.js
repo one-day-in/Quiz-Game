@@ -1,4 +1,6 @@
 // src/views/questionModal.template.js
+import { t } from '../i18n.js';
+
 export function buildModalDom() {
   const root = document.createElement('div');
   root.className = 'qmodal';
@@ -18,14 +20,14 @@ export function buildModalDom() {
         <div class="qmodal__headerActions">
           <label class="qmodal__headerToggle">
             <input type="checkbox" class="qmodal__quizSpinnerInput">
-            <span>Quiz Spinner</span>
+            <span>${t('quiz_spinner')}</span>
           </label>
 
           <!-- Right: toggle view/edit mode -->
           <button
             class="qmodal__btn qmodal__btn--ghost qmodal__btnToggleMode"
             type="button"
-          >✏ Edit</button>
+          >✏ ${t('edit')}</button>
         </div>
       </header>
 
@@ -39,7 +41,7 @@ export function buildModalDom() {
         <!-- QUESTION -->
         <div class="qmodal__section qmodal__questionSection">
 
-          <div class="qmodal__sectionLabel">Question</div>
+          <div class="qmodal__sectionLabel">${t('question')}</div>
 
           <div class="qmodal__sectionContent">
 
@@ -48,7 +50,7 @@ export function buildModalDom() {
               <div class="qmodal__text qmodal__questionText"></div>
               <textarea
                 class="qmodal__textarea qmodal__questionInput"
-                placeholder="Type your question..."
+                placeholder="${t('question')}"
               ></textarea>
             </div>
 
@@ -58,15 +60,15 @@ export function buildModalDom() {
               <!-- Upload progress overlay (edit mode) -->
               <div class="qmodal__uploadOverlay qmodal__questionUploadOverlay" hidden aria-hidden="true">
                 <div class="qmodal__uploadRing"></div>
-                <span class="qmodal__uploadText">Uploading…</span>
+                <span class="qmodal__uploadText">${t('uploading')}</span>
               </div>
 
               <!-- Edit-mode controls -->
               <div class="qmodal__mediaActions qmodal__questionMediaActions">
                 <input class="qmodal__file qmodal__questionFile" type="file" hidden accept="image/*,video/*">
-                <button type="button" class="qmodal__btn qmodal__btn--primary qmodal__btn--mediaAction qmodal__questionUploadBtn" title="Upload image or video">⬆️ image/video</button>
+                <button type="button" class="qmodal__btn qmodal__btn--primary qmodal__btn--mediaAction qmodal__questionUploadBtn" title="${t('image_video')}">⬆️ ${t('image_video')}</button>
                 <input class="qmodal__file qmodal__questionAudioFile" type="file" hidden accept="audio/*">
-                <button type="button" class="qmodal__btn qmodal__btn--secondary qmodal__btn--mediaAction qmodal__questionAddAudioBtn" title="Add audio track">🎵 add audio</button>
+                <button type="button" class="qmodal__btn qmodal__btn--secondary qmodal__btn--mediaAction qmodal__questionAddAudioBtn" title="${t('add_audio')}">🎵 ${t('add_audio')}</button>
               </div>
 
               <!-- Image / Video player + delete -->
@@ -74,7 +76,7 @@ export function buildModalDom() {
                 <div class="qmodal__mediaHostWrap qmodal__questionMediaHostWrap">
                   <div class="qmodal__mediaHost" data-media="question"></div>
                 </div>
-                <button type="button" class="qmodal__btn qmodal__btn--danger qmodal__audioDeleteBtn qmodal__mediaDeleteBtn qmodal__questionDeleteBtn" title="Delete media" hidden aria-hidden="true">🗑️</button>
+                <button type="button" class="qmodal__btn qmodal__btn--danger qmodal__audioDeleteBtn qmodal__mediaDeleteBtn qmodal__questionDeleteBtn" title="${t('delete_media')}" hidden aria-hidden="true">🗑️</button>
               </div>
 
               <!-- Audio list (visible in both edit and view modes) -->
@@ -83,7 +85,7 @@ export function buildModalDom() {
               <!-- Peek button: view mode only, shown by JS when text is too long
                    for media to display comfortably (< 150 px available height) -->
               <button type="button" class="qmodal__mediaPeekBtn qmodal__questionMediaPeekBtn" hidden>
-                📷 Show media
+                📷 ${t('show_media')}
               </button>
 
             </div>
@@ -93,7 +95,7 @@ export function buildModalDom() {
         <!-- ANSWER -->
         <div class="qmodal__section qmodal__answerSection">
 
-          <div class="qmodal__sectionLabel">Answer</div>
+          <div class="qmodal__sectionLabel">${t('answer')}</div>
 
           <div class="qmodal__sectionContent">
 
@@ -102,7 +104,7 @@ export function buildModalDom() {
               <div class="qmodal__text qmodal__answerText"></div>
               <textarea
                 class="qmodal__textarea qmodal__answerInput"
-                placeholder="Type your answer..."
+                placeholder="${t('answer')}"
               ></textarea>
             </div>
 
@@ -112,15 +114,15 @@ export function buildModalDom() {
               <!-- Upload progress overlay (edit mode) -->
               <div class="qmodal__uploadOverlay qmodal__answerUploadOverlay" hidden aria-hidden="true">
                 <div class="qmodal__uploadRing"></div>
-                <span class="qmodal__uploadText">Uploading…</span>
+                <span class="qmodal__uploadText">${t('uploading')}</span>
               </div>
 
               <!-- Edit-mode controls -->
               <div class="qmodal__mediaActions qmodal__answerMediaActions">
                 <input class="qmodal__file qmodal__answerFile" type="file" hidden accept="image/*,video/*">
-                <button type="button" class="qmodal__btn qmodal__btn--primary qmodal__btn--mediaAction qmodal__answerUploadBtn" title="Upload image or video">⬆️ image/video</button>
+                <button type="button" class="qmodal__btn qmodal__btn--primary qmodal__btn--mediaAction qmodal__answerUploadBtn" title="${t('image_video')}">⬆️ ${t('image_video')}</button>
                 <input class="qmodal__file qmodal__answerAudioFile" type="file" hidden accept="audio/*">
-                <button type="button" class="qmodal__btn qmodal__btn--secondary qmodal__btn--mediaAction qmodal__answerAddAudioBtn" title="Add audio track">🎵 add audio</button>
+                <button type="button" class="qmodal__btn qmodal__btn--secondary qmodal__btn--mediaAction qmodal__answerAddAudioBtn" title="${t('add_audio')}">🎵 ${t('add_audio')}</button>
               </div>
 
               <!-- Image / Video player + delete -->
@@ -128,7 +130,7 @@ export function buildModalDom() {
                 <div class="qmodal__mediaHostWrap qmodal__answerMediaHostWrap">
                   <div class="qmodal__mediaHost" data-media="answer"></div>
                 </div>
-                <button type="button" class="qmodal__btn qmodal__btn--danger qmodal__audioDeleteBtn qmodal__mediaDeleteBtn qmodal__answerDeleteBtn" title="Delete media" hidden aria-hidden="true">🗑️</button>
+                <button type="button" class="qmodal__btn qmodal__btn--danger qmodal__audioDeleteBtn qmodal__mediaDeleteBtn qmodal__answerDeleteBtn" title="${t('delete_media')}" hidden aria-hidden="true">🗑️</button>
               </div>
 
               <!-- Audio list (visible in both edit and view modes) -->
@@ -136,7 +138,7 @@ export function buildModalDom() {
 
               <!-- Peek button: view mode only, shown by JS when text is too long -->
               <button type="button" class="qmodal__mediaPeekBtn qmodal__answerMediaPeekBtn" hidden>
-                📷 Show media
+                📷 ${t('show_media')}
               </button>
 
             </div>
@@ -152,22 +154,22 @@ export function buildModalDom() {
         <div class="qmodal__footerLeft">
           <label class="qmodal__toggle">
             <input type="checkbox" class="qmodal__toggleInput">
-            <span>Answered</span>
+            <span>${t('answered')}</span>
           </label>
 
           <button type="button" class="qmodal__btn qmodal__btnToggleAnswer">
-            👁️ Show answer
+            👁️ ${t('show_answer')}
           </button>
         </div>
 
         <!-- Right: result buttons (equal width, side by side) -->
         <div class="qmodal__footerRight">
           <button type="button" class="qmodal__btn qmodal__btn--danger qmodal__btnIncorrect">
-            ✕ Not Correct
+            ✕ ${t('not_correct')}
           </button>
 
           <button type="button" class="qmodal__btn qmodal__btn--primary qmodal__btnCorrect">
-            ✓ Correct
+            ✓ ${t('correct')}
           </button>
         </div>
 

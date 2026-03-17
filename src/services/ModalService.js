@@ -3,6 +3,7 @@ import { QuestionModalView } from '../views/QuestionModalView.js';
 import { Disposer } from '../utils/disposer.js';
 import { showConfirm } from '../utils/confirm.js';
 import { adjustPlayerScore, getGameRuntime, subscribeToGameRuntime } from '../api/gameApi.js';
+import { t } from '../i18n.js';
 
 export class ModalService {
   constructor(gameService, mediaService) {
@@ -51,12 +52,12 @@ export class ModalService {
   }
 
   _getHeaderTitle({ roundId, rowId, value, topic }) {
-    const t =
+    const topicText =
       this._game?.getModel?.()?.getTopic?.(roundId, rowId) ??
       topic ??
       '';
 
-    const topicPart = (t || '').trim() || 'No topic';
+    const topicPart = (topicText || '').trim() || t('no_topic');
 
     // ✅ only points/value, no coordinates
     const valuePart =
@@ -124,7 +125,7 @@ export class ModalService {
           this.view.updateMedia('question', media);
         } catch (e) {
           console.error('[ModalService] toggle quiz spinner failed:', e);
-          alert('Error applying Quiz Spinner template: ' + (e?.message || e));
+          alert(`${t('quiz_spinner_error')}: ` + (e?.message || e));
           throw e;
         }
       },
@@ -158,7 +159,7 @@ export class ModalService {
           this.view.updateMedia(target, viewMedia);
         } catch (e) {
           console.error('[ModalService] upload failed:', e);
-          alert('Error uploading media: ' + (e?.message || e));
+          alert(`${t('upload_media_error')}: ` + (e?.message || e));
           throw e;
         } finally {
           this.view?.setUploading(target, false);
@@ -166,7 +167,7 @@ export class ModalService {
       },
 
       onDeleteMedia: async (target) => {
-        if (!await showConfirm({ message: 'Delete media?' })) return;
+        if (!await showConfirm({ message: t('delete_media_confirm') })) return;
 
         this.view.setUploading(target, true);
         try {
@@ -177,7 +178,7 @@ export class ModalService {
           this.view.updateMedia(target, null);
         } catch (e) {
           console.error('[ModalService] delete media failed:', e);
-          alert('Error deleting media: ' + (e?.message || e));
+          alert(`${t('delete_media_error')}: ` + (e?.message || e));
           throw e;
         } finally {
           this.view?.setUploading(target, false);
@@ -193,14 +194,14 @@ export class ModalService {
           this.view.updateAudioList(target, [...this.view.getAudioFiles(target), viewAudio]);
         } catch (e) {
           console.error('[ModalService] add audio failed:', e);
-          alert('Error uploading audio: ' + (e?.message || e));
+          alert(`${t('upload_audio_error')}: ` + (e?.message || e));
         } finally {
           this.view?.setUploading(target, false);
         }
       },
 
       onDeleteAudio: async (filename, target) => {
-        if (!await showConfirm({ message: 'Delete audio track?' })) return;
+        if (!await showConfirm({ message: t('delete_audio_confirm') })) return;
 
         this.view.setUploading(target, true);
         try {
@@ -210,7 +211,7 @@ export class ModalService {
           this.view.updateAudioList(target, this.view.getAudioFiles(target).filter(f => f.filename !== filename));
         } catch (e) {
           console.error('[ModalService] delete audio failed:', e);
-          alert('Error deleting audio: ' + (e?.message || e));
+          alert(`${t('delete_audio_error')}: ` + (e?.message || e));
         } finally {
           this.view?.setUploading(target, false);
         }
@@ -234,7 +235,7 @@ export class ModalService {
       await this._game.updateCell(roundId, rowId, cellId, update);
     } catch (error) {
       console.error('[ModalService] Failed to update cell:', error);
-      if (!silent) alert('Save failed. Please try again.');
+      if (!silent) alert(t('save_failed'));
       throw error;
     }
   }

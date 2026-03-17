@@ -3,16 +3,7 @@ import { listGames, renameGame } from '../api/gameApi.js';
 import { GameRepository } from '../services/GameRepository.js';
 import { escapeHtml } from '../utils/utils.js';
 import { showConfirm, showPrompt } from '../utils/confirm.js';
-
-function formatDate(isoStr) {
-    if (!isoStr) return '';
-    try {
-        return new Date(isoStr).toLocaleString('uk-UA', {
-            day: '2-digit', month: '2-digit', year: 'numeric',
-            hour: '2-digit', minute: '2-digit'
-        });
-    } catch { return ''; }
-}
+import { formatLocaleDate, getLanguage, getSupportedLanguages, setLanguage, subscribeLanguage, t } from '../i18n.js';
 
 export class LobbyView {
     constructor({ currentUser, onOpen, onCreate, onLogout }) {
@@ -23,6 +14,7 @@ export class LobbyView {
         this._games = [];
         this._loading = true;
         this._error = null;
+        this._stopLanguageSubscription = subscribeLanguage(() => this._render());
 
         this._render();
         this._loadGames();
@@ -30,7 +22,10 @@ export class LobbyView {
 
     get el() { return this._root; }
 
-    destroy() { this._root.remove(); }
+    destroy() {
+        this._stopLanguageSubscription?.();
+        this._root.remove();
+    }
 
     async _loadGames() {
         this._loading = true;
@@ -40,14 +35,14 @@ export class LobbyView {
             this._games = await listGames();
         } catch (err) {
             console.error('[LobbyView] loadGames failed:', err);
-            this._error = err.message || 'Failed to load games';
+            this._error = err.message || t('failed_to_load_games');
         }
         this._loading = false;
         this._render();
     }
 
     async _handleDelete(gameId, gameName) {
-        if (!await showConfirm({ message: `Delete game "${gameName}"?`, confirmText: 'Delete' })) return;
+        if (!await showConfirm({ message: t('delete_game_confirm', { name: gameName }), confirmText: t('delete') })) return;
         try {
             // GameRepository.deleteGame wipes the game's storage folder first,
             // then removes the DB row — no orphaned media files left behind.
@@ -56,7 +51,7 @@ export class LobbyView {
             this._render();
         } catch (err) {
             console.error('[LobbyView] delete failed:', err);
-            alert(`Error deleting game: ${err.message}`);
+            alert(`${t('error_prefix')}: ${err.message}`);
         }
     }
 
@@ -104,7 +99,7 @@ export class LobbyView {
                 console.error('[LobbyView] rename failed:', err);
                 restore(current);
                 game.name = current;
-                alert(`Error renaming game: ${err.message}`);
+                alert(`${t('error_prefix')}: ${err.message}`);
             }
         };
 
@@ -122,8 +117,17 @@ export class LobbyView {
 
         this._root.innerHTML = `
             <div class="lobby__header">
-                <h1 class="lobby__title">🎮 Quiz Games</h1>
-                <button class="lobby__logout-btn" type="button" aria-label="Logout" title="Logout">
+                <h1 class="lobby__title">🎮 ${t('quiz_games')}</h1>
+                <div class="lobby__langSwitch" role="group" aria-label="${t('language')}">
+                    ${getSupportedLanguages().map((language) => `
+                        <button
+                            class="lobby__langBtn${language === getLanguage() ? ' is-active' : ''}"
+                            type="button"
+                            data-language="${language}"
+                        >${escapeHtml(t(`language_${language}`))}</button>
+                    `).join('')}
+                </div>
+                <button class="lobby__logout-btn" type="button" aria-label="${t('logout')}" title="${t('logout')}">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                         <path d="M14 3h-4a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h4" />
                         <path d="M10 12h10" />
@@ -133,18 +137,18 @@ export class LobbyView {
             </div>
 
             <div class="lobby__body">
-                <button class="lobby__create-btn" type="button">＋ New Game</button>
+                <button class="lobby__create-btn" type="button">＋ ${t('new_game')}</button>
 
                 ${this._loading ? `
                     <div class="inline-loader">
                         <div class="inline-loader__ring"></div>
-                        <span>Loading...</span>
+                        <span>${t('loading_games')}</span>
                     </div>
                 ` : ''}
                 ${this._error ? `<div class="lobby__error">${escapeHtml(this._error)}</div>` : ''}
 
                 ${!this._loading && !this._error && this._games.length === 0 ? `
-                    <div class="lobby__empty">No saved games yet. Create your first one!</div>
+                    <div class="lobby__empty">${t('no_saved_games')}</div>
                 ` : ''}
 
                 <div class="lobby__groups">
@@ -155,7 +159,7 @@ export class LobbyView {
                                     ${escapeHtml(avatarLabel)}
                                 </div>
                                 <div class="lobby__groupMeta">
-                                    <p class="lobby__groupEyebrow">Created by</p>
+                                    <p class="lobby__groupEyebrow">${t('created_by')}</p>
                                     <h2 class="lobby__groupTitle">${escapeHtml(ownerLabel)}</h2>
                                 </div>
                             </div>
@@ -164,21 +168,21 @@ export class LobbyView {
                                     <div class="lobby__row" data-id="${escapeHtml(game.id)}">
                                         <div class="lobby__rowMain">
                                             <div class="lobby__rowName">${escapeHtml(game.name)}</div>
-                                            <div class="lobby__rowDate">Updated: ${formatDate(game.updated_at)}</div>
+                                            <div class="lobby__rowDate">${t('updated_at')}: ${formatLocaleDate(game.updated_at)}</div>
                                         </div>
                                         <div class="lobby__rowActions">
                                             <button
                                                 class="lobby__rowRename"
                                                 data-id="${escapeHtml(game.id)}"
                                                 type="button"
-                                                title="Rename game"
+                                                title="${t('rename_game')}"
                                             >✏</button>
                                             <button
                                                 class="lobby__rowDelete"
                                                 data-id="${escapeHtml(game.id)}"
                                                 data-name="${escapeHtml(game.name)}"
                                                 type="button"
-                                                title="Delete game"
+                                                title="${t('delete_game')}"
                                             >🗑️</button>
                                         </div>
                                     </div>
@@ -194,13 +198,19 @@ export class LobbyView {
         this._root.querySelector('.lobby__logout-btn')
             ?.addEventListener('click', () => onLogout?.());
 
+        this._root.querySelectorAll('.lobby__langBtn').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                setLanguage(btn.dataset.language);
+            });
+        });
+
         // Create new game
         this._root.querySelector('.lobby__create-btn')
             ?.addEventListener('click', async () => {
                 const name = await showPrompt({
-                    message:     'New game name:',
-                    placeholder: 'e.g. Round 1...',
-                    confirmText: 'Create',
+                    message:     t('new_game_name'),
+                    placeholder: t('game_name_placeholder'),
+                    confirmText: t('create'),
                 });
                 if (name) await onCreate?.(name);
             });
@@ -213,7 +223,7 @@ export class LobbyView {
                 if (e.target.closest('.lobby__rowDelete')) return;
                 if (e.target.closest('.lobby__rowRename')) return;
                 if (e.target.closest('.lobby__card-name-input')) return;
-                onOpen?.(id, game?.name || 'Game');
+                onOpen?.(id, game?.name || t('new_game'));
             });
         });
 
@@ -251,11 +261,11 @@ export class LobbyView {
         return Array.from(groups.entries()).map(([ownerId, games], index) => {
             const isCurrentUser = currentUserId && ownerId === currentUserId;
             const ownerLabel = isCurrentUser
-                ? (this._currentUser?.user_metadata?.full_name || this._currentUser?.email || 'You')
-                : `Creator ${index + 1} • ${ownerId.slice(0, 4)}`;
+                ? (this._currentUser?.user_metadata?.full_name || this._currentUser?.email || t('you'))
+                : t('creator_fallback', { index: index + 1, id: ownerId.slice(0, 4) });
             const avatarLabel = isCurrentUser
-                ? this._getInitials(this._currentUser?.user_metadata?.full_name || this._currentUser?.email || 'You')
-                : `C${index + 1}`;
+                ? this._getInitials(this._currentUser?.user_metadata?.full_name || this._currentUser?.email || t('you'))
+                : t('creator_short', { index: index + 1 }).slice(0, 2).toUpperCase();
 
             return { ownerId, ownerLabel, avatarLabel, games };
         });

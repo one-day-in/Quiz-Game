@@ -1,8 +1,10 @@
 import { getPlayers, subscribeToPlayers, removePlayer } from './api/gameApi.js';
 import { LeaderboardGridView } from './views/LeaderboardGridView.js';
 import QRCode from 'qrcode';
+import { initLanguageFromUrl, t, withLanguageParam } from './i18n.js';
 
 const root = document.getElementById('leaderboard-app');
+initLanguageFromUrl();
 
 // gameId from URL: /leaderboard.html?gameId=xxx
 const gameId = new URLSearchParams(location.search).get('gameId');
@@ -17,8 +19,8 @@ async function startLeaderboard() {
     if (!gameId) {
         root.innerHTML = `
             <div class="page-error">
-                <h2 class="page-error__title">No game selected</h2>
-                <pre class="page-error__detail">Open leaderboard from the game header.</pre>
+                <h2 class="page-error__title">${t('no_game_selected')}</h2>
+                <pre class="page-error__detail">${t('open_leaderboard_from_header')}</pre>
             </div>`;
         return;
     }
@@ -26,7 +28,7 @@ async function startLeaderboard() {
     root.innerHTML = `
         <div class="page-loader">
             <div class="page-loader__ring"></div>
-            <p class="page-loader__text">Loading…</p>
+            <p class="page-loader__text">${t('loading')}</p>
         </div>`;
 
     try {
@@ -40,7 +42,7 @@ async function startLeaderboard() {
     } catch (e) {
         root.innerHTML = `
             <div class="page-error">
-                <h2 class="page-error__title">Error loading players</h2>
+                <h2 class="page-error__title">${t('error_loading_players')}</h2>
                 <pre class="page-error__detail">${e.message}</pre>
             </div>`;
     }
@@ -89,20 +91,20 @@ function ensureAddPlayerDrawer() {
     drawer.hidden = true;
     drawer.innerHTML = `
         <div class="leaderboard-drawer__overlay"></div>
-        <aside class="leaderboard-drawer__panel" role="dialog" aria-modal="true" aria-label="Add player">
+        <aside class="leaderboard-drawer__panel" role="dialog" aria-modal="true" aria-label="${t('add_player')}">
             <header class="leaderboard-drawer__header">
-                <h3 class="leaderboard-drawer__title">Add player</h3>
-                <button class="leaderboard-drawer__close" type="button" aria-label="Close">&times;</button>
+                <h3 class="leaderboard-drawer__title">${t('add_player')}</h3>
+                <button class="leaderboard-drawer__close" type="button" aria-label="${t('close')}">&times;</button>
             </header>
             <div class="leaderboard-drawer__body leaderboard-page__drawerBody">
                 <div class="leaderboard-page__drawerCopy">
-                    <p class="leaderboard-page__eyebrow">Players</p>
-                    <p class="leaderboard-page__text">Scan this QR code on a phone to join the game, set a name, and manage your score.</p>
+                    <p class="leaderboard-page__eyebrow">${t('players')}</p>
+                    <p class="leaderboard-page__text">${t('scan_player_qr')}</p>
                 </div>
                 <div class="leaderboard-drawer__section leaderboard-drawer__section--qr">
                     <div class="leaderboard-drawer__qr-wrap">
                         <div class="leaderboard-drawer__qr-glow"></div>
-                        <img class="leaderboard-drawer__qr-img leaderboard-page__qr" alt="Player controller QR code">
+                        <img class="leaderboard-drawer__qr-img leaderboard-page__qr" alt="${t('player_controller_qr_alt')}">
                     </div>
                 </div>
             </div>
@@ -153,7 +155,7 @@ function scheduleRefresh() {
 }
 
 async function renderPlayerJoinQr(joinPanel) {
-    const url = `${window.location.origin}${import.meta.env.BASE_URL}player.html?gameId=${gameId}`;
+    const url = withLanguageParam(`${import.meta.env.BASE_URL}player.html?gameId=${gameId}`);
     const qrImg = joinPanel.querySelector('.leaderboard-page__qr');
     if (!qrImg) return;
 
