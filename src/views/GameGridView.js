@@ -1,4 +1,5 @@
 import { GRID_CONFIG, getCellValueByCol } from '../utils/utils.js';
+import { t } from '../i18n.js';
 
 // ---------- helpers ----------
 
@@ -14,7 +15,7 @@ function setTopicCellText(el, topic) {
 
   if (!t || /^Topic \d+$/.test(t)) {
     el.classList.add('is-empty');
-    span.textContent = '➕ add topic';
+    span.textContent = t('add_topic');
   } else {
     el.classList.remove('is-empty');
     span.textContent = t;
@@ -55,7 +56,7 @@ export function GameGridView({ model, uiState, roundId, onCellClick, onTopicChan
     const editTopicBtn = document.createElement('button');
     editTopicBtn.type = 'button';
     editTopicBtn.className = 'cell-topic__editBtn';
-    editTopicBtn.setAttribute('aria-label', 'Edit topic');
+    editTopicBtn.setAttribute('aria-label', t('edit_topic'));
     editTopicBtn.textContent = '✏';
     topicCell.appendChild(editTopicBtn);
 
@@ -68,7 +69,7 @@ export function GameGridView({ model, uiState, roundId, onCellClick, onTopicChan
       input.type = 'text';
       input.className = 'topic-editor';
       input.value = currentTopic;
-      input.placeholder = 'edit topic...';
+      input.placeholder = t('edit_topic');
 
       // Replace content with input (keep editBtn out of the way)
       const span = topicCell.querySelector('span');
