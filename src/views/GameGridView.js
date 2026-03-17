@@ -4,7 +4,7 @@ import { t } from '../i18n.js';
 // ---------- helpers ----------
 
 function setTopicCellText(el, topic) {
-  const t = (topic || '').trim();
+  const topicText = (topic || '').trim();
 
   // Keep span between renders (so fitText doesn't break)
   let span = el.querySelector(':scope > span');
@@ -13,12 +13,12 @@ function setTopicCellText(el, topic) {
     el.appendChild(span);
   }
 
-  if (!t || /^Topic \d+$/.test(t)) {
+  if (!topicText || /^Topic \d+$/.test(topicText)) {
     el.classList.add('is-empty');
     span.textContent = t('add_topic');
   } else {
     el.classList.remove('is-empty');
-    span.textContent = t;
+    span.textContent = topicText;
   }
 }
 
