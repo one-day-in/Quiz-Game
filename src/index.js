@@ -10,26 +10,8 @@ const IS_DEV =
 const appDisposer = new Disposer();
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Debug click logger — dev only
     if (IS_DEV) {
-        appDisposer.addEventListener(
-            document,
-            'click',
-            (e) => {
-                const target = e.target;
-                console.log('🔍 Dev click:', {
-                    tag: target?.tagName,
-                    class: target?.className,
-                    id: target?.id,
-                    dataset: target?.dataset
-                });
-            },
-            true
-        );
-
-        // dev-only restart
         window.restartApp = () => {
-            console.log('🔄 Restarting app...');
             const app = document.getElementById('app');
             if (app) {
                 app.innerHTML = '<div class="loading">Restarting...</div>';
