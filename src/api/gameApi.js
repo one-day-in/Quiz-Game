@@ -118,11 +118,6 @@ function mapPlayerRpcResult(data) {
     return normalizePlayerRow(row, 0, { includeControllerId: false });
 }
 
-function extractGameFromRealtimePayload(payload) {
-    const data = payload?.new?.data ?? payload?.record?.data ?? payload?.data ?? null;
-    return data ? normalizeGame(data) : null;
-}
-
 // ================================================
 // LOBBY — game list
 // ================================================

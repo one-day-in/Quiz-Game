@@ -30,6 +30,7 @@ let isPressEnabled = false;
 let pressWinnerPlayerId = null;
 
 const SCORE_FLUSH_DELAY_MS = 220;
+const CONTROLLER_DISABLED_SELECTOR = '.player-controller__input, .player-controller__scoreBtn';
 
 async function startPlayerController() {
   if (!gameId) {
@@ -244,7 +245,6 @@ function bindRuntimeState() {
   stopRuntimeSubscription?.();
   stopRuntimeSubscription = subscribeToGameRuntime(gameId, (runtime) => {
     applyRuntimeState(runtime);
-    syncPressButtonState();
   });
 }
 
@@ -256,7 +256,7 @@ function startGameRefreshLoop() {
         .then((players) => syncControllerFromPlayers(players))
         .catch(() => {}),
       getGameRuntime(gameId)
-        .then((runtime) => { applyRuntimeState(runtime); syncPressButtonState(); })
+        .then((runtime) => { applyRuntimeState(runtime); })
         .catch(() => {}),
     ]);
   }, 1000);
@@ -282,7 +282,7 @@ function syncControllerFromPlayers(players = []) {
 
   player = nextPlayer;
   confirmedScore = Number(nextPlayer.points) || 0;
-  scoreEl.textContent = formatPoints(confirmedScore + pendingScoreDelta);
+  updateScoreDisplay(scoreEl);
   if (document.activeElement !== nameInput) {
     nameInput.value = nextPlayer.name;
   }
@@ -291,9 +291,6 @@ function syncControllerFromPlayers(players = []) {
 function applyRuntimeState(runtime) {
   isPressEnabled = !!runtime?.pressEnabled;
   pressWinnerPlayerId = runtime?.winnerPlayerId || null;
-}
-
-function syncPressButtonState() {
   const pressBtn = document.getElementById('playerPressBtn');
   if (!pressBtn) return;
   pressBtn.classList.toggle('is-enabled', !!isPressEnabled && !pressWinnerPlayerId);
@@ -311,8 +308,7 @@ async function syncPressRuntime() {
 async function claimPress(statusEl) {
   try {
     applyRuntimeState(await claimGamePress(gameId, controllerId));
-    syncPressButtonState();
-    statusEl.hidden = true;
+    hideStatus(statusEl);
   } catch (error) {
     statusEl.textContent = error.message || 'Could not claim press';
     statusEl.hidden = false;
@@ -321,8 +317,8 @@ async function claimPress(statusEl) {
 
 function queueScoreDelta(delta, scoreEl, statusEl) {
   pendingScoreDelta += Number(delta) || 0;
-  scoreEl.textContent = formatPoints(confirmedScore + pendingScoreDelta);
-  statusEl.hidden = true;
+  updateScoreDisplay(scoreEl);
+  hideStatus(statusEl);
 
   clearTimeout(scoreFlushTimer);
   scoreFlushTimer = window.setTimeout(() => {
@@ -340,11 +336,11 @@ async function flushQueuedScoreDelta(scoreEl, statusEl) {
   try {
     player = await adjustPlayerScoreByController(gameId, controllerId, delta);
     confirmedScore = Number(player.points) || 0;
-    scoreEl.textContent = formatPoints(confirmedScore + pendingScoreDelta);
-    statusEl.hidden = true;
+    updateScoreDisplay(scoreEl);
+    hideStatus(statusEl);
   } catch (error) {
     pendingScoreDelta += delta;
-    scoreEl.textContent = formatPoints(confirmedScore + pendingScoreDelta);
+    updateScoreDisplay(scoreEl);
     statusEl.textContent = error.message || 'Could not update score';
     statusEl.hidden = false;
   } finally {
@@ -367,9 +363,17 @@ function toggleJoinPending(isPending) {
 }
 
 function setControllerPending(isPending) {
-  root.querySelectorAll('.player-controller__input, .player-controller__scoreBtn').forEach((element) => {
+  root.querySelectorAll(CONTROLLER_DISABLED_SELECTOR).forEach((element) => {
     element.disabled = isPending;
   });
+}
+
+function hideStatus(statusEl) {
+  if (statusEl) statusEl.hidden = true;
+}
+
+function updateScoreDisplay(scoreEl) {
+  if (scoreEl) scoreEl.textContent = formatPoints(confirmedScore + pendingScoreDelta);
 }
 
 function getOrCreateControllerId(gameIdValue) {
