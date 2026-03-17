@@ -1,6 +1,8 @@
 const REVEAL_W = 80; // px — width of the delete action strip
 let _activeSwipeState = null;
 
+import { sortPlayersByScore } from './leaderboardSort.js';
+
 function closeActiveSwipeRow() {
   _activeSwipeState?.close();
 }
@@ -46,13 +48,7 @@ export function LeaderboardGridView({
   function update(nextPlayers = []) {
     closeActiveSwipeRow(); // close before rebuilding DOM
 
-    const sortedPlayers = (Array.isArray(nextPlayers) ? nextPlayers : [])
-      .slice()
-      .sort((a, b) => {
-        const scoreDelta = (Number(b?.points) || 0) - (Number(a?.points) || 0);
-        if (scoreDelta !== 0) return scoreDelta;
-        return String(a?.name || '').localeCompare(String(b?.name || ''));
-      });
+    const sortedPlayers = sortPlayersByScore(nextPlayers);
 
     list.innerHTML = '';
 

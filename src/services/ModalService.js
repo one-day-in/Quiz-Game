@@ -309,7 +309,7 @@ export class ModalService {
       this.view?.updateWinnerName(runtime?.winnerName || '');
       this._pressEnableTimer = window.setTimeout(() => {
         void this._game.setPressEnabled(true);
-      }, 1000);
+      }, 2000);
     } catch (error) {
       console.error('[ModalService] Failed to reset press runtime:', error);
     }
