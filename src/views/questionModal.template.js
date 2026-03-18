@@ -31,13 +31,11 @@ export function buildModalDom() {
         </div>
       </header>
 
-      <div class="qmodal__bodyWrap">
-        <!-- PRESS WINNER BANNER — overlay over modal body when a player claims the press -->
+      <!-- BODY -->
+      <section class="qmodal__body">
+        <!-- PRESS WINNER BANNER — absolute overlay over body content -->
         <div class="qmodal__pressBanner" hidden aria-live="polite"></div>
-
-        <!-- BODY -->
-        <section class="qmodal__body">
-          <div class="qmodal__emptyState">✏️ is empty</div>
+        <div class="qmodal__emptyState">✏️ is empty</div>
 
           <!-- QUESTION -->
           <div class="qmodal__section qmodal__questionSection">
@@ -145,8 +143,7 @@ export function buildModalDom() {
               </div>
             </div>
           </div>
-        </section>
-      </div>
+      </section>
 
       <!-- FOOTER — same in both modes: Answered + Show answer (view only) + result placeholders -->
       <footer class="qmodal__footer">

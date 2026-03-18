@@ -4,7 +4,6 @@
 ========================================= */
 
 .qmodal__header,
-.qmodal__bodyWrap,
 .qmodal__body,
 .qmodal__footer {
     width: 100%;
@@ -104,12 +103,6 @@
 }
 
 
-.qmodal__bodyWrap {
-    position: relative;
-    flex: 1 1 auto;
-    min-height: 0;
-}
-
 /* Press winner banner — overlay over modal body when a player claims the press */
 .qmodal__pressBanner {
     position: absolute;
@@ -153,6 +146,7 @@
 
 /* Body */
 .qmodal__body {
+    position: relative;
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
