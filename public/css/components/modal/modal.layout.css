@@ -142,6 +142,10 @@
     pointer-events: none;
 }
 
+.qmodal__pressBanner[hidden] {
+    display: none !important;
+}
+
 .qmodal__pressBanner.is-visible {
     opacity: 1;
     transform: scale(1);
