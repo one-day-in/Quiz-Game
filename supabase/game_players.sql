@@ -206,7 +206,28 @@ begin
 end;
 $$;
 
+create or replace function public.delete_game_player(
+    p_game_id uuid,
+    p_player_id uuid
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+    delete from public.game_players
+    where game_players.game_id = p_game_id
+      and game_players.id = p_player_id;
+
+    if not found then
+        raise exception 'Player not found';
+    end if;
+end;
+$$;
+
 grant execute on function public.claim_game_player(uuid, text, text) to anon, authenticated;
 grant execute on function public.rename_game_player(uuid, text, text) to anon, authenticated;
 grant execute on function public.adjust_game_player_score(uuid, text, integer) to anon, authenticated;
 grant execute on function public.leave_game_player(uuid, text) to anon, authenticated;
+grant execute on function public.delete_game_player(uuid, uuid) to anon, authenticated;

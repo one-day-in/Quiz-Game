@@ -501,11 +501,10 @@ export async function adjustPlayerScore(gameId, playerId, delta) {
 }
 
 export async function removePlayer(gameId, playerId) {
-    const { error } = await supabase
-        .from('game_players')
-        .delete()
-        .eq('game_id', gameId)
-        .eq('id', playerId);
+    const { error } = await supabase.rpc('delete_game_player', {
+        p_game_id: gameId,
+        p_player_id: playerId,
+    });
 
     if (error) throw new Error(`[Game] removePlayer failed: ${error.message}`);
     return getPlayers(gameId);
