@@ -29,7 +29,7 @@ describe('ModalService press reset', () => {
     });
   });
 
-  it('enables press only after a 2 second delay', async () => {
+  it('enables press immediately after reset', async () => {
     const setPressEnabled = vi.fn().mockResolvedValue(undefined);
     const gameService = {
       setPressEnabled,
@@ -40,14 +40,8 @@ describe('ModalService press reset', () => {
 
     await service._resetPressRuntime();
 
-    expect(setPressEnabled).toHaveBeenCalledTimes(1);
-    expect(setPressEnabled).toHaveBeenNthCalledWith(1, false);
-
-    await vi.advanceTimersByTimeAsync(1999);
-    expect(setPressEnabled).toHaveBeenCalledTimes(1);
-
-    await vi.advanceTimersByTimeAsync(1);
     expect(setPressEnabled).toHaveBeenCalledTimes(2);
+    expect(setPressEnabled).toHaveBeenNthCalledWith(1, false);
     expect(setPressEnabled).toHaveBeenNthCalledWith(2, true);
   });
 

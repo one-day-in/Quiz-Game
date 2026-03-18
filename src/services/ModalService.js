@@ -308,9 +308,7 @@ export class ModalService {
       const runtime = await getGameRuntime(this._game.getGameId());
       this._pressWinnerId = runtime?.winnerPlayerId || null;
       this.view?.updateWinnerName(runtime?.winnerName || '');
-      this._pressEnableTimer = window.setTimeout(() => {
-        void this._game.setPressEnabled(true);
-      }, 2000);
+      await this._game.setPressEnabled(true);
     } catch (error) {
       console.error('[ModalService] Failed to reset press runtime:', error);
     }
