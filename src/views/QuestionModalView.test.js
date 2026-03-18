@@ -11,6 +11,10 @@ beforeAll(() => {
     configurable: true,
     value: vi.fn(),
   });
+  Object.defineProperty(window.HTMLElement.prototype, 'scrollIntoView', {
+    configurable: true,
+    value: vi.fn(),
+  });
 });
 
 function createView(overrides = {}) {
@@ -71,6 +75,23 @@ describe('QuestionModalView winner state', () => {
 
     expect(onIncorrect).toHaveBeenCalledTimes(1);
     expect(onCorrect).toHaveBeenCalledTimes(1);
+
+    view.destroy();
+  });
+
+  it('hides the winner banner while the answer section is shown', () => {
+    const view = createView();
+
+    view.updateWinnerName('Maria');
+    expect(view._refs.pressBanner.hidden).toBe(false);
+
+    view._refs.toggleAnswerBtn.click();
+    expect(view._isAnswerShown).toBe(true);
+    expect(view._refs.pressBanner.hidden).toBe(true);
+
+    view._refs.toggleAnswerBtn.click();
+    expect(view._isAnswerShown).toBe(false);
+    expect(view._refs.pressBanner.hidden).toBe(false);
 
     view.destroy();
   });

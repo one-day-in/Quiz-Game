@@ -247,6 +247,8 @@ export function renderAll(view, refs) {
   if (refs.answeredCheckbox) {
     refs.answeredCheckbox.checked = !!view._isAnswered;
   }
+
+  view.syncPressBannerVisibility?.();
   if (refs.quizSpinnerCheckbox) {
     refs.quizSpinnerCheckbox.checked = !!view._isQuizSpinner;
   }

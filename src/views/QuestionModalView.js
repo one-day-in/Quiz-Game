@@ -132,23 +132,34 @@ export class QuestionModalView {
         this._winnerName = (name || '').trim();
 
         const bannerEl = this._refs.pressBanner;
-        if (bannerEl) {
-            if (this._winnerName) {
-                bannerEl.textContent = `🔔 ${this._winnerName}`;
-                bannerEl.hidden = false;
-                bannerEl.classList.remove('is-visible');
-                void bannerEl.offsetWidth; // force reflow to restart animation
-                bannerEl.classList.add('is-visible');
-            } else {
-                bannerEl.hidden = true;
-                bannerEl.classList.remove('is-visible');
-            }
+        if (bannerEl && this._winnerName) {
+            bannerEl.textContent = `🔔 ${this._winnerName}`;
         }
+        this.syncPressBannerVisibility({ animate: !!this._winnerName });
 
         // Enable/disable result buttons based on whether there is a winner
         const hasWinner = !!this._winnerName;
         if (this._refs.btnIncorrect) this._refs.btnIncorrect.disabled = !hasWinner;
         if (this._refs.btnCorrect)   this._refs.btnCorrect.disabled   = !hasWinner;
+    }
+
+    syncPressBannerVisibility({ animate = false } = {}) {
+        const bannerEl = this._refs.pressBanner;
+        if (!bannerEl) return;
+
+        const shouldShow = !!this._winnerName && !(this._mode === 'view' && this._isAnswerShown);
+        if (!shouldShow) {
+            bannerEl.hidden = true;
+            bannerEl.classList.remove('is-visible');
+            return;
+        }
+
+        bannerEl.hidden = false;
+        if (animate) {
+            bannerEl.classList.remove('is-visible');
+            void bannerEl.offsetWidth;
+        }
+        bannerEl.classList.add('is-visible');
     }
 
     _bindFullscreenEvents() {
@@ -185,6 +196,7 @@ export class QuestionModalView {
             if (this._mode === 'edit') this._isAnswerShown = true;
             applyModeUI(this, this._refs);
             renderAll(this, this._refs);
+            this.syncPressBannerVisibility();
         });
 
         // ESC
@@ -232,6 +244,7 @@ export class QuestionModalView {
             this._isAnswerShown = !this._isAnswerShown;
             applyModeUI(this, this._refs);
             renderAll(this, this._refs);
+            this.syncPressBannerVisibility();
 
             if (this._isAnswerShown) {
                 requestAnimationFrame(() => {
