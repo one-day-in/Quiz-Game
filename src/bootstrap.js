@@ -1,6 +1,7 @@
 // src/bootstrap.js
 import { getSession, signOut, onAuthStateChange } from './api/authApi.js';
 import { createGame } from './api/gameApi.js';
+import { syncCurrentUserProfile } from './api/profileApi.js';
 import { escapeHtml } from './utils/utils.js';
 import { createAppController } from './AppController.js';
 import { Disposer } from './utils/disposer.js';
@@ -179,6 +180,11 @@ async function startApp() {
         _sessionActive = true;
 
         const user = session.user;
+        try {
+            await syncCurrentUserProfile(user);
+        } catch (error) {
+            console.error('[Bootstrap] profile sync failed:', error);
+        }
 
         const lastGame = getLastGame();
         if (lastGame) {

@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient.js';
+import { getProfilesByIds } from './profileApi.js';
 
 export const MAX_PLAYERS = 8;
 const PUBLIC_PLAYER_COLUMNS = 'id, game_id, name, points, joined_at';
@@ -128,7 +129,14 @@ export async function listGames() {
         .order('updated_at', { ascending: false });
 
     if (error) throw new Error(`[Game] listGames failed: ${error.message}`);
-    return data ?? [];
+    const games = data ?? [];
+    const profiles = await getProfilesByIds(games.map((game) => game.created_by));
+    const profilesById = new Map(profiles.map((profile) => [profile.id, profile]));
+
+    return games.map((game) => ({
+        ...game,
+        creatorProfile: profilesById.get(game.created_by) || null,
+    }));
 }
 
 export async function createGame(name) {

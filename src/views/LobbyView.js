@@ -158,12 +158,21 @@ export class LobbyView {
                 ` : ''}
 
                 <div class="lobby__groups">
-                    ${gameGroups.map(({ ownerId, ownerLabel, avatarLabel, games }) => `
+                    ${gameGroups.map(({ ownerId, ownerLabel, avatarLabel, avatarUrl, games }) => `
                         <section class="lobby__group" data-owner-id="${escapeHtml(ownerId)}">
                             <div class="lobby__groupHead">
-                                <div class="lobby__groupAvatar" style="${escapeHtml(this._buildAvatarStyle(ownerId))}">
-                                    ${escapeHtml(avatarLabel)}
-                                </div>
+                                ${avatarUrl ? `
+                                    <img
+                                        class="lobby__groupAvatar lobby__groupAvatar--image"
+                                        src="${escapeHtml(avatarUrl)}"
+                                        alt="${escapeHtml(ownerLabel)}"
+                                        referrerpolicy="no-referrer"
+                                    />
+                                ` : `
+                                    <div class="lobby__groupAvatar" style="${escapeHtml(this._buildAvatarStyle(ownerId))}">
+                                        ${escapeHtml(avatarLabel)}
+                                    </div>
+                                `}
                                 <div class="lobby__groupMeta">
                                     <p class="lobby__groupEyebrow">${t('created_by')}</p>
                                     <h2 class="lobby__groupTitle">${escapeHtml(ownerLabel)}</h2>
@@ -267,15 +276,19 @@ export class LobbyView {
         }
 
         return Array.from(groups.entries()).map(([ownerId, games], index) => {
+            const profile = games[0]?.creatorProfile || null;
             const isCurrentUser = currentUserId && ownerId === currentUserId;
             const ownerLabel = isCurrentUser
                 ? (this._currentUser?.user_metadata?.full_name || this._currentUser?.email || t('you'))
-                : t('creator_fallback', { index: index + 1, id: ownerId.slice(0, 4) });
+                : (profile?.full_name || profile?.email || t('creator_fallback', { index: index + 1, id: ownerId.slice(0, 4) }));
             const avatarLabel = isCurrentUser
                 ? this._getInitials(this._currentUser?.user_metadata?.full_name || this._currentUser?.email || t('you'))
-                : t('creator_short', { index: index + 1 }).slice(0, 2).toUpperCase();
+                : this._getInitials(profile?.full_name || profile?.email || t('creator_short', { index: index + 1 }));
+            const avatarUrl = isCurrentUser
+                ? (this._currentUser?.user_metadata?.avatar_url || this._currentUser?.user_metadata?.picture || '')
+                : (profile?.avatar_url || '');
 
-            return { ownerId, ownerLabel, avatarLabel, games };
+            return { ownerId, ownerLabel, avatarLabel, avatarUrl, games };
         });
     }
 

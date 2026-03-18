@@ -179,6 +179,12 @@
     box-shadow: var(--shadow-sm);
 }
 
+.lobby__groupAvatar--image {
+    object-fit: cover;
+    background: var(--surface-2);
+    border: 1px solid var(--border-2);
+}
+
 .lobby__groupMeta {
     min-width: 0;
 }
