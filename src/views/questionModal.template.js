@@ -31,121 +31,122 @@ export function buildModalDom() {
         </div>
       </header>
 
-      <!-- PRESS WINNER BANNER — shown when a player claims the press -->
-      <div class="qmodal__pressBanner" hidden aria-live="polite"></div>
+      <div class="qmodal__bodyWrap">
+        <!-- PRESS WINNER BANNER — overlay over modal body when a player claims the press -->
+        <div class="qmodal__pressBanner" hidden aria-live="polite"></div>
 
-      <!-- BODY -->
-      <section class="qmodal__body">
-        <div class="qmodal__emptyState">✏️ is empty</div>
+        <!-- BODY -->
+        <section class="qmodal__body">
+          <div class="qmodal__emptyState">✏️ is empty</div>
 
-        <!-- QUESTION -->
-        <div class="qmodal__section qmodal__questionSection">
+          <!-- QUESTION -->
+          <div class="qmodal__section qmodal__questionSection">
 
-          <div class="qmodal__sectionLabel">${t('question')}</div>
+            <div class="qmodal__sectionLabel">${t('question')}</div>
 
-          <div class="qmodal__sectionContent">
+            <div class="qmodal__sectionContent">
 
-            <!-- Left: text block -->
-            <div class="qmodal__textBlock">
-              <div class="qmodal__text qmodal__questionText"></div>
-              <textarea
-                class="qmodal__textarea qmodal__questionInput"
-                placeholder="${t('question')}"
-              ></textarea>
-            </div>
-
-            <!-- Right: media block -->
-            <div class="qmodal__mediaBlock">
-
-              <!-- Upload progress overlay (edit mode) -->
-              <div class="qmodal__uploadOverlay qmodal__questionUploadOverlay" hidden aria-hidden="true">
-                <div class="qmodal__uploadRing"></div>
-                <span class="qmodal__uploadText">${t('uploading')}</span>
+              <!-- Left: text block -->
+              <div class="qmodal__textBlock">
+                <div class="qmodal__text qmodal__questionText"></div>
+                <textarea
+                  class="qmodal__textarea qmodal__questionInput"
+                  placeholder="${t('question')}"
+                ></textarea>
               </div>
 
-              <!-- Edit-mode controls -->
-              <div class="qmodal__mediaActions qmodal__questionMediaActions">
-                <input class="qmodal__file qmodal__questionFile" type="file" hidden accept="image/*,video/*">
-                <button type="button" class="qmodal__btn qmodal__btn--primary qmodal__btn--mediaAction qmodal__questionUploadBtn" title="${t('image_video')}">⬆️ ${t('image_video')}</button>
-                <input class="qmodal__file qmodal__questionAudioFile" type="file" hidden accept="audio/*">
-                <button type="button" class="qmodal__btn qmodal__btn--secondary qmodal__btn--mediaAction qmodal__questionAddAudioBtn" title="${t('add_audio')}">🎵 ${t('add_audio')}</button>
-              </div>
+              <!-- Right: media block -->
+              <div class="qmodal__mediaBlock">
 
-              <!-- Image / Video player + delete -->
-              <div class="qmodal__mediaRow qmodal__audioItem">
-                <div class="qmodal__mediaHostWrap qmodal__questionMediaHostWrap">
-                  <div class="qmodal__mediaHost" data-media="question"></div>
+                <!-- Upload progress overlay (edit mode) -->
+                <div class="qmodal__uploadOverlay qmodal__questionUploadOverlay" hidden aria-hidden="true">
+                  <div class="qmodal__uploadRing"></div>
+                  <span class="qmodal__uploadText">${t('uploading')}</span>
                 </div>
-                <button type="button" class="qmodal__btn qmodal__btn--danger qmodal__audioDeleteBtn qmodal__mediaDeleteBtn qmodal__questionDeleteBtn" title="${t('delete_media')}" hidden aria-hidden="true">🗑️</button>
+
+                <!-- Edit-mode controls -->
+                <div class="qmodal__mediaActions qmodal__questionMediaActions">
+                  <input class="qmodal__file qmodal__questionFile" type="file" hidden accept="image/*,video/*">
+                  <button type="button" class="qmodal__btn qmodal__btn--primary qmodal__btn--mediaAction qmodal__questionUploadBtn" title="${t('image_video')}">⬆️ ${t('image_video')}</button>
+                  <input class="qmodal__file qmodal__questionAudioFile" type="file" hidden accept="audio/*">
+                  <button type="button" class="qmodal__btn qmodal__btn--secondary qmodal__btn--mediaAction qmodal__questionAddAudioBtn" title="${t('add_audio')}">🎵 ${t('add_audio')}</button>
+                </div>
+
+                <!-- Image / Video player + delete -->
+                <div class="qmodal__mediaRow qmodal__audioItem">
+                  <div class="qmodal__mediaHostWrap qmodal__questionMediaHostWrap">
+                    <div class="qmodal__mediaHost" data-media="question"></div>
+                  </div>
+                  <button type="button" class="qmodal__btn qmodal__btn--danger qmodal__audioDeleteBtn qmodal__mediaDeleteBtn qmodal__questionDeleteBtn" title="${t('delete_media')}" hidden aria-hidden="true">🗑️</button>
+                </div>
+
+                <!-- Audio list (visible in both edit and view modes) -->
+                <div class="qmodal__audioList qmodal__questionAudioList" hidden></div>
+
+                <!-- Peek button: view mode only, shown by JS when text is too long
+                     for media to display comfortably (< 150 px available height) -->
+                <button type="button" class="qmodal__mediaPeekBtn qmodal__questionMediaPeekBtn" hidden>
+                  📷 ${t('show_media')}
+                </button>
+
               </div>
-
-              <!-- Audio list (visible in both edit and view modes) -->
-              <div class="qmodal__audioList qmodal__questionAudioList" hidden></div>
-
-              <!-- Peek button: view mode only, shown by JS when text is too long
-                   for media to display comfortably (< 150 px available height) -->
-              <button type="button" class="qmodal__mediaPeekBtn qmodal__questionMediaPeekBtn" hidden>
-                📷 ${t('show_media')}
-              </button>
-
             </div>
           </div>
-        </div>
 
-        <!-- ANSWER -->
-        <div class="qmodal__section qmodal__answerSection">
+          <!-- ANSWER -->
+          <div class="qmodal__section qmodal__answerSection">
 
-          <div class="qmodal__sectionLabel">${t('answer')}</div>
+            <div class="qmodal__sectionLabel">${t('answer')}</div>
 
-          <div class="qmodal__sectionContent">
+            <div class="qmodal__sectionContent">
 
-            <!-- Left: text block -->
-            <div class="qmodal__textBlock">
-              <div class="qmodal__text qmodal__answerText"></div>
-              <textarea
-                class="qmodal__textarea qmodal__answerInput"
-                placeholder="${t('answer')}"
-              ></textarea>
-            </div>
-
-            <!-- Right: media block -->
-            <div class="qmodal__mediaBlock">
-
-              <!-- Upload progress overlay (edit mode) -->
-              <div class="qmodal__uploadOverlay qmodal__answerUploadOverlay" hidden aria-hidden="true">
-                <div class="qmodal__uploadRing"></div>
-                <span class="qmodal__uploadText">${t('uploading')}</span>
+              <!-- Left: text block -->
+              <div class="qmodal__textBlock">
+                <div class="qmodal__text qmodal__answerText"></div>
+                <textarea
+                  class="qmodal__textarea qmodal__answerInput"
+                  placeholder="${t('answer')}"
+                ></textarea>
               </div>
 
-              <!-- Edit-mode controls -->
-              <div class="qmodal__mediaActions qmodal__answerMediaActions">
-                <input class="qmodal__file qmodal__answerFile" type="file" hidden accept="image/*,video/*">
-                <button type="button" class="qmodal__btn qmodal__btn--primary qmodal__btn--mediaAction qmodal__answerUploadBtn" title="${t('image_video')}">⬆️ ${t('image_video')}</button>
-                <input class="qmodal__file qmodal__answerAudioFile" type="file" hidden accept="audio/*">
-                <button type="button" class="qmodal__btn qmodal__btn--secondary qmodal__btn--mediaAction qmodal__answerAddAudioBtn" title="${t('add_audio')}">🎵 ${t('add_audio')}</button>
-              </div>
+              <!-- Right: media block -->
+              <div class="qmodal__mediaBlock">
 
-              <!-- Image / Video player + delete -->
-              <div class="qmodal__mediaRow qmodal__audioItem">
-                <div class="qmodal__mediaHostWrap qmodal__answerMediaHostWrap">
-                  <div class="qmodal__mediaHost" data-media="answer"></div>
+                <!-- Upload progress overlay (edit mode) -->
+                <div class="qmodal__uploadOverlay qmodal__answerUploadOverlay" hidden aria-hidden="true">
+                  <div class="qmodal__uploadRing"></div>
+                  <span class="qmodal__uploadText">${t('uploading')}</span>
                 </div>
-                <button type="button" class="qmodal__btn qmodal__btn--danger qmodal__audioDeleteBtn qmodal__mediaDeleteBtn qmodal__answerDeleteBtn" title="${t('delete_media')}" hidden aria-hidden="true">🗑️</button>
+
+                <!-- Edit-mode controls -->
+                <div class="qmodal__mediaActions qmodal__answerMediaActions">
+                  <input class="qmodal__file qmodal__answerFile" type="file" hidden accept="image/*,video/*">
+                  <button type="button" class="qmodal__btn qmodal__btn--primary qmodal__btn--mediaAction qmodal__answerUploadBtn" title="${t('image_video')}">⬆️ ${t('image_video')}</button>
+                  <input class="qmodal__file qmodal__answerAudioFile" type="file" hidden accept="audio/*">
+                  <button type="button" class="qmodal__btn qmodal__btn--secondary qmodal__btn--mediaAction qmodal__answerAddAudioBtn" title="${t('add_audio')}">🎵 ${t('add_audio')}</button>
+                </div>
+
+                <!-- Image / Video player + delete -->
+                <div class="qmodal__mediaRow qmodal__audioItem">
+                  <div class="qmodal__mediaHostWrap qmodal__answerMediaHostWrap">
+                    <div class="qmodal__mediaHost" data-media="answer"></div>
+                  </div>
+                  <button type="button" class="qmodal__btn qmodal__btn--danger qmodal__audioDeleteBtn qmodal__mediaDeleteBtn qmodal__answerDeleteBtn" title="${t('delete_media')}" hidden aria-hidden="true">🗑️</button>
+                </div>
+
+                <!-- Audio list (visible in both edit and view modes) -->
+                <div class="qmodal__audioList qmodal__answerAudioList" hidden></div>
+
+                <!-- Peek button: view mode only, shown by JS when text is too long -->
+                <button type="button" class="qmodal__mediaPeekBtn qmodal__answerMediaPeekBtn" hidden>
+                  📷 ${t('show_media')}
+                </button>
+
               </div>
-
-              <!-- Audio list (visible in both edit and view modes) -->
-              <div class="qmodal__audioList qmodal__answerAudioList" hidden></div>
-
-              <!-- Peek button: view mode only, shown by JS when text is too long -->
-              <button type="button" class="qmodal__mediaPeekBtn qmodal__answerMediaPeekBtn" hidden>
-                📷 ${t('show_media')}
-              </button>
-
             </div>
           </div>
-        </div>
-
-      </section>
+        </section>
+      </div>
 
       <!-- FOOTER — same in both modes: Answered + Show answer (view only) + result placeholders -->
       <footer class="qmodal__footer">
