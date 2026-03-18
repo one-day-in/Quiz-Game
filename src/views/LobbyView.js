@@ -3,6 +3,7 @@ import { listGames, renameGame } from '../api/gameApi.js';
 import { GameRepository } from '../services/GameRepository.js';
 import { escapeHtml } from '../utils/utils.js';
 import { showConfirm, showPrompt } from '../utils/confirm.js';
+import { isGameDeleteAdminUser } from '../utils/adminAccess.js';
 import { formatLocaleDate, getLanguage, getSupportedLanguages, setLanguage, subscribeLanguage, t } from '../i18n.js';
 
 export class LobbyView {
@@ -42,6 +43,10 @@ export class LobbyView {
     }
 
     async _handleDelete(gameId, gameName) {
+        if (!isGameDeleteAdminUser(this._currentUser)) {
+            alert(`${t('error_prefix')}: ${t('delete_game_admin_only')}`);
+            return;
+        }
         if (!await showConfirm({ message: t('delete_game_confirm', { name: gameName }), confirmText: t('delete') })) return;
         try {
             // GameRepository.deleteGame wipes the game's storage folder first,
@@ -114,6 +119,7 @@ export class LobbyView {
     _render() {
         const { onOpen, onCreate, onLogout } = this._cb;
         const gameGroups = this._groupGamesByCreator();
+        const canDeleteGames = isGameDeleteAdminUser(this._currentUser);
 
         this._root.innerHTML = `
             <div class="lobby__header">
@@ -177,13 +183,15 @@ export class LobbyView {
                                                 type="button"
                                                 title="${t('rename_game')}"
                                             >✏</button>
-                                            <button
-                                                class="lobby__rowDelete"
-                                                data-id="${escapeHtml(game.id)}"
-                                                data-name="${escapeHtml(game.name)}"
-                                                type="button"
-                                                title="${t('delete_game')}"
-                                            >🗑️</button>
+                                            ${canDeleteGames ? `
+                                                <button
+                                                    class="lobby__rowDelete"
+                                                    data-id="${escapeHtml(game.id)}"
+                                                    data-name="${escapeHtml(game.name)}"
+                                                    type="button"
+                                                    title="${t('delete_game')}"
+                                                >🗑️</button>
+                                            ` : ''}
                                         </div>
                                     </div>
                                 `).join('')}

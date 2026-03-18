@@ -1,6 +1,9 @@
 // src/services/GameRepository.js
 import * as gameApi from '../api/gameApi.js';
 import * as mediaApi from '../api/mediaApi.js';
+import { getSession } from '../api/authApi.js';
+import { t } from '../i18n.js';
+import { isGameDeleteAdminUser } from '../utils/adminAccess.js';
 
 export class GameRepository {
   constructor(gameId) {
@@ -21,6 +24,10 @@ export class GameRepository {
   }
 
   static async deleteGame(gameId) {
+    const session = await getSession();
+    if (!isGameDeleteAdminUser(session?.user)) {
+      throw new Error(t('delete_game_admin_only'));
+    }
     // Delete all storage files for this game first, then remove the DB row
     await mediaApi.deleteGameFolder(gameId);
     return gameApi.deleteGame(gameId);
