@@ -351,6 +351,7 @@ function bindSwipeDelete(wrap, row) {
   let isOpen = false;
 
   function setTranslate(x, animated) {
+    wrap.classList.toggle('is-revealing', x < 0);
     row.style.transition = animated
       ? 'transform 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
       : 'none';
@@ -362,17 +363,24 @@ function bindSwipeDelete(wrap, row) {
       _activeSwipeState.close();
     }
     isOpen = true;
+    wrap.classList.add('is-open');
     _activeSwipeState = { wrap, close: closeRow };
     setTranslate(-REVEAL_W, true);
   }
 
   function closeRow() {
     isOpen = false;
+    wrap.classList.remove('is-open');
     if (_activeSwipeState?.wrap === wrap) _activeSwipeState = null;
     setTranslate(0, true);
   }
 
+  function shouldIgnoreSwipeStart(target) {
+    return !!target?.closest?.('.leaderboard__rowActions, .leaderboard__deleteRevealBtn, button, a, input, textarea, select, label');
+  }
+
   wrap.addEventListener('touchstart', (event) => {
+    if (shouldIgnoreSwipeStart(event.target)) return;
     const touch = event.touches[0];
     startX = touch.clientX;
     startY = touch.clientY;
@@ -427,6 +435,7 @@ function bindSwipeDelete(wrap, row) {
 
   wrap.addEventListener('mousedown', (event) => {
     if (event.button !== 0) return;
+    if (shouldIgnoreSwipeStart(event.target)) return;
 
     const dragStartX = event.clientX;
     const dragBaseOffset = isOpen ? -REVEAL_W : 0;

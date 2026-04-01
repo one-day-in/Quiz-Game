@@ -2,6 +2,7 @@
 // Promise-based custom dialogs — replaces window.confirm() and window.prompt().
 
 import { escapeHtml } from './utils.js';
+import { bindOverlayDismiss } from './overlayDismiss.js';
 import { t } from '../i18n.js';
 
 /**
@@ -43,7 +44,7 @@ export function showConfirm({
       if (resolved) return;
       resolved = true;
 
-      document.removeEventListener('keydown', onKey);
+      dismissCleanup();
       root.classList.remove('cfdialog--visible');
 
       const onEnd = () => { root.remove(); };
@@ -54,15 +55,17 @@ export function showConfirm({
     }
 
     function onKey(e) {
-      if (e.key === 'Escape') { e.preventDefault(); close(false); }
       if (e.key === 'Enter')  { e.preventDefault(); close(true);  }
     }
 
     cancelBtn.addEventListener('click',  () => close(false));
     confirmBtn.addEventListener('click', () => close(true));
 
-    // Click on dark overlay = cancel
-    root.addEventListener('click', (e) => { if (e.target === root) close(false); });
+    const dismissCleanup = bindOverlayDismiss({
+      overlay: root,
+      onDismiss: () => close(false),
+      shouldDismissOnOverlay: (event, overlayEl) => event.target === overlayEl,
+    });
 
     document.addEventListener('keydown', onKey);
     document.body.appendChild(root);
@@ -107,7 +110,7 @@ export function showRoundPicker({ rounds = [], currentRound = 0 } = {}) {
     function close(result) {
       if (resolved) return;
       resolved = true;
-      document.removeEventListener('keydown', onKey);
+      dismissCleanup();
       root.classList.remove('cfdialog--visible');
       const onEnd = () => root.remove();
       root.querySelector('.cfdialog__box').addEventListener('transitionend', onEnd, { once: true });
@@ -115,16 +118,16 @@ export function showRoundPicker({ rounds = [], currentRound = 0 } = {}) {
       resolve(result);
     }
 
-    function onKey(e) {
-      if (e.key === 'Escape') { e.preventDefault(); close(null); }
-    }
-
     root.querySelectorAll('.round-tile').forEach(btn => {
       btn.addEventListener('click', () => close(Number(btn.dataset.round)));
     });
 
-    root.addEventListener('click', (e) => { if (e.target === root) close(null); });
-    document.addEventListener('keydown', onKey);
+    const dismissCleanup = bindOverlayDismiss({
+      overlay: root,
+      onDismiss: () => close(null),
+      shouldDismissOnOverlay: (event, overlayEl) => event.target === overlayEl,
+    });
+
     document.body.appendChild(root);
 
     requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -182,6 +185,7 @@ export function showPrompt({
     function close(result) {
       if (resolved) return;
       resolved = true;
+      dismissCleanup();
 
       root.classList.remove('cfdialog--visible');
 
@@ -207,8 +211,11 @@ export function showPrompt({
     cancelBtn.addEventListener('click',  () => close(null));
     confirmBtn.addEventListener('click', () => submit());
 
-    // Click on dark overlay = cancel
-    root.addEventListener('click', (e) => { if (e.target === root) close(null); });
+    const dismissCleanup = bindOverlayDismiss({
+      overlay: root,
+      onDismiss: () => close(null),
+      shouldDismissOnOverlay: (event, overlayEl) => event.target === overlayEl,
+    });
 
     document.body.appendChild(root);
 

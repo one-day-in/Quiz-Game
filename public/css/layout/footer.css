@@ -240,6 +240,9 @@
   align-items: center;
   justify-content: center;
   background: linear-gradient(180deg, rgba(220, 38, 38, 0.96), rgba(127, 29, 29, 1));
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease;
 }
 
 .leaderboard__deleteRevealBtn {
@@ -254,6 +257,15 @@
   text-transform: uppercase;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+}
+
+.leaderboard__rowWrap.is-revealing .leaderboard__deleteReveal,
+.leaderboard__rowWrap.is-open .leaderboard__deleteReveal {
+  opacity: 1;
+}
+
+.leaderboard__rowWrap.is-open .leaderboard__deleteReveal {
+  pointer-events: auto;
 }
 
 .leaderboard__row.is-leading {
@@ -320,6 +332,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: nowrap;
 }
 
 .leaderboard__rowActionBtn {

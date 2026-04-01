@@ -101,6 +101,8 @@ The app is realtime, but not purely realtime. It mixes:
   - full leaderboard drawer with all players, inline score controls, swipe-to-delete, and QR for the player controller
 - `views/QuestionModalView.js`
   - modal UI
+- `utils/overlayDismiss.js`
+  - shared close-on-overlay and close-on-Escape wiring for dismissable layers
 - `views/LobbyView.js`
   - game list, rename, create, delete
 - `views/LoginView.js`
@@ -192,6 +194,12 @@ The app is realtime, but not purely realtime. It mixes:
 - Host leaderboard state is now owned by `PlayersService`, not by `AppView`.
 - Host footer leaderboard is read-only preview only.
 - Host drawer leaderboard is the editing surface for score changes and player deletion.
+- Dismissable overlays now follow one shared rule:
+  - click on the backdrop closes
+  - `Escape` closes
+  - exceptions stay explicit at the call site, such as fullscreen media in the question modal
+- Host drawer delete action is intentionally hidden until swipe reveal.
+- Swipe gestures in the host drawer must not start from inline score-control buttons.
 - Board updates are optimistic in `GameService`.
 - Player updates are mostly direct RPC calls in `player.js`.
 - Press runtime is handled separately from board state and separately from players.
@@ -304,6 +312,15 @@ Missing coverage includes:
 - leaderboard/footer collapse behavior
 - Supabase integration contracts
 
+### 11. Overlay dismissal rules were previously duplicated
+
+- `LeaderboardDrawerView`
+- `QuestionModalView`
+- `leaderboard.js` add-player drawer
+- `utils/confirm.js`
+
+Each of these had local `click` and `keydown` dismissal wiring. That made a simple UX rule easy to apply inconsistently.
+
 ## TODO For Agent
 
 Ordered refactor and improvement steps. Do not treat all items as immediate.
@@ -326,6 +343,10 @@ Ordered refactor and improvement steps. Do not treat all items as immediate.
 6. Audit view modules for direct data fetching and decide which fetches belong in controller/service instead.
 7. Retire or formally re-home `LeaderboardDrawerView` if it is no longer part of the primary host UX.
 8. Add a small architecture test checklist to the repo so future UI changes do not regress multiplayer flow.
+9. Add targeted tests for shared overlay dismissal behavior.
+   - Escape closes
+   - backdrop click closes
+   - fullscreen question modal remains exempt from Escape
 
 ## Improvement Proposals
 
@@ -599,3 +620,16 @@ Ordered refactor and improvement steps. Do not treat all items as immediate.
 
 - `PROJECT_STATE.md` is established as the repository source of truth for future agent work.
 - `AGENT_RULES.md` is established as the operating ruleset for future code changes.
+
+### 2026-04-01
+
+- Dismissable overlay behavior was standardized through `src/utils/overlayDismiss.js`.
+- Host leaderboard drawer, question modal, standalone leaderboard add-player drawer, and custom confirm dialogs now share the same close-on-backdrop and close-on-`Escape` rule.
+- The question modal keeps an explicit fullscreen exception so `Escape` does not close the modal while the browser is handling fullscreen media.
+
+### 2026-04-01
+
+- Host leaderboard drawer swipe-delete behavior was tightened:
+  - the delete action stays visually hidden until the row is actually swiped open
+  - swipe gestures no longer start from score-control buttons
+- This prevents row jitter in the expanded leaderboard and removes the visible delete strip under closed rows.

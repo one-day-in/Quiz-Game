@@ -1,6 +1,7 @@
 // src/views/QuestionModalView.js
 import { isQuizSpinnerMedia } from '../constants/quizSpinnerMedia.js';
 import { ViewDisposer } from '../utils/disposer.js';
+import { bindOverlayDismiss } from '../utils/overlayDismiss.js';
 import { buildModalDom } from './questionModal.template.js';
 import { initMediaUI, applyModeUI, renderAll } from './questionModal.render.js';
 
@@ -186,7 +187,6 @@ export class QuestionModalView {
         const r = this._refs;
 
         // ── Close ──────────────────────────────────────────────────────────────
-        this._disposer.addEventListener(r.overlay,   'click', () => this._cb.onClose?.());
         this._disposer.addEventListener(r.btnIncorrect, 'click', () => this._cb.onIncorrect?.());
         this._disposer.addEventListener(r.btnCorrect,   'click', () => this._cb.onCorrect?.());
 
@@ -199,9 +199,11 @@ export class QuestionModalView {
             this.syncPressBannerVisibility();
         });
 
-        // ESC
-        this._disposer.addEventListener(document, 'keydown', (e) => {
-            if (e.key === 'Escape' && !this._isFullscreen()) this._cb.onClose?.();
+        bindOverlayDismiss({
+            disposer: this._disposer,
+            overlay: r.overlay,
+            onDismiss: () => this._cb.onClose?.(),
+            shouldDismissOnEscape: () => !this._isFullscreen(),
         });
 
         // ── Answered toggle ────────────────────────────────────────────────────

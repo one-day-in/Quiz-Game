@@ -2,6 +2,7 @@
 import QRCode from 'qrcode';
 import { LeaderboardGridView } from './LeaderboardGridView.js';
 import { ViewDisposer } from '../utils/disposer.js';
+import { bindOverlayDismiss } from '../utils/overlayDismiss.js';
 import { t, withLanguageParam } from '../i18n.js';
 
 export class LeaderboardDrawerView {
@@ -145,10 +146,11 @@ export class LeaderboardDrawerView {
   }
 
   _wire() {
-    this._disposer.addEventListener(this._overlay, 'click', () => this.beginClose());
-    this._disposer.addEventListener(this._closeBtn, 'click', () => this.beginClose());
-    this._disposer.addEventListener(document, 'keydown', (event) => {
-      if (event.key === 'Escape') this.beginClose();
+    bindOverlayDismiss({
+      disposer: this._disposer,
+      overlay: this._overlay,
+      closeButton: this._closeBtn,
+      onDismiss: () => this.beginClose(),
     });
   }
 }

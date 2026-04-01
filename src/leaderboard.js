@@ -1,5 +1,6 @@
 import { getPlayers, subscribeToPlayers, removePlayer } from './api/gameApi.js';
 import { LeaderboardGridView } from './views/LeaderboardGridView.js';
+import { bindOverlayDismiss } from './utils/overlayDismiss.js';
 import QRCode from 'qrcode';
 import { initLanguageFromUrl, t, withLanguageParam } from './i18n.js';
 
@@ -14,6 +15,7 @@ let refreshTimer = null;
 let lastLeaderboardSnapshot = '';
 let leaderboardShell = null;
 let addPlayerDrawer = null;
+let stopAddPlayerDismiss = null;
 
 async function startLeaderboard() {
     if (!gameId) {
@@ -111,10 +113,12 @@ function ensureAddPlayerDrawer() {
         </aside>
     `;
 
-    const overlay = drawer.querySelector('.leaderboard-drawer__overlay');
     const closeBtn = drawer.querySelector('.leaderboard-drawer__close');
-    overlay?.addEventListener('click', closeAddPlayerDrawer);
-    closeBtn?.addEventListener('click', closeAddPlayerDrawer);
+    stopAddPlayerDismiss = bindOverlayDismiss({
+        overlay: drawer.querySelector('.leaderboard-drawer__overlay'),
+        closeButton: closeBtn,
+        onDismiss: closeAddPlayerDrawer,
+    });
 
     document.body.appendChild(drawer);
     addPlayerDrawer = drawer;
@@ -174,6 +178,7 @@ startLeaderboard();
 
 window.addEventListener('beforeunload', () => {
     stopGameSubscription?.();
+    stopAddPlayerDismiss?.();
     clearTimeout(refreshTimer);
     addPlayerDrawer?.remove();
 });
