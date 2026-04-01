@@ -23,6 +23,7 @@
     --header-h: 90px;
     --footer-h: 60px;
     --footer-collapsed-h: 82px;
+    --footer-preview-h: min(16vh, 140px);
     --footer-expanded-h: min(32vh, 280px);
 
     --radius-sm: 14px;
