@@ -92,6 +92,7 @@ The app is realtime, but not purely realtime. It mixes:
 
 - `views/GameGridView.js`
   - board grid and topic editing
+  - wraps the board in a centered inner container with a `2100px` max width
 - `views/HeaderView.js`
   - host header with lobby/back and round switcher
 - `views/LeaderboardGridView.js`
@@ -200,6 +201,7 @@ The app is realtime, but not purely realtime. It mixes:
   - exceptions stay explicit at the call site, such as fullscreen media in the question modal
 - Host drawer delete action is intentionally hidden until swipe reveal.
 - Swipe gestures in the host drawer must not start from inline score-control buttons.
+- Host board width is capped by a centered `game-grid__inner` container instead of letting the raw grid stretch to the full viewport width.
 - Board updates are optimistic in `GameService`.
 - Player updates are mostly direct RPC calls in `player.js`.
 - Press runtime is handled separately from board state and separately from players.
@@ -633,3 +635,8 @@ Ordered refactor and improvement steps. Do not treat all items as immediate.
   - the delete action stays visually hidden until the row is actually swiped open
   - swipe gestures no longer start from score-control buttons
 - This prevents row jitter in the expanded leaderboard and removes the visible delete strip under closed rows.
+
+### 2026-04-01
+
+- Host board layout now uses a dedicated centered inner container inside `GameGridView`.
+- The board/grid width is capped at `2100px` so very wide screens do not over-stretch the game field while the surrounding layout still fills the viewport.

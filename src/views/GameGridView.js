@@ -37,6 +37,10 @@ export function GameGridView({ model, uiState, roundId, onCellClick, onTopicChan
   const root = document.createElement('main');
   root.className = 'game-grid';
 
+  const inner = document.createElement('div');
+  inner.className = 'game-grid__inner';
+  root.appendChild(inner);
+
   if (!model) return root;
 
   const { ROWS, COLS } = GRID_CONFIG;
@@ -154,6 +158,6 @@ export function GameGridView({ model, uiState, roundId, onCellClick, onTopicChan
     }
   }
 
-  root.appendChild(grid);
+  inner.appendChild(grid);
   return root;
 }
