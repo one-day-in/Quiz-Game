@@ -7,7 +7,6 @@ import { ViewDisposer } from '../utils/disposer.js';
 import { fitAllCells } from '../utils/fitText.js';
 
 export function AppView({ model, uiState, actions, gameId, gameName, onCellClick, onBackToLobby, onRoundClick }) {
-  const OVERLAY_STATE_KEY = `quiz-game:leaderboard-overlay:${gameId}`;
   const container = document.createElement('div');
   container.className = 'app-shell';
 
@@ -17,7 +16,7 @@ export function AppView({ model, uiState, actions, gameId, gameName, onCellClick
   let overlayEl = null;
   let leaderboardPlayers = Array.isArray(model?.players) ? model.players : [];
   let hasHydratedPlayers = false;
-  let isOverlayOpen = localStorage.getItem(OVERLAY_STATE_KEY) === 'open';
+  let isOverlayOpen = false;
 
   // ResizeObserver — recalculate fitText on resize
   const ro = new ResizeObserver(() => {
@@ -58,14 +57,9 @@ export function AppView({ model, uiState, actions, gameId, gameName, onCellClick
     fit();
   }
 
-  function persistOverlayState() {
-    localStorage.setItem(OVERLAY_STATE_KEY, isOverlayOpen ? 'open' : 'closed');
-  }
-
   function closeOverlay() {
     if (!overlayEl) return;
     isOverlayOpen = false;
-    persistOverlayState();
     overlayEl.hidden = true;
     fit();
   }
@@ -73,7 +67,6 @@ export function AppView({ model, uiState, actions, gameId, gameName, onCellClick
   function openOverlay() {
     if (!overlayEl) return;
     isOverlayOpen = true;
-    persistOverlayState();
     overlayEl.hidden = false;
     fit();
   }
