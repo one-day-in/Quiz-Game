@@ -91,7 +91,6 @@ export function LeaderboardGridView({
   }
 
   function update(nextPlayers = []) {
-    closeActiveSwipeRow();
     const sortedPlayers = sortPlayersByScore(Array.isArray(nextPlayers) ? nextPlayers : []);
 
     if (variant === 'footer') {
@@ -185,15 +184,22 @@ export function LeaderboardGridView({
   }
 
   function clearPlayerNodes() {
+    const shouldCloseActiveRow = _activeSwipeState && list.contains(_activeSwipeState.wrap);
+
     for (const node of itemNodes.values()) {
       node.remove();
     }
     itemNodes.clear();
+
+    if (shouldCloseActiveRow) closeActiveSwipeRow();
   }
 
   function removeStaleNodes(validKeys) {
     for (const [key, node] of itemNodes.entries()) {
       if (validKeys.has(key)) continue;
+      if (_activeSwipeState && (_activeSwipeState.wrap === node || node.contains?.(_activeSwipeState.wrap))) {
+        closeActiveSwipeRow();
+      }
       node.remove();
       itemNodes.delete(key);
     }
@@ -206,7 +212,9 @@ export function LeaderboardGridView({
     if (typeof onDeletePlayer === 'function') {
       document.removeEventListener('pointerdown', onDocPointerDown);
     }
-    closeActiveSwipeRow();
+    if (_activeSwipeState && el.contains(_activeSwipeState.wrap)) {
+      closeActiveSwipeRow();
+    }
   };
   return el;
 }
