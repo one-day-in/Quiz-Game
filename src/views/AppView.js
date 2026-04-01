@@ -78,6 +78,14 @@ export function AppView({ model, uiState, actions, gameId, gameName, onCellClick
     fit();
   }
 
+  function toggleOverlay() {
+    if (isOverlayOpen) {
+      closeOverlay();
+      return;
+    }
+    openOverlay();
+  }
+
   function renderLeaderboard(players = leaderboardPlayers) {
     leaderboardPlayers = Array.isArray(players) ? players : [];
 
@@ -85,7 +93,7 @@ export function AppView({ model, uiState, actions, gameId, gameName, onCellClick
       previewEl = LeaderboardGridView({
         players: leaderboardPlayers,
         variant: 'preview',
-        onOpenOverlay: () => openOverlay(),
+        onOpenOverlay: () => toggleOverlay(),
       });
       container.appendChild(previewEl);
     } else {
