@@ -18,25 +18,22 @@ function getRankLabel(rank) {
 export function LeaderboardGridView({
   players = [],
   variant = 'page',
-  collapsed = false,
-  onToggleCollapse = null,
-  onOpenOverlay = null,
-  onCloseOverlay = null,
+  expanded = false,
+  onToggleExpanded = null,
   onAddPlayer = null,
   onDeletePlayer = null,
 } = {}) {
   const el = document.createElement('footer');
   el.className = `app-footer leaderboard leaderboard--${variant}`;
-  if (variant === 'overlay') {
-    el.tabIndex = -1;
-  }
+
+  const panel = document.createElement('div');
+  panel.className = 'leaderboard__panel';
 
   const header = document.createElement('div');
   header.className = 'leaderboard__header';
 
   const titleGroup = document.createElement('div');
   titleGroup.className = 'leaderboard__titleGroup';
-
   const title = document.createElement('div');
   title.className = 'leaderboard__title';
   title.textContent = t('leaderboard');
@@ -44,12 +41,10 @@ export function LeaderboardGridView({
 
   const status = document.createElement('div');
   status.className = 'leaderboard__status';
-  status.hidden = !['footer', 'preview'].includes(variant);
   titleGroup.appendChild(status);
-
   header.appendChild(titleGroup);
 
-  if (typeof onAddPlayer === 'function') {
+  if (variant === 'page' && typeof onAddPlayer === 'function') {
     const addButton = document.createElement('button');
     addButton.type = 'button';
     addButton.className = 'leaderboard__addPlayerBtn';
@@ -58,56 +53,43 @@ export function LeaderboardGridView({
     header.appendChild(addButton);
   }
 
-  if (variant === 'footer' && typeof onToggleCollapse === 'function') {
+  if (variant === 'footer' && typeof onToggleExpanded === 'function') {
     const toggleButton = document.createElement('button');
     toggleButton.type = 'button';
     toggleButton.className = 'leaderboard__toggleBtn';
     toggleButton.setAttribute('aria-label', t('leaderboard'));
-    toggleButton.addEventListener('click', () => onToggleCollapse());
+    toggleButton.addEventListener('click', () => onToggleExpanded());
     header.appendChild(toggleButton);
+    header.addEventListener('click', (event) => {
+      if (event.target === toggleButton) return;
+      onToggleExpanded();
+    });
+    peek.addEventListener('click', () => onToggleExpanded());
   }
 
-  if (variant === 'preview' && typeof onOpenOverlay === 'function') {
-    const openButton = document.createElement('button');
-    openButton.type = 'button';
-    openButton.className = 'leaderboard__openBtn';
-    openButton.textContent = '↗';
-    openButton.setAttribute('aria-label', t('open_leaderboard'));
-    openButton.addEventListener('click', (event) => {
-      event.stopPropagation();
-      onOpenOverlay();
-    });
-    header.appendChild(openButton);
-    el.addEventListener('click', () => onOpenOverlay());
-  }
+  const peek = document.createElement('div');
+  peek.className = 'leaderboard__peek';
 
-  if (variant === 'overlay' && typeof onCloseOverlay === 'function') {
-    const closeButton = document.createElement('button');
-    closeButton.type = 'button';
-    closeButton.className = 'leaderboard__closeBtn';
-    closeButton.textContent = '×';
-    closeButton.setAttribute('aria-label', t('close'));
-    closeButton.addEventListener('click', () => onCloseOverlay());
-    header.appendChild(closeButton);
-    el.addEventListener('click', (event) => {
-      if (event.target === el) onCloseOverlay();
-    });
-    document.addEventListener('keydown', onEscClose);
-  }
+  const peekLeader = document.createElement('div');
+  peekLeader.className = 'leaderboard__peekLeader';
+
+  const peekSummary = document.createElement('div');
+  peekSummary.className = 'leaderboard__peekSummary';
+
+  peek.append(peekLeader, peekSummary);
+
+  const body = document.createElement('div');
+  body.className = 'leaderboard__body';
 
   const list = document.createElement('div');
   list.className = 'leaderboard__list';
-  const panel = document.createElement('div');
-  panel.className = 'leaderboard__panel';
-  panel.append(header, list);
+  body.appendChild(list);
 
-  if (variant === 'overlay') {
-    const overlay = document.createElement('div');
-    overlay.className = 'leaderboard__overlay';
-    overlay.addEventListener('click', () => onCloseOverlay?.());
-    el.append(overlay, panel);
-  } else {
-    el.append(panel);
+  panel.append(header, peek, body);
+  el.append(panel);
+
+  if (variant === 'page') {
+    peek.hidden = true;
   }
 
   // Close any swiped-open row when tapping/clicking outside it
@@ -118,18 +100,13 @@ export function LeaderboardGridView({
   };
   document.addEventListener('pointerdown', onDocPointerDown);
 
-  function onEscClose(event) {
-    if (event.key === 'Escape') onCloseOverlay?.();
-  }
-
-  function setCollapsed(nextCollapsed) {
-    const isCollapsed = !!nextCollapsed;
-    el.classList.toggle('leaderboard--collapsed', isCollapsed);
-
+  function setExpanded(nextExpanded) {
+    const isExpanded = !!nextExpanded;
+    el.classList.toggle('is-expanded', isExpanded);
     const toggleButton = header.querySelector('.leaderboard__toggleBtn');
     if (toggleButton) {
-      toggleButton.textContent = isCollapsed ? '▾' : '▴';
-      toggleButton.setAttribute('aria-expanded', String(!isCollapsed));
+      toggleButton.textContent = isExpanded ? '▾' : '▴';
+      toggleButton.setAttribute('aria-expanded', String(isExpanded));
     }
   }
 
@@ -140,10 +117,16 @@ export function LeaderboardGridView({
     const playerCount = sortedPlayers.length;
     const leader = sortedPlayers[0] || null;
 
-    if (['footer', 'preview'].includes(variant)) {
+    if (variant === 'footer') {
       status.textContent = leader
         ? `${playerCount} • ${leader.name} • ${formatPoints(leader.points)}`
         : String(playerCount);
+      peekLeader.textContent = leader ? `${leader.name}` : t('no_players_yet');
+      peekSummary.textContent = leader
+        ? `${formatPoints(leader.points)} • ${playerCount} ${t('players').toLowerCase()}`
+        : t('no_players_yet');
+    } else {
+      status.hidden = true;
     }
 
     list.innerHTML = '';
@@ -156,28 +139,18 @@ export function LeaderboardGridView({
       return;
     }
 
-    const displayPlayers = variant === 'preview' ? sortedPlayers.slice(0, 4) : sortedPlayers;
-
-    for (const [index, player] of displayPlayers.entries()) {
+    for (const [index, player] of sortedPlayers.entries()) {
       list.appendChild(buildRow(player, onDeletePlayer, index, variant));
-    }
-
-    if (variant === 'preview' && sortedPlayers.length > displayPlayers.length) {
-      const more = document.createElement('div');
-      more.className = 'leaderboard__more';
-      more.textContent = `+${sortedPlayers.length - displayPlayers.length}`;
-      list.appendChild(more);
     }
   }
 
-  setCollapsed(collapsed);
+  setExpanded(expanded);
   update(players);
 
   el.update = update;
-  el.setCollapsed = setCollapsed;
+  el.setExpanded = setExpanded;
   el.destroy = () => {
     document.removeEventListener('pointerdown', onDocPointerDown);
-    document.removeEventListener('keydown', onEscClose);
     closeActiveSwipeRow();
   };
   return el;
@@ -187,7 +160,6 @@ function buildRow(player, onDeletePlayer, rank = 0, variant = 'page') {
   const row = document.createElement('div');
   row.className = 'leaderboard__row';
   if (rank === 0) row.classList.add('is-leading');
-  if (variant === 'preview') row.classList.add('leaderboard__row--preview');
 
   const rankEl = document.createElement('div');
   rankEl.className = 'leaderboard__rank';

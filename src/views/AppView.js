@@ -12,11 +12,10 @@ export function AppView({ model, uiState, actions, gameId, gameName, onCellClick
 
   const disposer = new ViewDisposer(container);
   let gridEl = null;
-  let previewEl = null;
-  let overlayEl = null;
+  let footerEl = null;
   let leaderboardPlayers = Array.isArray(model?.players) ? model.players : [];
   let hasHydratedPlayers = false;
-  let isOverlayOpen = false;
+  let isFooterExpanded = false;
 
   // ResizeObserver — recalculate fitText on resize
   const ro = new ResizeObserver(() => {
@@ -57,69 +56,25 @@ export function AppView({ model, uiState, actions, gameId, gameName, onCellClick
     fit();
   }
 
-  function closeOverlay() {
-    if (!overlayEl) return;
-    isOverlayOpen = false;
-    overlayEl.hidden = true;
-    fit();
-  }
-
-  function openOverlay() {
-    if (!overlayEl) return;
-    isOverlayOpen = true;
-    overlayEl.hidden = false;
-    fit();
-  }
-
-  function toggleOverlay() {
-    if (isOverlayOpen) {
-      closeOverlay();
-      return;
-    }
-    openOverlay();
+  function toggleFooter() {
+    isFooterExpanded = !isFooterExpanded;
+    footerEl?.setExpanded?.(isFooterExpanded);
   }
 
   function renderLeaderboard(players = leaderboardPlayers) {
     leaderboardPlayers = Array.isArray(players) ? players : [];
 
-    if (!previewEl) {
-      previewEl = LeaderboardGridView({
+    if (!footerEl) {
+      footerEl = LeaderboardGridView({
         players: leaderboardPlayers,
-        variant: 'preview',
-        onOpenOverlay: () => toggleOverlay(),
+        variant: 'footer',
+        expanded: isFooterExpanded,
+        onToggleExpanded: () => toggleFooter(),
       });
-      container.appendChild(previewEl);
-    } else {
-      previewEl.update?.(leaderboardPlayers);
-    }
-
-    if (!overlayEl) {
-      overlayEl = LeaderboardGridView({
-        players: leaderboardPlayers,
-        variant: 'overlay',
-        onCloseOverlay: () => closeOverlay(),
-      });
-      overlayEl.hidden = !isOverlayOpen;
-      container.appendChild(overlayEl);
-    } else {
-      overlayEl.update?.(leaderboardPlayers);
-      overlayEl.hidden = !isOverlayOpen;
-    }
-
-    if (isOverlayOpen) {
-      overlayEl?.focus?.();
-    }
-
-    if (previewEl && previewEl.isConnected === false) {
-      container.appendChild(previewEl);
-    }
-
-    if (overlayEl && overlayEl.isConnected === false) {
-      container.appendChild(overlayEl);
-    }
-
-    if (!previewEl || !overlayEl) {
+      container.appendChild(footerEl);
       fit();
+    } else {
+      footerEl.update?.(leaderboardPlayers);
     }
   }
 
@@ -158,8 +113,7 @@ export function AppView({ model, uiState, actions, gameId, gameName, onCellClick
   renderGrid(model, uiState);
   renderLeaderboard(leaderboardPlayers);
   bindPlayers();
-  disposer.add(() => previewEl?.destroy?.());
-  disposer.add(() => overlayEl?.destroy?.());
+  disposer.add(() => footerEl?.destroy?.());
 
   return { el: container, update, patchCell, syncLive };
 }

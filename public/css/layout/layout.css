@@ -27,5 +27,7 @@
 }
 
 .app-footer {
-  flex: 0 0 auto;
+  flex: 0 0 var(--footer-expanded-h);
+  height: var(--footer-expanded-h);
+  min-height: var(--footer-expanded-h);
 }
