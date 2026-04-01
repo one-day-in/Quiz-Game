@@ -8,16 +8,28 @@ function closeActiveSwipeRow() {
   _activeSwipeState?.close();
 }
 
+function getRankLabel(rank) {
+  if (rank === 0) return '#1';
+  if (rank === 1) return '#2';
+  if (rank === 2) return '#3';
+  return `#${rank + 1}`;
+}
+
 export function LeaderboardGridView({
   players = [],
   variant = 'page',
   collapsed = false,
   onToggleCollapse = null,
+  onOpenOverlay = null,
+  onCloseOverlay = null,
   onAddPlayer = null,
   onDeletePlayer = null,
 } = {}) {
   const el = document.createElement('footer');
   el.className = `app-footer leaderboard leaderboard--${variant}`;
+  if (variant === 'overlay') {
+    el.tabIndex = -1;
+  }
 
   const header = document.createElement('div');
   header.className = 'leaderboard__header';
@@ -32,7 +44,7 @@ export function LeaderboardGridView({
 
   const status = document.createElement('div');
   status.className = 'leaderboard__status';
-  status.hidden = variant !== 'footer';
+  status.hidden = !['footer', 'preview'].includes(variant);
   titleGroup.appendChild(status);
 
   header.appendChild(titleGroup);
@@ -55,10 +67,48 @@ export function LeaderboardGridView({
     header.appendChild(toggleButton);
   }
 
+  if (variant === 'preview' && typeof onOpenOverlay === 'function') {
+    const openButton = document.createElement('button');
+    openButton.type = 'button';
+    openButton.className = 'leaderboard__openBtn';
+    openButton.textContent = '↗';
+    openButton.setAttribute('aria-label', t('open_leaderboard'));
+    openButton.addEventListener('click', (event) => {
+      event.stopPropagation();
+      onOpenOverlay();
+    });
+    header.appendChild(openButton);
+    el.addEventListener('click', () => onOpenOverlay());
+  }
+
+  if (variant === 'overlay' && typeof onCloseOverlay === 'function') {
+    const closeButton = document.createElement('button');
+    closeButton.type = 'button';
+    closeButton.className = 'leaderboard__closeBtn';
+    closeButton.textContent = '×';
+    closeButton.setAttribute('aria-label', t('close'));
+    closeButton.addEventListener('click', () => onCloseOverlay());
+    header.appendChild(closeButton);
+    el.addEventListener('click', (event) => {
+      if (event.target === el) onCloseOverlay();
+    });
+    document.addEventListener('keydown', onEscClose);
+  }
+
   const list = document.createElement('div');
   list.className = 'leaderboard__list';
+  const panel = document.createElement('div');
+  panel.className = 'leaderboard__panel';
+  panel.append(header, list);
 
-  el.append(header, list);
+  if (variant === 'overlay') {
+    const overlay = document.createElement('div');
+    overlay.className = 'leaderboard__overlay';
+    overlay.addEventListener('click', () => onCloseOverlay?.());
+    el.append(overlay, panel);
+  } else {
+    el.append(panel);
+  }
 
   // Close any swiped-open row when tapping/clicking outside it
   const onDocPointerDown = (e) => {
@@ -67,6 +117,10 @@ export function LeaderboardGridView({
     }
   };
   document.addEventListener('pointerdown', onDocPointerDown);
+
+  function onEscClose(event) {
+    if (event.key === 'Escape') onCloseOverlay?.();
+  }
 
   function setCollapsed(nextCollapsed) {
     const isCollapsed = !!nextCollapsed;
@@ -86,7 +140,7 @@ export function LeaderboardGridView({
     const playerCount = sortedPlayers.length;
     const leader = sortedPlayers[0] || null;
 
-    if (variant === 'footer') {
+    if (['footer', 'preview'].includes(variant)) {
       status.textContent = leader
         ? `${playerCount} • ${leader.name} • ${formatPoints(leader.points)}`
         : String(playerCount);
@@ -102,8 +156,17 @@ export function LeaderboardGridView({
       return;
     }
 
-    for (const player of sortedPlayers) {
-      list.appendChild(buildRow(player, onDeletePlayer));
+    const displayPlayers = variant === 'preview' ? sortedPlayers.slice(0, 4) : sortedPlayers;
+
+    for (const [index, player] of displayPlayers.entries()) {
+      list.appendChild(buildRow(player, onDeletePlayer, index, variant));
+    }
+
+    if (variant === 'preview' && sortedPlayers.length > displayPlayers.length) {
+      const more = document.createElement('div');
+      more.className = 'leaderboard__more';
+      more.textContent = `+${sortedPlayers.length - displayPlayers.length}`;
+      list.appendChild(more);
     }
   }
 
@@ -114,14 +177,21 @@ export function LeaderboardGridView({
   el.setCollapsed = setCollapsed;
   el.destroy = () => {
     document.removeEventListener('pointerdown', onDocPointerDown);
+    document.removeEventListener('keydown', onEscClose);
     closeActiveSwipeRow();
   };
   return el;
 }
 
-function buildRow(player, onDeletePlayer) {
+function buildRow(player, onDeletePlayer, rank = 0, variant = 'page') {
   const row = document.createElement('div');
   row.className = 'leaderboard__row';
+  if (rank === 0) row.classList.add('is-leading');
+  if (variant === 'preview') row.classList.add('leaderboard__row--preview');
+
+  const rankEl = document.createElement('div');
+  rankEl.className = 'leaderboard__rank';
+  rankEl.textContent = getRankLabel(rank);
 
   const name = document.createElement('div');
   name.className = 'leaderboard__nameLabel';
@@ -132,7 +202,7 @@ function buildRow(player, onDeletePlayer) {
   points.textContent = formatPoints(player?.points);
   points.setAttribute('aria-label', `Points: ${player?.points ?? 0}`);
 
-  row.append(name, points);
+  row.append(rankEl, name, points);
 
   // No swipe needed when delete is not available (e.g. in-game footer)
   if (typeof onDeletePlayer !== 'function') return row;

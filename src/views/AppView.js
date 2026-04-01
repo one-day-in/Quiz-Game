@@ -7,18 +7,17 @@ import { ViewDisposer } from '../utils/disposer.js';
 import { fitAllCells } from '../utils/fitText.js';
 
 export function AppView({ model, uiState, actions, gameId, gameName, onCellClick, onBackToLobby, onRoundClick }) {
-  const FOOTER_STATE_KEY = `quiz-game:leaderboard-footer:${gameId}`;
+  const OVERLAY_STATE_KEY = `quiz-game:leaderboard-overlay:${gameId}`;
   const container = document.createElement('div');
   container.className = 'app-shell';
 
   const disposer = new ViewDisposer(container);
   let gridEl = null;
-  let footerEl = null;
-  let lastModel = model;
-  let lastUiState = uiState;
+  let previewEl = null;
+  let overlayEl = null;
   let leaderboardPlayers = Array.isArray(model?.players) ? model.players : [];
   let hasHydratedPlayers = false;
-  let isFooterCollapsed = localStorage.getItem(FOOTER_STATE_KEY) === 'collapsed';
+  let isOverlayOpen = localStorage.getItem(OVERLAY_STATE_KEY) === 'open';
 
   // ResizeObserver — recalculate fitText on resize
   const ro = new ResizeObserver(() => {
@@ -59,37 +58,74 @@ export function AppView({ model, uiState, actions, gameId, gameName, onCellClick
     fit();
   }
 
-  function persistFooterState() {
-    localStorage.setItem(FOOTER_STATE_KEY, isFooterCollapsed ? 'collapsed' : 'expanded');
+  function persistOverlayState() {
+    localStorage.setItem(OVERLAY_STATE_KEY, isOverlayOpen ? 'open' : 'closed');
   }
 
-  function renderFooter(players = leaderboardPlayers) {
+  function closeOverlay() {
+    if (!overlayEl) return;
+    isOverlayOpen = false;
+    persistOverlayState();
+    overlayEl.hidden = true;
+    fit();
+  }
+
+  function openOverlay() {
+    if (!overlayEl) return;
+    isOverlayOpen = true;
+    persistOverlayState();
+    overlayEl.hidden = false;
+    fit();
+  }
+
+  function renderLeaderboard(players = leaderboardPlayers) {
     leaderboardPlayers = Array.isArray(players) ? players : [];
 
-    if (!footerEl) {
-      footerEl = LeaderboardGridView({
+    if (!previewEl) {
+      previewEl = LeaderboardGridView({
         players: leaderboardPlayers,
-        variant: 'footer',
-        collapsed: isFooterCollapsed,
-        onToggleCollapse: () => {
-          isFooterCollapsed = !isFooterCollapsed;
-          persistFooterState();
-          footerEl?.setCollapsed?.(isFooterCollapsed);
-          fit();
-        },
+        variant: 'preview',
+        onOpenOverlay: () => openOverlay(),
       });
-      container.appendChild(footerEl);
-      fit();
-      return;
+      container.appendChild(previewEl);
+    } else {
+      previewEl.update?.(leaderboardPlayers);
     }
 
-    footerEl.update?.(leaderboardPlayers);
+    if (!overlayEl) {
+      overlayEl = LeaderboardGridView({
+        players: leaderboardPlayers,
+        variant: 'overlay',
+        onCloseOverlay: () => closeOverlay(),
+      });
+      overlayEl.hidden = !isOverlayOpen;
+      container.appendChild(overlayEl);
+    } else {
+      overlayEl.update?.(leaderboardPlayers);
+      overlayEl.hidden = !isOverlayOpen;
+    }
+
+    if (isOverlayOpen) {
+      overlayEl?.focus?.();
+    }
+
+    if (previewEl && previewEl.isConnected === false) {
+      container.appendChild(previewEl);
+    }
+
+    if (overlayEl && overlayEl.isConnected === false) {
+      container.appendChild(overlayEl);
+    }
+
+    if (!previewEl || !overlayEl) {
+      fit();
+    }
   }
 
   function bindPlayers() {
     const syncPlayers = (players) => {
       hasHydratedPlayers = true;
-      renderFooter(players);
+      renderLeaderboard(players);
     };
 
     void getPlayers(gameId)
@@ -102,18 +138,14 @@ export function AppView({ model, uiState, actions, gameId, gameName, onCellClick
 
   // Public update — called on every subsequent state change
   function update(m, ui) {
-    lastModel = m;
-    lastUiState = ui;
     header.update(ui);
     renderGrid(m, ui);
-    renderFooter(hasHydratedPlayers ? leaderboardPlayers : (m?.players || leaderboardPlayers));
+    renderLeaderboard(hasHydratedPlayers ? leaderboardPlayers : (m?.players || leaderboardPlayers));
   }
 
-  function syncLive(m, ui = lastUiState) {
-    lastModel = m;
-    lastUiState = ui;
+  function syncLive(m, ui = uiState) {
     header.update(ui);
-    renderFooter(hasHydratedPlayers ? leaderboardPlayers : (m?.players || leaderboardPlayers));
+    renderLeaderboard(hasHydratedPlayers ? leaderboardPlayers : (m?.players || leaderboardPlayers));
   }
 
   // Targeted patch for a single cell (avoids full grid rebuild)
@@ -123,9 +155,10 @@ export function AppView({ model, uiState, actions, gameId, gameName, onCellClick
   }
 
   renderGrid(model, uiState);
-  renderFooter(leaderboardPlayers);
+  renderLeaderboard(leaderboardPlayers);
   bindPlayers();
-  disposer.add(() => footerEl?.destroy?.());
+  disposer.add(() => previewEl?.destroy?.());
+  disposer.add(() => overlayEl?.destroy?.());
 
   return { el: container, update, patchCell, syncLive };
 }

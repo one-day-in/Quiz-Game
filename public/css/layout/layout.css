@@ -12,6 +12,7 @@
   gap: 14px;
   background: var(--bg), var(--bg-2);
   padding: var(--app-pad);
+  overflow: hidden;
 }
 
 /* Views */
@@ -27,5 +28,4 @@
 
 .app-footer {
   flex: 0 0 auto;
-  min-height: var(--footer-h);
 }
