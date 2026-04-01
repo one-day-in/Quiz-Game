@@ -92,7 +92,7 @@ The app is realtime, but not purely realtime. It mixes:
 
 - `views/GameGridView.js`
   - board grid and topic editing
-  - wraps the board in a centered inner container with a `2100px` max width
+  - wraps the board in a centered inner container with a `1600px` max width
 - `views/HeaderView.js`
   - host header with lobby/back and round switcher
 - `views/LeaderboardGridView.js`
@@ -639,4 +639,4 @@ Ordered refactor and improvement steps. Do not treat all items as immediate.
 ### 2026-04-01
 
 - Host board layout now uses a dedicated centered inner container inside `GameGridView`.
-- The board/grid width is capped at `2100px` so very wide screens do not over-stretch the game field while the surrounding layout still fills the viewport.
+- The board/grid width is capped at `1600px` so very wide screens do not over-stretch the game field while the surrounding layout still fills the viewport.
