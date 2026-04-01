@@ -18,67 +18,51 @@ function getRankLabel(rank) {
 export function LeaderboardGridView({
   players = [],
   variant = 'page',
-  expanded = false,
-  onToggleExpanded = null,
+  footerLimit = 4,
+  showHeader = true,
+  onOpenExpanded = null,
   onAddPlayer = null,
   onDeletePlayer = null,
 } = {}) {
   const el = document.createElement('footer');
-  el.className = `app-footer leaderboard leaderboard--${variant}`;
+  el.className = variant === 'drawer'
+    ? `leaderboard leaderboard--${variant}`
+    : `app-footer leaderboard leaderboard--${variant}`;
 
   const panel = document.createElement('div');
   panel.className = 'leaderboard__panel';
+  el.appendChild(panel);
 
-  const header = document.createElement('div');
-  header.className = 'leaderboard__header';
+  let header = null;
+  if (showHeader) {
+    header = document.createElement('div');
+    header.className = 'leaderboard__header';
 
-  const titleGroup = document.createElement('div');
-  titleGroup.className = 'leaderboard__titleGroup';
-  const title = document.createElement('div');
-  title.className = 'leaderboard__title';
-  title.textContent = t('leaderboard');
-  titleGroup.appendChild(title);
+    const title = document.createElement('div');
+    title.className = 'leaderboard__title';
+    title.textContent = t('leaderboard');
+    header.appendChild(title);
 
-  const status = document.createElement('div');
-  status.className = 'leaderboard__status';
-  titleGroup.appendChild(status);
-  header.appendChild(titleGroup);
+    if (variant === 'page' && typeof onAddPlayer === 'function') {
+      const addButton = document.createElement('button');
+      addButton.type = 'button';
+      addButton.className = 'leaderboard__addPlayerBtn';
+      addButton.textContent = t('add_player');
+      addButton.addEventListener('click', () => onAddPlayer());
+      header.appendChild(addButton);
+    }
 
-  if (variant === 'page' && typeof onAddPlayer === 'function') {
-    const addButton = document.createElement('button');
-    addButton.type = 'button';
-    addButton.className = 'leaderboard__addPlayerBtn';
-    addButton.textContent = t('add_player');
-    addButton.addEventListener('click', () => onAddPlayer());
-    header.appendChild(addButton);
-  }
+    if (variant === 'footer' && typeof onOpenExpanded === 'function') {
+      const openButton = document.createElement('button');
+      openButton.type = 'button';
+      openButton.className = 'leaderboard__toggleBtn';
+      openButton.textContent = t('show_all_players');
+      openButton.setAttribute('aria-label', t('show_all_players'));
+      openButton.addEventListener('click', () => onOpenExpanded());
+      header.appendChild(openButton);
+    }
 
-  if (variant === 'footer' && typeof onToggleExpanded === 'function') {
-    const toggleButton = document.createElement('button');
-    toggleButton.type = 'button';
-    toggleButton.className = 'leaderboard__toggleBtn';
-    toggleButton.setAttribute('aria-label', t('leaderboard'));
-    toggleButton.addEventListener('click', () => onToggleExpanded());
-    header.appendChild(toggleButton);
-    header.addEventListener('click', (event) => {
-      if (event.target === toggleButton) return;
-      onToggleExpanded();
-    });
-  }
-
-  const peek = document.createElement('div');
-  peek.className = 'leaderboard__peek';
-
-  const peekLeader = document.createElement('div');
-  peekLeader.className = 'leaderboard__peekLeader';
-
-  const peekSummary = document.createElement('div');
-  peekSummary.className = 'leaderboard__peekSummary';
-
-  peek.append(peekLeader, peekSummary);
-
-  if (variant === 'footer' && typeof onToggleExpanded === 'function') {
-    peek.addEventListener('click', () => onToggleExpanded());
+    panel.appendChild(header);
   }
 
   const body = document.createElement('div');
@@ -86,54 +70,65 @@ export function LeaderboardGridView({
 
   const list = document.createElement('div');
   list.className = 'leaderboard__list';
+  if (variant === 'footer') list.classList.add('leaderboard__list--cards');
+  if (variant === 'drawer') list.classList.add('leaderboard__list--drawer');
+
   body.appendChild(list);
+  panel.appendChild(body);
 
-  panel.append(header, peek, body);
-  el.append(panel);
-
-  if (variant === 'page') {
-    peek.hidden = true;
-  }
-
-  // Close any swiped-open row when tapping/clicking outside it
-  const onDocPointerDown = (e) => {
-    if (_activeSwipeState && !_activeSwipeState.wrap.contains(e.target)) {
+  const onDocPointerDown = (event) => {
+    if (_activeSwipeState && !_activeSwipeState.wrap.contains(event.target)) {
       closeActiveSwipeRow();
     }
   };
-  document.addEventListener('pointerdown', onDocPointerDown);
 
-  function setExpanded(nextExpanded) {
-    const isExpanded = !!nextExpanded;
-    el.classList.toggle('is-expanded', isExpanded);
-    const toggleButton = header.querySelector('.leaderboard__toggleBtn');
-    if (toggleButton) {
-      toggleButton.textContent = isExpanded ? '▾' : '▴';
-      toggleButton.setAttribute('aria-expanded', String(isExpanded));
-    }
+  if (typeof onDeletePlayer === 'function') {
+    document.addEventListener('pointerdown', onDocPointerDown);
   }
 
   function update(nextPlayers = []) {
-    closeActiveSwipeRow(); // close before rebuilding DOM
+    closeActiveSwipeRow();
 
     const sortedPlayers = sortPlayersByScore(nextPlayers);
-    const playerCount = sortedPlayers.length;
-    const leader = sortedPlayers[0] || null;
-
-    if (variant === 'footer') {
-      status.textContent = leader
-        ? `${playerCount} • ${leader.name} • ${formatPoints(leader.points)}`
-        : String(playerCount);
-      peekLeader.textContent = leader ? `${leader.name}` : t('no_players_yet');
-      peekSummary.textContent = leader
-        ? `${formatPoints(leader.points)} • ${playerCount} ${t('players').toLowerCase()}`
-        : t('no_players_yet');
-    } else {
-      status.hidden = true;
-    }
-
     list.innerHTML = '';
 
+    if (variant === 'footer') {
+      renderFooterCards(sortedPlayers);
+      return;
+    }
+
+    renderRows(sortedPlayers);
+  }
+
+  function renderFooterCards(sortedPlayers) {
+    if (!sortedPlayers.length) {
+      const empty = document.createElement('div');
+      empty.className = 'leaderboard__emptyCard';
+      empty.textContent = t('no_players_yet');
+      list.appendChild(empty);
+      return;
+    }
+
+    const visiblePlayers = sortedPlayers.slice(0, footerLimit);
+    for (const [index, player] of visiblePlayers.entries()) {
+      list.appendChild(buildFooterCard(player, index));
+    }
+
+    const hiddenCount = sortedPlayers.length - visiblePlayers.length;
+    if (hiddenCount > 0) {
+      const moreCard = document.createElement('button');
+      moreCard.type = 'button';
+      moreCard.className = 'leaderboard__card leaderboard__card--more';
+      moreCard.innerHTML = `
+        <span class="leaderboard__cardMoreCount">+${hiddenCount}</span>
+        <span class="leaderboard__cardMoreLabel">${t('show_all_players')}</span>
+      `;
+      moreCard.addEventListener('click', () => onOpenExpanded?.());
+      list.appendChild(moreCard);
+    }
+  }
+
+  function renderRows(sortedPlayers) {
     if (!sortedPlayers.length) {
       const empty = document.createElement('div');
       empty.className = 'leaderboard__empty';
@@ -143,23 +138,44 @@ export function LeaderboardGridView({
     }
 
     for (const [index, player] of sortedPlayers.entries()) {
-      list.appendChild(buildRow(player, onDeletePlayer, index, variant));
+      list.appendChild(buildRow(player, onDeletePlayer, index));
     }
   }
 
-  setExpanded(expanded);
   update(players);
 
   el.update = update;
-  el.setExpanded = setExpanded;
   el.destroy = () => {
-    document.removeEventListener('pointerdown', onDocPointerDown);
+    if (typeof onDeletePlayer === 'function') {
+      document.removeEventListener('pointerdown', onDocPointerDown);
+    }
     closeActiveSwipeRow();
   };
   return el;
 }
 
-function buildRow(player, onDeletePlayer, rank = 0, variant = 'page') {
+function buildFooterCard(player, rank = 0) {
+  const card = document.createElement('div');
+  card.className = 'leaderboard__card';
+  if (rank === 0) card.classList.add('is-leading');
+
+  const rankEl = document.createElement('div');
+  rankEl.className = 'leaderboard__cardRank';
+  rankEl.textContent = getRankLabel(rank);
+
+  const name = document.createElement('div');
+  name.className = 'leaderboard__cardName';
+  name.textContent = player?.name || t('player_fallback');
+
+  const points = document.createElement('div');
+  points.className = 'leaderboard__cardScore';
+  points.textContent = formatPoints(player?.points);
+
+  card.append(rankEl, name, points);
+  return card;
+}
+
+function buildRow(player, onDeletePlayer, rank = 0) {
   const row = document.createElement('div');
   row.className = 'leaderboard__row';
   if (rank === 0) row.classList.add('is-leading');
@@ -179,10 +195,8 @@ function buildRow(player, onDeletePlayer, rank = 0, variant = 'page') {
 
   row.append(rankEl, name, points);
 
-  // No swipe needed when delete is not available (e.g. in-game footer)
   if (typeof onDeletePlayer !== 'function') return row;
 
-  // ── Swipe-to-delete wrapper ──────────────────────────────────────────────
   const wrap = document.createElement('div');
   wrap.className = 'leaderboard__rowWrap';
 
@@ -204,14 +218,13 @@ function buildRow(player, onDeletePlayer, rank = 0, variant = 'page') {
   return wrap;
 }
 
-// ── Swipe gesture handler ────────────────────────────────────────────────────
-
 function bindSwipeDelete(wrap, row) {
-  let startX = 0, startY = 0;
-  let isDragging  = false; // committed to horizontal swipe
-  let isScrolling = false; // committed to vertical scroll
-  let baseOffset  = 0;     // translation at touchstart: 0 or -REVEAL_W
-  let isOpen      = false;
+  let startX = 0;
+  let startY = 0;
+  let isDragging = false;
+  let isScrolling = false;
+  let baseOffset = 0;
+  let isOpen = false;
 
   function setTranslate(x, animated) {
     row.style.transition = animated
@@ -221,7 +234,6 @@ function bindSwipeDelete(wrap, row) {
   }
 
   function openRow() {
-    // Close whichever other row is currently open
     if (_activeSwipeState && _activeSwipeState.wrap !== wrap) {
       _activeSwipeState.close();
     }
@@ -236,94 +248,90 @@ function bindSwipeDelete(wrap, row) {
     setTranslate(0, true);
   }
 
-  // ── Touch events ────────────────────────────────────────────────────────
-
-  wrap.addEventListener('touchstart', (e) => {
-    const t = e.touches[0];
-    startX     = t.clientX;
-    startY     = t.clientY;
+  wrap.addEventListener('touchstart', (event) => {
+    const touch = event.touches[0];
+    startX = touch.clientX;
+    startY = touch.clientY;
     baseOffset = isOpen ? -REVEAL_W : 0;
-    isDragging  = false;
+    isDragging = false;
     isScrolling = false;
     row.style.transition = 'none';
   }, { passive: true });
 
-  wrap.addEventListener('touchmove', (e) => {
+  wrap.addEventListener('touchmove', (event) => {
     if (isScrolling) return;
 
-    const t  = e.touches[0];
-    const dx = t.clientX - startX;
-    const dy = t.clientY - startY;
+    const touch = event.touches[0];
+    const dx = touch.clientX - startX;
+    const dy = touch.clientY - startY;
 
     if (!isDragging) {
-      // Wait for a clear directional signal
       if (Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
-      if (Math.abs(dy) > Math.abs(dx)) { isScrolling = true; return; }
+      if (Math.abs(dy) > Math.abs(dx)) {
+        isScrolling = true;
+        return;
+      }
       isDragging = true;
     }
 
-    e.preventDefault(); // block scroll once we own the swipe
+    event.preventDefault();
     const clamped = Math.max(-REVEAL_W, Math.min(0, baseOffset + dx));
     row.style.transform = `translateX(${clamped}px)`;
   }, { passive: false });
 
-  wrap.addEventListener('touchend', (e) => {
-    if (!isDragging) { isDragging = false; isScrolling = false; return; }
+  wrap.addEventListener('touchend', (event) => {
+    if (!isDragging) {
+      isDragging = false;
+      isScrolling = false;
+      return;
+    }
 
-    const t     = e.changedTouches[0];
-    const dx    = t.clientX - startX;
-    const total = baseOffset + dx;
-    isDragging  = false;
+    const touch = event.changedTouches[0];
+    const total = baseOffset + (touch.clientX - startX);
+    isDragging = false;
     isScrolling = false;
 
-    // Snap open if dragged more than halfway, otherwise snap shut
-    if (total < -(REVEAL_W / 2)) {
-      openRow();
-    } else {
-      closeRow();
-    }
+    if (total < -(REVEAL_W / 2)) openRow();
+    else closeRow();
   });
 
   wrap.addEventListener('touchcancel', () => {
-    isDragging  = false;
+    isDragging = false;
     isScrolling = false;
     closeRow();
   });
 
-  // ── Mouse drag (desktop) ─────────────────────────────────────────────────
+  wrap.addEventListener('mousedown', (event) => {
+    if (event.button !== 0) return;
 
-  wrap.addEventListener('mousedown', (e) => {
-    if (e.button !== 0) return;
-
-    const startX    = e.clientX;
-    const baseOff   = isOpen ? -REVEAL_W : 0;
-    let   dragging  = false;
+    const dragStartX = event.clientX;
+    const dragBaseOffset = isOpen ? -REVEAL_W : 0;
+    let dragging = false;
 
     row.style.transition = 'none';
 
-    function onMove(e) {
-      const dx = e.clientX - startX;
+    function onMove(moveEvent) {
+      const dx = moveEvent.clientX - dragStartX;
       if (!dragging && Math.abs(dx) < 5) return;
       dragging = true;
-      const clamped = Math.max(-REVEAL_W, Math.min(0, baseOff + dx));
+      const clamped = Math.max(-REVEAL_W, Math.min(0, dragBaseOffset + dx));
       row.style.transform = `translateX(${clamped}px)`;
     }
 
-    function onUp(e) {
+    function onUp(upEvent) {
       document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup',   onUp);
+      document.removeEventListener('mouseup', onUp);
       if (!dragging) return;
-      const total = baseOff + (e.clientX - startX);
-      if (total < -(REVEAL_W / 2)) openRow(); else closeRow();
+      const total = dragBaseOffset + (upEvent.clientX - dragStartX);
+      if (total < -(REVEAL_W / 2)) openRow();
+      else closeRow();
     }
 
     document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup',   onUp);
+    document.addEventListener('mouseup', onUp);
   });
 }
 
-function formatPoints(value) {
-  const numeric = Number(value) || 0;
-  if (numeric === 0) return '000';
-  return String(numeric);
+function formatPoints(points) {
+  return String(points ?? 0);
 }

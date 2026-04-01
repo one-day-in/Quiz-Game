@@ -29,7 +29,7 @@
     right: 0;
 
     height: 100%;
-    width: var(--leaderboard-drawer-panel-w);
+    width: min(42vw, 560px);
 
     display: flex;
     flex-direction: column;
@@ -41,7 +41,7 @@
     overflow: hidden;
 
     opacity: 0;
-    transform: translateX(24px);
+    transform: translateX(28px);
     transition: opacity 180ms ease-out, transform 180ms ease-out;
     will-change: opacity, transform;
     z-index: 1;
@@ -60,4 +60,10 @@
 .leaderboard-drawer.is-open .leaderboard-drawer__panel {
     opacity: 1;
     transform: translateX(0);
+}
+
+@media (max-width: 900px) {
+    .leaderboard-drawer__panel {
+        width: 100%;
+    }
 }

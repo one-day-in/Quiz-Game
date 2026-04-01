@@ -7,7 +7,23 @@
   gap: 12px;
 
   border-bottom: 1px solid var(--border-2);
-  background: var(--surface-1);
+  background: var(--surface);
+}
+
+.leaderboard-drawer__titleGroup {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.leaderboard-drawer__eyebrow {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
 .leaderboard-drawer__title {
@@ -18,7 +34,6 @@
   color: var(--text);
 }
 
-/* Body scrolls; QR area grows to fill the panel */
 .leaderboard-drawer__body {
   flex: 1 1 0;
   min-height: 0;
@@ -26,13 +41,12 @@
 
   display: flex;
   flex-direction: column;
-  gap: var(--leaderboard-drawer-section-gap);
+  gap: 18px;
 
   overflow: auto;
-  background: var(--surface-1);
+  background: linear-gradient(180deg, var(--surface), var(--surface-3));
 }
 
-/* Scrollbar (match modal vibe) */
 .leaderboard-drawer__body::-webkit-scrollbar { width: 8px; }
 .leaderboard-drawer__body::-webkit-scrollbar-track { background: transparent; }
 .leaderboard-drawer__body::-webkit-scrollbar-thumb {
@@ -44,4 +58,29 @@
 .leaderboard-drawer__body::-webkit-scrollbar-thumb:hover {
   background: var(--surface-3);
   background-clip: padding-box;
+}
+
+.leaderboard-drawer__section {
+  min-height: 0;
+  padding: 16px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-2);
+  background: linear-gradient(180deg, rgba(31, 41, 55, 0.96), rgba(15, 23, 42, 0.98));
+  box-shadow: var(--shadow-sm);
+}
+
+.leaderboard-drawer__section--board {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.leaderboard-drawer__boardMount {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.leaderboard-drawer__copy {
+  margin: 0;
+  color: var(--text-soft);
 }

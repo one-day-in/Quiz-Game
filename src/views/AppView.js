@@ -2,6 +2,7 @@
 import { HeaderView } from './HeaderView.js';
 import { GameGridView } from './GameGridView.js';
 import { LeaderboardGridView } from './LeaderboardGridView.js';
+import { LeaderboardDrawerView } from './LeaderboardDrawerView.js';
 import { getPlayers, subscribeToPlayers } from '../api/gameApi.js';
 import { ViewDisposer } from '../utils/disposer.js';
 import { fitAllCells } from '../utils/fitText.js';
@@ -13,9 +14,9 @@ export function AppView({ model, uiState, actions, gameId, gameName, onCellClick
   const disposer = new ViewDisposer(container);
   let gridEl = null;
   let footerEl = null;
+  let drawerView = null;
   let leaderboardPlayers = Array.isArray(model?.players) ? model.players : [];
   let hasHydratedPlayers = false;
-  let isFooterExpanded = false;
 
   // ResizeObserver — recalculate fitText on resize
   const ro = new ResizeObserver(() => {
@@ -56,9 +57,19 @@ export function AppView({ model, uiState, actions, gameId, gameName, onCellClick
     fit();
   }
 
-  function toggleFooter() {
-    isFooterExpanded = !isFooterExpanded;
-    footerEl?.setExpanded?.(isFooterExpanded);
+  function openLeaderboardView() {
+    if (drawerView) return;
+
+    drawerView = new LeaderboardDrawerView({
+      gameId,
+      players: leaderboardPlayers,
+      onClose: () => {
+        drawerView = null;
+      },
+    });
+
+    document.body.appendChild(drawerView.el);
+    drawerView.beginOpen();
   }
 
   function renderLeaderboard(players = leaderboardPlayers) {
@@ -68,14 +79,15 @@ export function AppView({ model, uiState, actions, gameId, gameName, onCellClick
       footerEl = LeaderboardGridView({
         players: leaderboardPlayers,
         variant: 'footer',
-        expanded: isFooterExpanded,
-        onToggleExpanded: () => toggleFooter(),
+        onOpenExpanded: () => openLeaderboardView(),
       });
       container.appendChild(footerEl);
       fit();
     } else {
       footerEl.update?.(leaderboardPlayers);
     }
+
+    drawerView?.updatePlayers?.(leaderboardPlayers);
   }
 
   function bindPlayers() {
@@ -114,6 +126,7 @@ export function AppView({ model, uiState, actions, gameId, gameName, onCellClick
   renderLeaderboard(leaderboardPlayers);
   bindPlayers();
   disposer.add(() => footerEl?.destroy?.());
+  disposer.add(() => drawerView?.destroy?.());
 
   return { el: container, update, patchCell, syncLive };
 }

@@ -1,4 +1,4 @@
-/* footer.css — persistent footer leaderboard slider */
+/* footer.css — footer preview leaderboard + full drawer view */
 
 .leaderboard {
   position: relative;
@@ -8,6 +8,8 @@
 .leaderboard__panel {
   position: relative;
   height: 100%;
+  display: flex;
+  flex-direction: column;
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-1);
   background: linear-gradient(180deg, var(--surface), var(--surface-3));
@@ -26,26 +28,18 @@
   opacity: 0.9;
 }
 
-.leaderboard__header {
+.leaderboard__header,
+.leaderboard__body {
   position: relative;
   z-index: 1;
+}
+
+.leaderboard__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 12px 14px 8px;
-  cursor: pointer;
-}
-
-.leaderboard--page .leaderboard__header {
-  cursor: default;
-}
-
-.leaderboard__titleGroup {
-  min-width: 0;
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
+  padding: 14px 16px 12px;
 }
 
 .leaderboard__title {
@@ -57,30 +51,19 @@
   color: var(--muted);
 }
 
-.leaderboard__status {
-  min-width: 0;
-  color: var(--muted-2);
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 .leaderboard__toggleBtn,
 .leaderboard__addPlayerBtn {
   flex: 0 0 auto;
   min-height: 42px;
-  min-width: 42px;
   padding: 0 14px;
   border-radius: 999px;
   border: 1px solid var(--btn-outline);
   background: var(--btn-bg);
   color: var(--text);
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 900;
   letter-spacing: 0.08em;
+  text-transform: uppercase;
   cursor: pointer;
   transition:
     filter var(--t-fast) var(--ease),
@@ -97,68 +80,9 @@
   filter: brightness(1.08);
 }
 
-.leaderboard__peek {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 0 14px 12px;
-}
-
-.leaderboard--footer .leaderboard__peek {
-  cursor: pointer;
-}
-
-.leaderboard__peekLeader {
-  min-width: 0;
-  color: var(--text);
-  font-size: clamp(18px, 2vw, 24px);
-  font-weight: 900;
-  letter-spacing: 0.04em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.leaderboard__peekSummary {
-  flex: 0 0 auto;
-  color: var(--warning);
-  font-size: 13px;
-  font-weight: 900;
-  letter-spacing: 0.10em;
-  text-transform: uppercase;
-}
-
 .leaderboard__body {
-  position: absolute;
-  z-index: 1;
-  inset: var(--footer-collapsed-h) 0 0;
-  opacity: 0;
-  overflow: hidden;
-  transform: translateY(20px);
-  pointer-events: none;
-  will-change: transform, opacity;
-  transition:
-    opacity var(--t) var(--ease),
-    transform var(--t-slow) var(--ease);
-}
-
-.leaderboard--page .leaderboard__body {
-  position: relative;
-  inset: auto;
-  opacity: 1;
-  overflow: visible;
-  transform: none;
-  pointer-events: auto;
-  will-change: auto;
-}
-
-.leaderboard.is-expanded .leaderboard__body {
-  opacity: 1;
-  transform: translateY(0);
-  pointer-events: auto;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .leaderboard__list {
@@ -166,14 +90,8 @@
   flex-direction: column;
   gap: 10px;
   height: 100%;
-  padding: 4px 14px 14px;
+  padding: 0 16px 16px;
   overflow: auto;
-  will-change: transform;
-}
-
-.leaderboard--page .leaderboard__list {
-  max-height: none;
-  padding-top: 0;
 }
 
 .leaderboard__list::-webkit-scrollbar {
@@ -187,6 +105,106 @@
 .leaderboard__list::-webkit-scrollbar-thumb {
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.18);
+}
+
+.leaderboard--footer .leaderboard__list--cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  overflow: hidden;
+}
+
+.leaderboard__card,
+.leaderboard__emptyCard {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-2);
+  background: linear-gradient(180deg, var(--surface-2), rgba(15, 23, 42, 0.95));
+  box-shadow: var(--shadow-sm);
+}
+
+.leaderboard__card.is-leading {
+  border-color: rgba(250, 204, 21, 0.35);
+  box-shadow:
+    0 0 0 1px rgba(250, 204, 21, 0.12),
+    0 14px 28px rgba(0, 0, 0, 0.45);
+}
+
+.leaderboard__card--more {
+  align-items: flex-start;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    filter var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease),
+    transform var(--t-fast) var(--ease);
+}
+
+.leaderboard__card--more:hover {
+  transform: translateY(-2px);
+  border-color: var(--btn-outline-hover);
+  filter: brightness(1.06);
+}
+
+.leaderboard__cardRank {
+  align-self: flex-start;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-3);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--warning);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+
+.leaderboard__cardName {
+  min-width: 0;
+  color: var(--text);
+  font-size: clamp(18px, 1.8vw, 22px);
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.leaderboard__cardScore,
+.leaderboard__cardMoreCount {
+  color: var(--danger);
+  font-size: clamp(28px, 3vh, 34px);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+  text-shadow:
+    0 0 10px var(--danger-a35),
+    0 0 22px var(--danger-a35),
+    0 0 36px var(--danger-a18);
+}
+
+.leaderboard__cardMoreLabel {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.leaderboard__emptyCard {
+  align-items: center;
+  justify-content: center;
+  color: var(--text-soft);
+  font-size: clamp(18px, 1.8vw, 22px);
+  font-weight: 700;
+  text-align: center;
 }
 
 .leaderboard__row {
@@ -282,30 +300,73 @@
   font-weight: 700;
 }
 
+.leaderboard--drawer {
+  height: 100%;
+}
+
+.leaderboard--drawer .leaderboard__panel {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.leaderboard--drawer .leaderboard__panel::before {
+  display: none;
+}
+
+.leaderboard--drawer .leaderboard__body {
+  height: 100%;
+}
+
+.leaderboard--drawer .leaderboard__list {
+  padding: 0;
+}
+
+@media (max-width: 1100px) {
+  .leaderboard--footer .leaderboard__list--cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 900px) {
-  .app-footer {
-    flex-basis: min(38vh, 320px);
-    height: min(38vh, 320px);
-    min-height: min(38vh, 320px);
-  }
-
-  .leaderboard__peek {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-
   .leaderboard__rank {
     min-width: 48px;
     padding: 8px 10px;
   }
+
+  .leaderboard__row {
+    gap: 14px;
+    padding: 12px 14px;
+  }
+
+  .leaderboard__nameLabel {
+    font-size: clamp(18px, 4vw, 24px);
+  }
+
+  .leaderboard__scoreValue {
+    font-size: clamp(24px, 5vw, 34px);
+  }
+}
+
+@media (max-width: 640px) {
+  .leaderboard--footer .leaderboard__list--cards {
+    grid-template-columns: 1fr;
+  }
+
+  .leaderboard__toggleBtn,
+  .leaderboard__addPlayerBtn {
+    min-height: 38px;
+    padding: 0 12px;
+    font-size: 12px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .leaderboard__body,
   .leaderboard__toggleBtn,
   .leaderboard__addPlayerBtn,
-  .leaderboard__row {
+  .leaderboard__row,
+  .leaderboard__card--more {
     transition: none;
   }
 }

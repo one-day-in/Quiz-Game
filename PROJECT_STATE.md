@@ -40,7 +40,8 @@ The app is realtime, but not purely realtime. It mixes:
   - routes cell clicks into `ModalService`
   - avoids full grid rerender while modal is open
 - `views/AppView.js`
-  - renders header, game grid, footer leaderboard
+  - renders header, game grid, footer leaderboard preview
+  - directly opens full leaderboard drawer view from footer actions
   - directly subscribes to `game_players` for footer updates
 - `services/ModalService.js`
   - owns question modal lifecycle
@@ -91,9 +92,9 @@ The app is realtime, but not purely realtime. It mixes:
 - `views/HeaderView.js`
   - host header with lobby/back and round switcher
 - `views/LeaderboardGridView.js`
-  - shared leaderboard renderer for page and embedded footer
+  - shared leaderboard renderer for page, footer preview, and drawer list
 - `views/LeaderboardDrawerView.js`
-  - old QR drawer for standalone leaderboard opening; no longer primary in host flow
+  - full leaderboard drawer with all players plus QR for the player controller
 - `views/QuestionModalView.js`
   - modal UI
 - `views/LobbyView.js`
@@ -132,7 +133,8 @@ The app is realtime, but not purely realtime. It mixes:
 6. `AppView` shows:
    - header
    - game grid
-   - embedded footer leaderboard
+   - embedded footer leaderboard preview
+   - full leaderboard drawer opened from the footer button
 7. Clicking a cell opens the question modal through `ModalService`.
 8. Opening a question:
    - stores active cell
@@ -181,7 +183,7 @@ The app is realtime, but not purely realtime. It mixes:
 - `GameModel.players` exists, but it is not the long-term source of truth.
   - `getGame()` hydrates players into the model.
   - `saveGame()` explicitly strips players back out of `games.data`.
-  - `AppView` now separately subscribes to `game_players` for footer leaderboard updates.
+- `AppView` now separately subscribes to `game_players` for footer leaderboard preview and drawer updates.
 - Board updates are optimistic in `GameService`.
 - Player updates are mostly direct RPC calls in `player.js`.
 - Press runtime is handled separately from board state and separately from players.
@@ -201,7 +203,6 @@ The app is realtime, but not purely realtime. It mixes:
 - `activeRoundId` in `GameService`
 - `quiz-game:player-controller:<gameId>` for player/controller binding
 - `quiz-game:ui-language` in `i18n.js`
-- `quiz-game:leaderboard-footer:<gameId>` in `AppView`
 
 ## Code Smells and Structural Problems
 
@@ -243,9 +244,14 @@ Board state and player state are partially stitched together rather than cleanly
 
 `AppView` now fetches and subscribes to players directly. `leaderboard.js` also fetches and subscribes directly. This works, but it weakens the service/controller boundary and makes view reuse more fragile.
 
-### 5. Legacy leaderboard drawer still exists
+### 5. Host leaderboard now uses two presentation layers
 
-`LeaderboardDrawerView` and its CSS remain in the repo, but the host flow has shifted toward embedded footer leaderboard. The old drawer is now partial legacy code, not fully removed and not fully primary.
+Host leaderboard UX is now split between:
+
+- a stable footer preview with player cards
+- a full drawer with the complete leaderboard plus controller QR
+
+This is cleaner than the earlier overlay experiment, but it still means the same player state is rendered in multiple places on the host surface.
 
 ### 6. `GameService` does not own remote game subscriptions
 
@@ -298,9 +304,9 @@ Ordered refactor and improvement steps. Do not treat all items as immediate.
 2. Unify realtime and polling strategy for players and runtime.
    - keep fallbacks
    - remove duplicate subscriptions where they are redundant
-3. Clarify lifecycle of embedded footer leaderboard versus standalone leaderboard page.
+3. Clarify lifecycle of footer preview, full drawer, and standalone leaderboard page.
    - keep shared renderer
-   - remove dead trigger paths
+   - avoid duplicated wiring for QR / player join affordances
 4. Add targeted tests for:
    - `AppView` footer leaderboard behavior
    - player controller score sync
@@ -412,18 +418,19 @@ Ordered refactor and improvement steps. Do not treat all items as immediate.
 - Estimated complexity:
   Low to Medium
 
-### 7. Remove or isolate legacy leaderboard drawer code
+### 7. Consolidate leaderboard presentation wiring
 
 - Problem description:
-  `LeaderboardDrawerView` and its CSS still exist, but the host now uses embedded footer leaderboard as the primary experience.
+  The host now has three leaderboard-related presentations:
+  - footer preview
+  - full drawer
+  - standalone `leaderboard.html`
 - Why it matters:
-  Partial legacy code adds maintenance cost and makes future UI work less clear.
+  Without explicit ownership, QR, sorting, and player-list layout can drift between these surfaces.
 - Suggested solution:
-  Either:
-  - fully retire the drawer after confirming no active usage
-  - or move it into an explicit `legacy` or `secondary` path with clear ownership notes
+  Keep `LeaderboardGridView` as the shared list/preview renderer and formalize `LeaderboardDrawerView` as the host-only full view. Reuse the same QR-generation helper if another leaderboard entry point needs controller QR later.
 - Expected impact:
-  Less UI ambiguity and less dead-weight CSS/view code.
+  Clearer UI ownership and less duplication when evolving leaderboard UX.
 - Estimated complexity:
   Low
 
@@ -468,7 +475,8 @@ Ordered refactor and improvement steps. Do not treat all items as immediate.
   The highest-risk code paths are multiplayer and realtime-related, which currently have the least protection.
 - Suggested solution:
   Add focused tests for:
-  - `AppView` footer leaderboard updates and collapse state
+  - `AppView` footer leaderboard preview updates
+  - host leaderboard drawer open/close behavior
   - player controller score synchronization
   - runtime winner transitions
   - cleanup behavior for subscriptions/timers
@@ -541,6 +549,16 @@ Ordered refactor and improvement steps. Do not treat all items as immediate.
 - Host leaderboard UX was changed from header-triggered drawer behavior to an embedded footer leaderboard in `AppView`.
 - Standalone `leaderboard.html` remains in the repo and still functions as a separate surface.
 - `LeaderboardDrawerView` was not deleted; it is now legacy/secondary code until a later cleanup decision.
+
+### 2026-04-01
+
+- Host leaderboard UX was refined again after the accordion-style footer proved too awkward.
+- The host surface now uses:
+  - a stable footer preview with player cards and scores
+  - a dedicated drawer for the full leaderboard
+  - a controller QR inside that drawer for `player.html`
+- `LeaderboardDrawerView` is active host UI again, not legacy-only code.
+- No leaderboard UI persistence key is currently used in `localStorage`.
 
 ### 2026-04-01
 
