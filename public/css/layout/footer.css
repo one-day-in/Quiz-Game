@@ -5,6 +5,10 @@
   color: var(--text);
 }
 
+.leaderboard[hidden] {
+  display: none !important;
+}
+
 .leaderboard__panel {
   position: relative;
   z-index: 1;
