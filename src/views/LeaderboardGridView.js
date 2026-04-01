@@ -10,19 +10,32 @@ function closeActiveSwipeRow() {
 
 export function LeaderboardGridView({
   players = [],
+  variant = 'page',
+  collapsed = false,
+  onToggleCollapse = null,
   onAddPlayer = null,
   onDeletePlayer = null,
 } = {}) {
   const el = document.createElement('footer');
-  el.className = 'app-footer';
+  el.className = `app-footer leaderboard leaderboard--${variant}`;
 
   const header = document.createElement('div');
   header.className = 'leaderboard__header';
 
+  const titleGroup = document.createElement('div');
+  titleGroup.className = 'leaderboard__titleGroup';
+
   const title = document.createElement('div');
   title.className = 'leaderboard__title';
   title.textContent = t('leaderboard');
-  header.appendChild(title);
+  titleGroup.appendChild(title);
+
+  const status = document.createElement('div');
+  status.className = 'leaderboard__status';
+  status.hidden = variant !== 'footer';
+  titleGroup.appendChild(status);
+
+  header.appendChild(titleGroup);
 
   if (typeof onAddPlayer === 'function') {
     const addButton = document.createElement('button');
@@ -31,6 +44,15 @@ export function LeaderboardGridView({
     addButton.textContent = t('add_player');
     addButton.addEventListener('click', () => onAddPlayer());
     header.appendChild(addButton);
+  }
+
+  if (variant === 'footer' && typeof onToggleCollapse === 'function') {
+    const toggleButton = document.createElement('button');
+    toggleButton.type = 'button';
+    toggleButton.className = 'leaderboard__toggleBtn';
+    toggleButton.setAttribute('aria-label', t('leaderboard'));
+    toggleButton.addEventListener('click', () => onToggleCollapse());
+    header.appendChild(toggleButton);
   }
 
   const list = document.createElement('div');
@@ -46,10 +68,29 @@ export function LeaderboardGridView({
   };
   document.addEventListener('pointerdown', onDocPointerDown);
 
+  function setCollapsed(nextCollapsed) {
+    const isCollapsed = !!nextCollapsed;
+    el.classList.toggle('leaderboard--collapsed', isCollapsed);
+
+    const toggleButton = header.querySelector('.leaderboard__toggleBtn');
+    if (toggleButton) {
+      toggleButton.textContent = isCollapsed ? '▾' : '▴';
+      toggleButton.setAttribute('aria-expanded', String(!isCollapsed));
+    }
+  }
+
   function update(nextPlayers = []) {
     closeActiveSwipeRow(); // close before rebuilding DOM
 
     const sortedPlayers = sortPlayersByScore(nextPlayers);
+    const playerCount = sortedPlayers.length;
+    const leader = sortedPlayers[0] || null;
+
+    if (variant === 'footer') {
+      status.textContent = leader
+        ? `${playerCount} • ${leader.name} • ${formatPoints(leader.points)}`
+        : String(playerCount);
+    }
 
     list.innerHTML = '';
 
@@ -66,9 +107,11 @@ export function LeaderboardGridView({
     }
   }
 
+  setCollapsed(collapsed);
   update(players);
 
   el.update = update;
+  el.setCollapsed = setCollapsed;
   el.destroy = () => {
     document.removeEventListener('pointerdown', onDocPointerDown);
     closeActiveSwipeRow();

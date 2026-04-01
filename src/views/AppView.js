@@ -1,19 +1,24 @@
 // src/views/AppView.js
 import { HeaderView } from './HeaderView.js';
 import { GameGridView } from './GameGridView.js';
-import { LeaderboardDrawerView } from './LeaderboardDrawerView.js';
+import { LeaderboardGridView } from './LeaderboardGridView.js';
+import { getPlayers, subscribeToPlayers } from '../api/gameApi.js';
 import { ViewDisposer } from '../utils/disposer.js';
 import { fitAllCells } from '../utils/fitText.js';
 
 export function AppView({ model, uiState, actions, gameId, gameName, onCellClick, onBackToLobby, onRoundClick }) {
+  const FOOTER_STATE_KEY = `quiz-game:leaderboard-footer:${gameId}`;
   const container = document.createElement('div');
   container.className = 'app-shell';
 
   const disposer = new ViewDisposer(container);
-  let leaderboardDrawerInstance = null;
   let gridEl = null;
+  let footerEl = null;
   let lastModel = model;
   let lastUiState = uiState;
+  let leaderboardPlayers = Array.isArray(model?.players) ? model.players : [];
+  let hasHydratedPlayers = false;
+  let isFooterCollapsed = localStorage.getItem(FOOTER_STATE_KEY) === 'collapsed';
 
   // ResizeObserver — recalculate fitText on resize
   const ro = new ResizeObserver(() => {
@@ -30,7 +35,6 @@ export function AppView({ model, uiState, actions, gameId, gameName, onCellClick
   const header = HeaderView({
     uiState,
     gameName,
-    onLeaderboardClick: toggleLeaderboardDrawer,
     onBackToLobby,
     onRoundClick,
   });
@@ -52,33 +56,48 @@ export function AppView({ model, uiState, actions, gameId, gameName, onCellClick
     }
     gridEl = newGrid;
 
-    // Re-append the leaderboard drawer on top if open (replaceWith moves it out).
-    if (leaderboardDrawerInstance?.el?.isConnected === false) {
-      container.appendChild(leaderboardDrawerInstance.el);
-    }
-
     fit();
   }
 
-  function toggleLeaderboardDrawer() {
-    if (leaderboardDrawerInstance) {
-      leaderboardDrawerInstance.beginClose();
-      leaderboardDrawerInstance = null;
+  function persistFooterState() {
+    localStorage.setItem(FOOTER_STATE_KEY, isFooterCollapsed ? 'collapsed' : 'expanded');
+  }
+
+  function renderFooter(players = leaderboardPlayers) {
+    leaderboardPlayers = Array.isArray(players) ? players : [];
+
+    if (!footerEl) {
+      footerEl = LeaderboardGridView({
+        players: leaderboardPlayers,
+        variant: 'footer',
+        collapsed: isFooterCollapsed,
+        onToggleCollapse: () => {
+          isFooterCollapsed = !isFooterCollapsed;
+          persistFooterState();
+          footerEl?.setCollapsed?.(isFooterCollapsed);
+          fit();
+        },
+      });
+      container.appendChild(footerEl);
+      fit();
       return;
     }
 
-    leaderboardDrawerInstance = new LeaderboardDrawerView({
-      gameId,
-      onClose: () => {
-        leaderboardDrawerInstance = null;
-        // Re-render the grid once the leaderboard drawer closes so the latest
-        // round state is visible immediately.
-        renderGrid(lastModel, lastUiState);
-      }
-    });
+    footerEl.update?.(leaderboardPlayers);
+  }
 
-    container.appendChild(leaderboardDrawerInstance.el);
-    leaderboardDrawerInstance.beginOpen();
+  function bindPlayers() {
+    const syncPlayers = (players) => {
+      hasHydratedPlayers = true;
+      renderFooter(players);
+    };
+
+    void getPlayers(gameId)
+      .then(syncPlayers)
+      .catch((error) => console.error('[AppView] getPlayers failed:', error));
+
+    const stopPlayersSubscription = subscribeToPlayers(gameId, syncPlayers);
+    disposer.add(() => stopPlayersSubscription?.());
   }
 
   // Public update — called on every subsequent state change
@@ -87,12 +106,14 @@ export function AppView({ model, uiState, actions, gameId, gameName, onCellClick
     lastUiState = ui;
     header.update(ui);
     renderGrid(m, ui);
+    renderFooter(hasHydratedPlayers ? leaderboardPlayers : (m?.players || leaderboardPlayers));
   }
 
   function syncLive(m, ui = lastUiState) {
     lastModel = m;
     lastUiState = ui;
     header.update(ui);
+    renderFooter(hasHydratedPlayers ? leaderboardPlayers : (m?.players || leaderboardPlayers));
   }
 
   // Targeted patch for a single cell (avoids full grid rebuild)
@@ -102,6 +123,9 @@ export function AppView({ model, uiState, actions, gameId, gameName, onCellClick
   }
 
   renderGrid(model, uiState);
+  renderFooter(leaderboardPlayers);
+  bindPlayers();
+  disposer.add(() => footerEl?.destroy?.());
 
   return { el: container, update, patchCell, syncLive };
 }

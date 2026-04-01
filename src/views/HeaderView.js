@@ -2,7 +2,7 @@
 import { escapeHtml } from '../utils/utils.js';
 import { t } from '../i18n.js';
 
-export function HeaderView({ uiState, gameName, onLeaderboardClick, onBackToLobby, onRoundClick }) {
+export function HeaderView({ uiState, gameName, onBackToLobby, onRoundClick }) {
   const el = document.createElement('header');
   el.className = 'app-header';
 
@@ -18,9 +18,6 @@ export function HeaderView({ uiState, gameName, onLeaderboardClick, onBackToLobb
     <div class="hdr-center">
       <h1 class="app-title">${escapeHtml(title)}</h1>
     </div>
-    <div class="hdr-right">
-      <button class="hdr-leaderboard-btn" type="button">🏆 ${escapeHtml(t('leaderboard'))}</button>
-    </div>
   `;
 
   const roundValueEl = el.querySelector('.js-round-value');
@@ -34,10 +31,6 @@ export function HeaderView({ uiState, gameName, onLeaderboardClick, onBackToLobb
 
   el.querySelector('.hdr-lobby-btn').addEventListener('click', () => onBackToLobby?.());
   el.querySelector('.round-indicator').addEventListener('click', () => onRoundClick?.());
-  el.querySelector('.hdr-leaderboard-btn').addEventListener('click', (e) => {
-    e.stopPropagation();
-    onLeaderboardClick?.();
-  });
 
   return { el, update };
 }

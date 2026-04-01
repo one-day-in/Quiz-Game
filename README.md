@@ -1,4 +1,4 @@
-# Quiz Game
+# Quiz-Game
 
 Browser-based quiz board with three surfaces:
 
@@ -60,10 +60,10 @@ The project expects:
 - a `game_runtime` table and `claim_game_press(...)` for press winner state
 - a `media` storage bucket
 
-Apply the SQL files in [/Users/oneday_in/Desktop/project/supabase](/Users/oneday_in/Desktop/project/supabase):
+Apply the SQL files in [/Users/oneday_in/Desktop/Quiz-Game/supabase](/Users/oneday_in/Desktop/Quiz-Game/supabase):
 
-- [game_players.sql](/Users/oneday_in/Desktop/project/supabase/game_players.sql)
-- [game_runtime.sql](/Users/oneday_in/Desktop/project/supabase/game_runtime.sql)
+- [game_players.sql](/Users/oneday_in/Desktop/Quiz-Game/supabase/game_players.sql)
+- [game_runtime.sql](/Users/oneday_in/Desktop/Quiz-Game/supabase/game_runtime.sql)
 
 Recommended `games` RLS:
 
@@ -84,13 +84,13 @@ Recommended `games` RLS:
 
 ## Project Structure
 
-- [src/bootstrap.js](/Users/oneday_in/Desktop/project/src/bootstrap.js): app startup and routing
-- [src/api/gameApi.js](/Users/oneday_in/Desktop/project/src/api/gameApi.js): Supabase reads, writes, realtime, RPC
-- [src/services/ModalService.js](/Users/oneday_in/Desktop/project/src/services/ModalService.js): host modal behavior
-- [src/player.js](/Users/oneday_in/Desktop/project/src/player.js): mobile controller
-- [src/leaderboard.js](/Users/oneday_in/Desktop/project/src/leaderboard.js): leaderboard page
-- [src/views](/Users/oneday_in/Desktop/project/src/views): UI view layer
-- [public/css](/Users/oneday_in/Desktop/project/public/css): styles
+- [src/bootstrap.js](/Users/oneday_in/Desktop/Quiz-Game/src/bootstrap.js): app startup and routing
+- [src/api/gameApi.js](/Users/oneday_in/Desktop/Quiz-Game/src/api/gameApi.js): Supabase reads, writes, realtime, RPC
+- [src/services/ModalService.js](/Users/oneday_in/Desktop/Quiz-Game/src/services/ModalService.js): host modal behavior
+- [src/player.js](/Users/oneday_in/Desktop/Quiz-Game/src/player.js): mobile controller
+- [src/leaderboard.js](/Users/oneday_in/Desktop/Quiz-Game/src/leaderboard.js): leaderboard page
+- [src/views](/Users/oneday_in/Desktop/Quiz-Game/src/views): UI view layer
+- [public/css](/Users/oneday_in/Desktop/Quiz-Game/public/css): styles
 
 ## Verification
 

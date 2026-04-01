@@ -22,6 +22,8 @@
     --app-pad: 24px;
     --header-h: 90px;
     --footer-h: 60px;
+    --footer-collapsed-h: 82px;
+    --footer-expanded-h: min(32vh, 280px);
 
     --radius-sm: 14px;
     --radius-md: 20px;

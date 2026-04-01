@@ -186,6 +186,39 @@ begin
 end;
 $$;
 
+create or replace function public.adjust_game_player_score_by_id(
+    p_game_id uuid,
+    p_player_id uuid,
+    p_delta integer
+)
+returns table (
+    id uuid,
+    game_id uuid,
+    name text,
+    points integer,
+    joined_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+    update public.game_players
+    set points = coalesce(game_players.points, 0) + coalesce(p_delta, 0),
+        updated_at = timezone('utc', now())
+    where game_players.game_id = p_game_id
+      and game_players.id = p_player_id
+    returning game_players.id, game_players.game_id, game_players.name, game_players.points, game_players.joined_at
+    into id, game_id, name, points, joined_at;
+
+    if not found then
+        raise exception 'Player not found';
+    end if;
+
+    return next;
+end;
+$$;
+
 create or replace function public.leave_game_player(
     p_game_id uuid,
     p_controller_id text
@@ -229,5 +262,6 @@ $$;
 grant execute on function public.claim_game_player(uuid, text, text) to anon, authenticated;
 grant execute on function public.rename_game_player(uuid, text, text) to anon, authenticated;
 grant execute on function public.adjust_game_player_score(uuid, text, integer) to anon, authenticated;
+grant execute on function public.adjust_game_player_score_by_id(uuid, uuid, integer) to anon, authenticated;
 grant execute on function public.leave_game_player(uuid, text) to anon, authenticated;
 grant execute on function public.delete_game_player(uuid, uuid) to anon, authenticated;

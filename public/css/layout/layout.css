@@ -27,5 +27,5 @@
 
 .app-footer {
   flex: 0 0 auto;
-  height: var(--footer-h);
+  min-height: var(--footer-h);
 }
