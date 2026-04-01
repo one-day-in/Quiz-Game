@@ -284,27 +284,25 @@ function createRow(player, { variant = 'page', onDeletePlayer = null, onAdjustPl
     minusBtn.type = 'button';
     minusBtn.className = 'leaderboard__rowActionBtn';
     minusBtn.textContent = '-100';
-    minusBtn.addEventListener('click', () => onAdjustPlayerScore?.(row.dataset.playerId, -100));
+    minusBtn.addEventListener('click', (event) => {
+      const playerId = event.currentTarget.closest('.leaderboard__row')?.dataset.playerId;
+      if (playerId) onAdjustPlayerScore?.(playerId, -100);
+    });
 
     const plusBtn = document.createElement('button');
     plusBtn.type = 'button';
     plusBtn.className = 'leaderboard__rowActionBtn';
     plusBtn.textContent = '+100';
-    plusBtn.addEventListener('click', () => onAdjustPlayerScore?.(row.dataset.playerId, 100));
+    plusBtn.addEventListener('click', (event) => {
+      const playerId = event.currentTarget.closest('.leaderboard__row')?.dataset.playerId;
+      if (playerId) onAdjustPlayerScore?.(playerId, 100);
+    });
 
-    const deleteBtn = document.createElement('button');
-    deleteBtn.type = 'button';
-    deleteBtn.className = 'leaderboard__rowActionBtn leaderboard__rowActionBtn--danger';
-    deleteBtn.textContent = t('delete');
-    deleteBtn.addEventListener('click', () => onDeletePlayer?.(row.dataset.playerId));
-
-    actions.append(minusBtn, plusBtn, deleteBtn);
+    actions.append(minusBtn, plusBtn);
     row.appendChild(actions);
     row._parts.actions = actions;
     row._parts.minusBtn = minusBtn;
     row._parts.plusBtn = plusBtn;
-    row._parts.deleteBtn = deleteBtn;
-    return row;
   }
 
   if (typeof onDeletePlayer !== 'function') return row;
@@ -318,9 +316,11 @@ function createRow(player, { variant = 'page', onDeletePlayer = null, onAdjustPl
   const deleteBtn = document.createElement('button');
   deleteBtn.type = 'button';
   deleteBtn.className = 'leaderboard__deleteRevealBtn';
-  deleteBtn.setAttribute('aria-label', t('remove_player_aria', { name: player?.name || t('player_fallback') }));
   deleteBtn.textContent = t('delete');
-  deleteBtn.addEventListener('click', () => onDeletePlayer(player.id));
+  deleteBtn.addEventListener('click', () => {
+    const playerId = wrap._row?.dataset.playerId;
+    if (playerId) onDeletePlayer(playerId);
+  });
 
   reveal.appendChild(deleteBtn);
   wrap.append(reveal, row);
@@ -335,15 +335,12 @@ function createRow(player, { variant = 'page', onDeletePlayer = null, onAdjustPl
 function patchRow(node, player, rank = 0, { variant = 'page' } = {}) {
   const row = node._row || node;
   row.dataset.playerId = String(player?.id ?? '');
+  if (node !== row) node.dataset.playerId = String(player?.id ?? '');
   row.classList.toggle('is-leading', rank === 0);
   row._parts.rankEl.textContent = getRankLabel(rank);
   row._parts.name.textContent = player?.name || t('player_fallback');
   row._parts.points.textContent = formatPoints(player?.points);
   row._parts.points.setAttribute('aria-label', `Points: ${player?.points ?? 0}`);
-  if (variant === 'drawer') {
-    row._parts.deleteBtn?.setAttribute('aria-label', t('remove_player_aria', { name: player?.name || t('player_fallback') }));
-    return;
-  }
   node._deleteBtn?.setAttribute('aria-label', t('remove_player_aria', { name: player?.name || t('player_fallback') }));
 }
 

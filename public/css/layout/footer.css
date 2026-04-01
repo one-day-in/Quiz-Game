@@ -230,18 +230,6 @@
   border: 1px solid var(--border-2);
   background: linear-gradient(180deg, var(--surface-2), var(--surface-3));
   box-shadow: var(--shadow-sm);
-  transition:
-    box-shadow var(--t-fast) var(--ease),
-    border-color var(--t-fast) var(--ease),
-    filter var(--t-fast) var(--ease),
-    transform var(--t-fast) var(--ease);
-}
-
-.leaderboard__row:hover {
-  border-color: var(--border-4);
-  box-shadow: var(--shadow-md);
-  filter: brightness(1.06);
-  transform: translateY(-1px);
 }
 
 .leaderboard__row.is-leading {
@@ -322,18 +310,6 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   cursor: pointer;
-  transition:
-    filter var(--t-fast) var(--ease),
-    border-color var(--t-fast) var(--ease),
-    box-shadow var(--t-fast) var(--ease),
-    transform var(--t-fast) var(--ease);
-}
-
-.leaderboard__rowActionBtn:hover {
-  transform: translateY(-1px);
-  border-color: var(--btn-outline-hover);
-  box-shadow: 0 0 0 1px var(--brand-a35), 0 0 18px var(--brand-a18);
-  filter: brightness(1.06);
 }
 
 .leaderboard__rowActionBtn--danger {

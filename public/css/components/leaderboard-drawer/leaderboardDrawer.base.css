@@ -29,7 +29,7 @@
     right: max(24px, env(safe-area-inset-right));
     bottom: max(24px, env(safe-area-inset-bottom));
 
-    height: min(68vh, 620px);
+    height: min(60vh, 760px);
 
     display: flex;
     flex-direction: column;
