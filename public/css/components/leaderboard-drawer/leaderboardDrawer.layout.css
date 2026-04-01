@@ -37,11 +37,12 @@
 .leaderboard-drawer__body {
   flex: 1 1 0;
   min-height: 0;
-  padding: 16px 18px;
+  padding: 18px 20px 20px;
 
   display: flex;
-  flex-direction: column;
-  gap: 18px;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 20px;
 
   overflow: auto;
   background: linear-gradient(180deg, var(--surface), var(--surface-3));
@@ -83,4 +84,20 @@
 .leaderboard-drawer__copy {
   margin: 0;
   color: var(--text-soft);
+}
+
+@media (max-width: 900px) {
+  .leaderboard-drawer__header {
+    padding: 16px 16px 14px;
+  }
+
+  .leaderboard-drawer__title {
+    font-size: clamp(28px, 5vw, 40px);
+  }
+
+  .leaderboard-drawer__body {
+    padding: 16px;
+    flex-direction: column;
+    gap: 16px;
+  }
 }

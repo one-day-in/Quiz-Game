@@ -22,26 +22,28 @@
     pointer-events: auto;
 }
 
-/* Slide-over panel */
+/* Bottom-sheet panel */
 .leaderboard-drawer__panel {
     position: absolute;
-    top: 0;
-    right: 0;
+    left: max(24px, env(safe-area-inset-left));
+    right: max(24px, env(safe-area-inset-right));
+    bottom: max(24px, env(safe-area-inset-bottom));
 
-    height: 100%;
-    width: min(42vw, 560px);
+    height: min(68vh, 620px);
 
     display: flex;
     flex-direction: column;
 
-    border-left: 1px solid var(--border-2);
+    border: 1px solid var(--border-2);
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+    border-radius: 28px;
     background: var(--surface);
     box-shadow: var(--shadow-lg);
 
     overflow: hidden;
 
     opacity: 0;
-    transform: translateX(28px);
+    transform: translateY(28px);
     transition: opacity 180ms ease-out, transform 180ms ease-out;
     will-change: opacity, transform;
     z-index: 1;
@@ -59,11 +61,18 @@
 
 .leaderboard-drawer.is-open .leaderboard-drawer__panel {
     opacity: 1;
-    transform: translateX(0);
+    transform: translateY(0);
 }
 
 @media (max-width: 900px) {
     .leaderboard-drawer__panel {
-        width: 100%;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: min(78vh, 720px);
+        border-right: none;
+        border-left: none;
+        border-bottom: none;
+        border-radius: 28px 28px 0 0;
     }
 }

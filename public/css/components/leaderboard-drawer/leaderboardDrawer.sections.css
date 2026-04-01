@@ -1,5 +1,5 @@
 .leaderboard-drawer__section--qr {
-  flex: 0 0 auto;
+  flex: 0 0 min(28%, 320px);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -25,7 +25,7 @@
 .leaderboard-drawer__qr-img {
   position: relative;
   z-index: 1;
-  width: min(100%, 280px);
+  width: min(100%, 260px);
   aspect-ratio: 1 / 1;
 
   border-radius: var(--radius-md);
@@ -63,4 +63,14 @@
 
 .leaderboard-drawer__secondaryLink:hover {
   text-decoration: underline;
+}
+
+@media (max-width: 900px) {
+  .leaderboard-drawer__section--qr {
+    flex-basis: auto;
+  }
+
+  .leaderboard-drawer__qr-img {
+    width: min(100%, 220px);
+  }
 }
