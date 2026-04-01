@@ -3,7 +3,7 @@ import { AppView } from './views/AppView.js';
 import { Disposer } from './utils/disposer.js';
 import { showRoundPicker } from './utils/confirm.js';
 
-export function createAppController({ root, gameService, modalService, roundNavigationService, gameId, gameName, onBackToLobby }) {
+export function createAppController({ root, gameService, playersService, modalService, roundNavigationService, gameId, gameName, onBackToLobby }) {
   let appViewRef = null; // { el, update } — kept alive across state changes
   const disposer = new Disposer();
 
@@ -40,10 +40,12 @@ export function createAppController({ root, gameService, modalService, roundNavi
 
   function render(state) {
     const { model, uiState, _cellHint } = state || gameService.getState();
+    const players = playersService?.getPlayers?.() || [];
     if (!model) return;
 
     // While modal is open, skip grid re-renders — they'll block the UI thread.
     if (modalService.isOpen()) {
+      appViewRef?.updatePlayers?.(players);
       appViewRef?.syncLive?.(model, uiState);
       return;
     }
@@ -52,6 +54,7 @@ export function createAppController({ root, gameService, modalService, roundNavi
       appViewRef = AppView({
         model,
         uiState,
+        players,
         actions,
         gameId,
         gameName,
@@ -66,6 +69,7 @@ export function createAppController({ root, gameService, modalService, roundNavi
     // Targeted single-cell patch — no full grid rebuild
     if (_cellHint) {
       const cell = model.getCell(_cellHint.roundId, _cellHint.rowId, _cellHint.cellId);
+      appViewRef.updatePlayers?.(players);
       appViewRef.patchCell(_cellHint.rowId, _cellHint.cellId, !!cell?.isAnswered);
       return;
     }
@@ -77,6 +81,11 @@ export function createAppController({ root, gameService, modalService, roundNavi
   disposer.addSubscription(
     (fn) => gameService.subscribe(fn),
     (state) => render(state)
+  );
+
+  disposer.addSubscription(
+    (fn) => playersService.subscribe(fn),
+    (players) => appViewRef?.updatePlayers?.(players)
   );
 
   disposer.add(() => { appViewRef?.el?.remove(); appViewRef = null; });

@@ -76,6 +76,10 @@ export function LeaderboardGridView({
   body.appendChild(list);
   panel.appendChild(body);
 
+  const itemNodes = new Map();
+  let emptyNode = null;
+  let moreNode = null;
+
   const onDocPointerDown = (event) => {
     if (_activeSwipeState && !_activeSwipeState.wrap.contains(event.target)) {
       closeActiveSwipeRow();
@@ -90,59 +94,109 @@ export function LeaderboardGridView({
     closeActiveSwipeRow();
 
     const sortedPlayers = sortPlayersByScore(nextPlayers);
-    list.innerHTML = '';
 
     if (variant === 'footer') {
-      renderFooterCards(sortedPlayers);
+      syncFooterCards(sortedPlayers);
       return;
     }
 
-    renderRows(sortedPlayers);
+    syncRows(sortedPlayers);
   }
 
-  function renderFooterCards(sortedPlayers) {
+  function syncFooterCards(sortedPlayers) {
     list.classList.toggle('is-empty', sortedPlayers.length === 0);
 
     if (!sortedPlayers.length) {
-      const empty = document.createElement('div');
-      empty.className = 'leaderboard__emptyFooter';
-      empty.textContent = t('no_players_yet');
-      list.appendChild(empty);
+      clearPlayerNodes();
+      removeMoreNode();
+      ensureEmptyNode('leaderboard__emptyFooter');
       return;
     }
 
+    removeEmptyNode();
+
     const visiblePlayers = sortedPlayers.slice(0, footerLimit);
+    const visibleKeys = new Set(visiblePlayers.map(getPlayerKey));
+    removeStaleNodes(visibleKeys);
+
     for (const [index, player] of visiblePlayers.entries()) {
-      list.appendChild(buildFooterCard(player, index));
+      const key = getPlayerKey(player);
+      let node = itemNodes.get(key);
+      if (!node) {
+        node = createFooterCard();
+        itemNodes.set(key, node);
+      }
+      patchFooterCard(node, player, index);
+      list.appendChild(node);
     }
 
     const hiddenCount = sortedPlayers.length - visiblePlayers.length;
     if (hiddenCount > 0) {
-      const moreCard = document.createElement('button');
-      moreCard.type = 'button';
-      moreCard.className = 'leaderboard__card leaderboard__card--more';
-      moreCard.innerHTML = `
-        <span class="leaderboard__cardMoreCount">+${hiddenCount}</span>
-        <span class="leaderboard__cardMoreLabel">${t('show_all_players')}</span>
-      `;
-      moreCard.addEventListener('click', () => onOpenExpanded?.());
-      list.appendChild(moreCard);
+      if (!moreNode) {
+        moreNode = createMoreCard(onOpenExpanded);
+      }
+      patchMoreCard(moreNode, hiddenCount);
+      list.appendChild(moreNode);
+    } else {
+      removeMoreNode();
     }
   }
 
-  function renderRows(sortedPlayers) {
+  function syncRows(sortedPlayers) {
     list.classList.remove('is-empty');
 
     if (!sortedPlayers.length) {
-      const empty = document.createElement('div');
-      empty.className = 'leaderboard__empty';
-      empty.textContent = t('no_players_yet');
-      list.appendChild(empty);
+      clearPlayerNodes();
+      ensureEmptyNode('leaderboard__empty');
       return;
     }
 
+    removeEmptyNode();
+
+    const playerKeys = new Set(sortedPlayers.map(getPlayerKey));
+    removeStaleNodes(playerKeys);
+
     for (const [index, player] of sortedPlayers.entries()) {
-      list.appendChild(buildRow(player, onDeletePlayer, index));
+      const key = getPlayerKey(player);
+      let node = itemNodes.get(key);
+      if (!node) {
+        node = createRow(player, onDeletePlayer);
+        itemNodes.set(key, node);
+      }
+      patchRow(node, player, index);
+      list.appendChild(node);
+    }
+  }
+
+  function ensureEmptyNode(className) {
+    if (!emptyNode) {
+      emptyNode = document.createElement('div');
+    }
+    emptyNode.className = className;
+    emptyNode.textContent = t('no_players_yet');
+    list.appendChild(emptyNode);
+  }
+
+  function removeEmptyNode() {
+    emptyNode?.remove();
+  }
+
+  function removeMoreNode() {
+    moreNode?.remove();
+  }
+
+  function clearPlayerNodes() {
+    for (const node of itemNodes.values()) {
+      node.remove();
+    }
+    itemNodes.clear();
+  }
+
+  function removeStaleNodes(validKeys) {
+    for (const [key, node] of itemNodes.entries()) {
+      if (validKeys.has(key)) continue;
+      node.remove();
+      itemNodes.delete(key);
     }
   }
 
@@ -158,46 +212,68 @@ export function LeaderboardGridView({
   return el;
 }
 
-function buildFooterCard(player, rank = 0) {
+function createFooterCard() {
   const card = document.createElement('div');
   card.className = 'leaderboard__card';
-  if (rank === 0) card.classList.add('is-leading');
 
   const rankEl = document.createElement('div');
   rankEl.className = 'leaderboard__cardRank';
-  rankEl.textContent = getRankLabel(rank);
 
   const name = document.createElement('div');
   name.className = 'leaderboard__cardName';
-  name.textContent = player?.name || t('player_fallback');
 
   const points = document.createElement('div');
   points.className = 'leaderboard__cardScore';
-  points.textContent = formatPoints(player?.points);
 
   card.append(rankEl, name, points);
+  card._parts = { rankEl, name, points };
   return card;
 }
 
-function buildRow(player, onDeletePlayer, rank = 0) {
+function patchFooterCard(card, player, rank = 0) {
+  card.classList.toggle('is-leading', rank === 0);
+  card._parts.rankEl.textContent = getRankLabel(rank);
+  card._parts.name.textContent = player?.name || t('player_fallback');
+  card._parts.points.textContent = formatPoints(player?.points);
+}
+
+function createMoreCard(onOpenExpanded) {
+  const moreCard = document.createElement('button');
+  moreCard.type = 'button';
+  moreCard.className = 'leaderboard__card leaderboard__card--more';
+
+  const count = document.createElement('span');
+  count.className = 'leaderboard__cardMoreCount';
+
+  const label = document.createElement('span');
+  label.className = 'leaderboard__cardMoreLabel';
+  label.textContent = t('show_all_players');
+
+  moreCard.append(count, label);
+  moreCard._parts = { count, label };
+  moreCard.addEventListener('click', () => onOpenExpanded?.());
+  return moreCard;
+}
+
+function patchMoreCard(moreCard, hiddenCount) {
+  moreCard._parts.count.textContent = `+${hiddenCount}`;
+}
+
+function createRow(player, onDeletePlayer) {
   const row = document.createElement('div');
   row.className = 'leaderboard__row';
-  if (rank === 0) row.classList.add('is-leading');
 
   const rankEl = document.createElement('div');
   rankEl.className = 'leaderboard__rank';
-  rankEl.textContent = getRankLabel(rank);
 
   const name = document.createElement('div');
   name.className = 'leaderboard__nameLabel';
-  name.textContent = player?.name || t('player_fallback');
 
   const points = document.createElement('div');
   points.className = 'leaderboard__scoreValue';
-  points.textContent = formatPoints(player?.points);
-  points.setAttribute('aria-label', `Points: ${player?.points ?? 0}`);
 
   row.append(rankEl, name, points);
+  row._parts = { rankEl, name, points };
 
   if (typeof onDeletePlayer !== 'function') return row;
 
@@ -216,10 +292,26 @@ function buildRow(player, onDeletePlayer, rank = 0) {
 
   reveal.appendChild(deleteBtn);
   wrap.append(reveal, row);
+  wrap._row = row;
+  wrap._deleteBtn = deleteBtn;
 
   bindSwipeDelete(wrap, row);
 
   return wrap;
+}
+
+function patchRow(node, player, rank = 0) {
+  const row = node._row || node;
+  row.classList.toggle('is-leading', rank === 0);
+  row._parts.rankEl.textContent = getRankLabel(rank);
+  row._parts.name.textContent = player?.name || t('player_fallback');
+  row._parts.points.textContent = formatPoints(player?.points);
+  row._parts.points.setAttribute('aria-label', `Points: ${player?.points ?? 0}`);
+  node._deleteBtn?.setAttribute('aria-label', t('remove_player_aria', { name: player?.name || t('player_fallback') }));
+}
+
+function getPlayerKey(player) {
+  return String(player?.id ?? player?.controllerId ?? player?.joinedAt ?? player?.name ?? 'unknown-player');
 }
 
 function bindSwipeDelete(wrap, row) {

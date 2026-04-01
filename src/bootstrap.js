@@ -11,6 +11,7 @@ import { createGameService } from './services/GameService.js';
 import { createRoundNavigationService } from './services/RoundNavigationService.js';
 import { createModalService } from './services/ModalService.js';
 import { createMediaService } from './services/MediaService.js';
+import { createPlayersService } from './services/PlayersService.js';
 
 import { renderLogin } from './views/LoginView.js';
 import { LobbyView } from './views/LobbyView.js';
@@ -105,11 +106,13 @@ async function renderGame(user, gameId, gameName) {
     try {
         const repo = createGameRepository(gameId);
         const gameService = createGameService(repo);
+        const playersService = createPlayersService(gameId);
         const mediaService = createMediaService({ repo, gameService });
         const roundNavigationService = createRoundNavigationService(gameService);
         const modalService = createModalService(gameService, mediaService);
 
         await gameService.initialize();
+        await playersService.initialize();
         gameService.restoreUiState();
 
         if (IS_DEV) {
@@ -131,6 +134,7 @@ async function renderGame(user, gameId, gameName) {
         const app = createAppController({
             root,
             gameService,
+            playersService,
             modalService,
             roundNavigationService,
             gameId,
@@ -139,6 +143,7 @@ async function renderGame(user, gameId, gameName) {
         });
 
         _currentCleanup = () => {
+            playersService?.destroy?.();
             modalService?.destroy();
             app?.destroy();
             if (IS_DEV) {

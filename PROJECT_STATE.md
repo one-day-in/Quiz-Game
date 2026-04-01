@@ -37,12 +37,12 @@ The app is realtime, but not purely realtime. It mixes:
   - creates repository/services/controller stack
 - `AppController.js`
   - binds `GameService` state to `AppView`
+  - binds `PlayersService` state to `AppView`
   - routes cell clicks into `ModalService`
   - avoids full grid rerender while modal is open
 - `views/AppView.js`
   - renders header, game grid, footer leaderboard preview
   - directly opens full leaderboard drawer view from footer actions
-  - directly subscribes to `game_players` for footer updates
 - `services/ModalService.js`
   - owns question modal lifecycle
   - updates board cells
@@ -57,6 +57,9 @@ The app is realtime, but not purely realtime. It mixes:
   - owns in-memory `GameModel`
   - owns local host UI state such as active round
   - performs optimistic board updates and rollback on failure
+- `services/PlayersService.js`
+  - owns host-side live player state
+  - performs initial fetch, realtime subscription, and fallback refresh
 - `services/MediaService.js`
   - view/media mapping and upload/delete orchestration
 - `services/RoundNavigationService.js`
@@ -124,11 +127,13 @@ The app is realtime, but not purely realtime. It mixes:
 3. Opening a game creates:
    - `GameRepository`
    - `GameService`
+   - `PlayersService`
    - `MediaService`
    - `RoundNavigationService`
    - `ModalService`
    - `AppController`
-4. `GameService.initialize()` loads board JSON plus players through `getGame()`.
+4. `GameService.initialize()` loads board JSON.
+5. `PlayersService.initialize()` hydrates live host-side player state from `game_players`.
 5. `AppController` renders `AppView`.
 6. `AppView` shows:
    - header
@@ -183,7 +188,7 @@ The app is realtime, but not purely realtime. It mixes:
 - `GameModel.players` exists, but it is not the long-term source of truth.
   - `getGame()` hydrates players into the model.
   - `saveGame()` explicitly strips players back out of `games.data`.
-- `AppView` now separately subscribes to `game_players` for footer leaderboard preview and drawer updates.
+- Host leaderboard state is now owned by `PlayersService`, not by `AppView`.
 - Board updates are optimistic in `GameService`.
 - Player updates are mostly direct RPC calls in `player.js`.
 - Press runtime is handled separately from board state and separately from players.
@@ -192,7 +197,7 @@ The app is realtime, but not purely realtime. It mixes:
 ### Realtime Reality
 
 - `gameApi.subscribeToGame()` listens to both `games` and `game_players`.
-- `AppView` also independently uses `subscribeToPlayers()`.
+- `PlayersService` uses `subscribeToPlayers()` plus a 1.5s fallback refresh loop for the host surface.
 - `player.js` uses `subscribeToPlayers()` and `subscribeToGameRuntime()` and also polls every second.
 - `ModalService` uses `subscribeToGameRuntime()` and also polls every 800ms while open.
 - The app currently relies on overlapping subscriptions and fallback timers rather than a single coherent event model.
@@ -235,14 +240,14 @@ Player state is represented in several places:
 
 - `game_players` table
 - `GameModel.players`
-- `leaderboardPlayers` in `AppView`
+- `PlayersService` host snapshot
 - `player` object in `player.js`
 
 Board state and player state are partially stitched together rather than cleanly separated.
 
-### 4. View modules perform their own data fetching
+### 4. Standalone leaderboard still performs its own data fetching
 
-`AppView` now fetches and subscribes to players directly. `leaderboard.js` also fetches and subscribes directly. This works, but it weakens the service/controller boundary and makes view reuse more fragile.
+`leaderboard.js` still fetches and subscribes directly. Host flow is cleaner now because `AppView` no longer owns player transport concerns, but standalone leaderboard still does.
 
 ### 5. Host leaderboard now uses two presentation layers
 
@@ -298,27 +303,24 @@ Missing coverage includes:
 
 Ordered refactor and improvement steps. Do not treat all items as immediate.
 
-1. Decide one owner for live player state on the host side.
-   - either service-level ownership
-   - or explicit dedicated players controller/store
-2. Unify realtime and polling strategy for players and runtime.
+1. Unify realtime and polling strategy for players and runtime.
    - keep fallbacks
    - remove duplicate subscriptions where they are redundant
-3. Clarify lifecycle of footer preview, full drawer, and standalone leaderboard page.
+2. Clarify lifecycle of footer preview, full drawer, and standalone leaderboard page.
    - keep shared renderer
    - avoid duplicated wiring for QR / player join affordances
-4. Add targeted tests for:
+3. Add targeted tests for:
    - `AppView` footer leaderboard behavior
    - player controller score sync
    - press race flow
    - modal correct/incorrect score application
-5. Move document metadata and page-level language handling to a consistent approach across all HTML entry points.
-6. Revisit `GameModel.players`.
+4. Move document metadata and page-level language handling to a consistent approach across all HTML entry points.
+5. Revisit `GameModel.players`.
    - either formalize it as read-only snapshot data
    - or remove it from the model layer to reduce confusion
-7. Audit view modules for direct data fetching and decide which fetches belong in controller/service instead.
-8. Retire or formally re-home `LeaderboardDrawerView` if it is no longer part of the primary host UX.
-9. Add a small architecture test checklist to the repo so future UI changes do not regress multiplayer flow.
+6. Audit view modules for direct data fetching and decide which fetches belong in controller/service instead.
+7. Retire or formally re-home `LeaderboardDrawerView` if it is no longer part of the primary host UX.
+8. Add a small architecture test checklist to the repo so future UI changes do not regress multiplayer flow.
 
 ## Improvement Proposals
 
@@ -559,6 +561,13 @@ Ordered refactor and improvement steps. Do not treat all items as immediate.
   - a controller QR inside that drawer for `player.html`
 - `LeaderboardDrawerView` is active host UI again, not legacy-only code.
 - No leaderboard UI persistence key is currently used in `localStorage`.
+
+### 2026-04-01
+
+- The first host-side leaderboard TODO was executed.
+- Live host player state now has a single owner: `PlayersService`.
+- `AppView` no longer fetches or subscribes to `game_players` directly.
+- `AppController` now binds board state and player state separately into the same host view.
 
 ### 2026-04-01
 
