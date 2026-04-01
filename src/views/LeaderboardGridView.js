@@ -64,7 +64,6 @@ export function LeaderboardGridView({
       if (event.target === toggleButton) return;
       onToggleExpanded();
     });
-    peek.addEventListener('click', () => onToggleExpanded());
   }
 
   const peek = document.createElement('div');
@@ -77,6 +76,10 @@ export function LeaderboardGridView({
   peekSummary.className = 'leaderboard__peekSummary';
 
   peek.append(peekLeader, peekSummary);
+
+  if (variant === 'footer' && typeof onToggleExpanded === 'function') {
+    peek.addEventListener('click', () => onToggleExpanded());
+  }
 
   const body = document.createElement('div');
   body.className = 'leaderboard__body';
