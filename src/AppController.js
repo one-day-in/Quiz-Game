@@ -9,6 +9,8 @@ export function createAppController({ root, gameService, playersService, modalSe
 
   const actions = {
     updateTopic: (roundId, rowId, topic) => gameService.updateTopic(roundId, rowId, topic),
+    adjustPlayerScore: (playerId, delta) => playersService.adjustPlayerScore(playerId, delta),
+    removePlayer: (playerId) => playersService.removePlayer(playerId),
   };
 
   async function handleRoundClick() {

@@ -5,9 +5,11 @@ import { ViewDisposer } from '../utils/disposer.js';
 import { t, withLanguageParam } from '../i18n.js';
 
 export class LeaderboardDrawerView {
-  constructor({ gameId, players = [], onClose } = {}) {
+  constructor({ gameId, players = [], onAdjustPlayerScore = null, onDeletePlayer = null, onClose } = {}) {
     this._gameId = gameId;
     this._players = Array.isArray(players) ? players : [];
+    this._onAdjustPlayerScore = onAdjustPlayerScore;
+    this._onDeletePlayer = onDeletePlayer;
     this._onCloseExternal = onClose;
     this._isClosing = false;
 
@@ -117,6 +119,8 @@ export class LeaderboardDrawerView {
       players: this._players,
       variant: 'drawer',
       showHeader: false,
+      onAdjustPlayerScore: this._onAdjustPlayerScore,
+      onDeletePlayer: this._onDeletePlayer,
     });
     this._boardMount?.appendChild(this._leaderboardEl);
 

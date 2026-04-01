@@ -1,4 +1,4 @@
-import { getPlayers, subscribeToPlayers } from '../api/gameApi.js';
+import { adjustPlayerScore, getPlayers, removePlayer, subscribeToPlayers } from '../api/gameApi.js';
 
 export function createPlayersService(gameId) {
   let players = [];
@@ -45,6 +45,21 @@ export function createPlayersService(gameId) {
         emit();
       });
       refreshTimer = window.setTimeout(refreshLoop, 1500);
+      return this.getPlayers();
+    },
+
+    async adjustPlayerScore(playerId, delta) {
+      const updatedPlayer = await adjustPlayerScore(gameId, playerId, delta);
+      players = players.map((player) => (
+        String(player?.id) === String(updatedPlayer?.id) ? { ...player, ...updatedPlayer } : player
+      ));
+      emit();
+      return updatedPlayer;
+    },
+
+    async removePlayer(playerId) {
+      players = await removePlayer(gameId, playerId);
+      emit();
       return this.getPlayers();
     },
 

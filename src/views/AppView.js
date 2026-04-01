@@ -61,6 +61,8 @@ export function AppView({ model, uiState, players = [], actions, gameId, gameNam
     drawerView = new LeaderboardDrawerView({
       gameId,
       players: leaderboardPlayers,
+      onAdjustPlayerScore: (playerId, delta) => actions.adjustPlayerScore?.(playerId, delta),
+      onDeletePlayer: (playerId) => actions.removePlayer?.(playerId),
       onClose: () => {
         drawerView = null;
       },

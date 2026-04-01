@@ -21,6 +21,7 @@ export function LeaderboardGridView({
   footerLimit = 4,
   showHeader = true,
   onOpenExpanded = null,
+  onAdjustPlayerScore = null,
   onAddPlayer = null,
   onDeletePlayer = null,
 } = {}) {
@@ -160,10 +161,10 @@ export function LeaderboardGridView({
       const key = getPlayerKey(player);
       let node = itemNodes.get(key);
       if (!node) {
-        node = createRow(player, onDeletePlayer);
+        node = createRow(player, { variant, onDeletePlayer, onAdjustPlayerScore });
         itemNodes.set(key, node);
       }
-      patchRow(node, player, index);
+      patchRow(node, player, index, { variant });
       list.appendChild(node);
     }
   }
@@ -259,7 +260,7 @@ function patchMoreCard(moreCard, hiddenCount) {
   moreCard._parts.count.textContent = `+${hiddenCount}`;
 }
 
-function createRow(player, onDeletePlayer) {
+function createRow(player, { variant = 'page', onDeletePlayer = null, onAdjustPlayerScore = null } = {}) {
   const row = document.createElement('div');
   row.className = 'leaderboard__row';
 
@@ -274,6 +275,37 @@ function createRow(player, onDeletePlayer) {
 
   row.append(rankEl, name, points);
   row._parts = { rankEl, name, points };
+
+  if (variant === 'drawer') {
+    const actions = document.createElement('div');
+    actions.className = 'leaderboard__rowActions';
+
+    const minusBtn = document.createElement('button');
+    minusBtn.type = 'button';
+    minusBtn.className = 'leaderboard__rowActionBtn';
+    minusBtn.textContent = '-100';
+    minusBtn.addEventListener('click', () => onAdjustPlayerScore?.(row.dataset.playerId, -100));
+
+    const plusBtn = document.createElement('button');
+    plusBtn.type = 'button';
+    plusBtn.className = 'leaderboard__rowActionBtn';
+    plusBtn.textContent = '+100';
+    plusBtn.addEventListener('click', () => onAdjustPlayerScore?.(row.dataset.playerId, 100));
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.type = 'button';
+    deleteBtn.className = 'leaderboard__rowActionBtn leaderboard__rowActionBtn--danger';
+    deleteBtn.textContent = t('delete');
+    deleteBtn.addEventListener('click', () => onDeletePlayer?.(row.dataset.playerId));
+
+    actions.append(minusBtn, plusBtn, deleteBtn);
+    row.appendChild(actions);
+    row._parts.actions = actions;
+    row._parts.minusBtn = minusBtn;
+    row._parts.plusBtn = plusBtn;
+    row._parts.deleteBtn = deleteBtn;
+    return row;
+  }
 
   if (typeof onDeletePlayer !== 'function') return row;
 
@@ -300,13 +332,18 @@ function createRow(player, onDeletePlayer) {
   return wrap;
 }
 
-function patchRow(node, player, rank = 0) {
+function patchRow(node, player, rank = 0, { variant = 'page' } = {}) {
   const row = node._row || node;
+  row.dataset.playerId = String(player?.id ?? '');
   row.classList.toggle('is-leading', rank === 0);
   row._parts.rankEl.textContent = getRankLabel(rank);
   row._parts.name.textContent = player?.name || t('player_fallback');
   row._parts.points.textContent = formatPoints(player?.points);
   row._parts.points.setAttribute('aria-label', `Points: ${player?.points ?? 0}`);
+  if (variant === 'drawer') {
+    row._parts.deleteBtn?.setAttribute('aria-label', t('remove_player_aria', { name: player?.name || t('player_fallback') }));
+    return;
+  }
   node._deleteBtn?.setAttribute('aria-label', t('remove_player_aria', { name: player?.name || t('player_fallback') }));
 }
 
