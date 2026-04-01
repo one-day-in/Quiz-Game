@@ -35,36 +35,6 @@
   object-fit: contain;
 }
 
-.leaderboard-drawer__qr-link {
-  position: relative;
-  z-index: 1;
-  font-size: var(--fs-2);
-  font-weight: 700;
-  color: var(--brand);
-  text-decoration: none;
-  letter-spacing: 0.02em;
-  transition: opacity var(--t-fast) var(--ease);
-  padding-bottom: 4px;
-}
-
-.leaderboard-drawer__qr-link:hover {
-  opacity: 0.8;
-  text-decoration: underline;
-}
-
-.leaderboard-drawer__secondaryLink {
-  position: relative;
-  z-index: 1;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--muted);
-  text-decoration: none;
-}
-
-.leaderboard-drawer__secondaryLink:hover {
-  text-decoration: underline;
-}
-
 @media (max-width: 900px) {
   .leaderboard-drawer__section--qr {
     flex-basis: auto;

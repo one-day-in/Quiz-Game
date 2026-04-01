@@ -100,8 +100,6 @@ export class LeaderboardDrawerView {
             <div class="leaderboard-drawer__qr-wrap">
               <div class="leaderboard-drawer__qr-glow"></div>
               <img class="leaderboard-drawer__qr-img" alt="${t('player_controller_qr_alt')}">
-              <a class="leaderboard-drawer__qr-link" target="_blank" rel="noopener noreferrer">${t('join_controller')}</a>
-              <a class="leaderboard-drawer__secondaryLink" target="_blank" rel="noopener noreferrer">${t('open_leaderboard')}</a>
             </div>
           </section>
         </div>
@@ -113,8 +111,6 @@ export class LeaderboardDrawerView {
     this._panel = root.querySelector('.leaderboard-drawer__panel');
     this._closeBtn = root.querySelector('.leaderboard-drawer__close');
     this._qrImg = root.querySelector('.leaderboard-drawer__qr-img');
-    this._qrLink = root.querySelector('.leaderboard-drawer__qr-link');
-    this._standaloneLink = root.querySelector('.leaderboard-drawer__secondaryLink');
     this._boardMount = root.querySelector('.leaderboard-drawer__boardMount');
 
     this._leaderboardEl = LeaderboardGridView({
@@ -128,13 +124,9 @@ export class LeaderboardDrawerView {
   }
 
   async _generateLinksAndQr() {
-    if (!this._gameId || !this._qrImg || !this._qrLink) return;
+    if (!this._gameId || !this._qrImg) return;
 
     const playerUrl = withLanguageParam(`${import.meta.env.BASE_URL}player.html?gameId=${this._gameId}`);
-    const leaderboardUrl = withLanguageParam(`${import.meta.env.BASE_URL}leaderboard.html?gameId=${this._gameId}`);
-
-    this._qrLink.href = playerUrl;
-    if (this._standaloneLink) this._standaloneLink.href = leaderboardUrl;
 
     try {
       const dataUrl = await QRCode.toDataURL(playerUrl, {

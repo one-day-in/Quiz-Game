@@ -101,9 +101,11 @@ export function LeaderboardGridView({
   }
 
   function renderFooterCards(sortedPlayers) {
+    list.classList.toggle('is-empty', sortedPlayers.length === 0);
+
     if (!sortedPlayers.length) {
       const empty = document.createElement('div');
-      empty.className = 'leaderboard__emptyCard';
+      empty.className = 'leaderboard__emptyFooter';
       empty.textContent = t('no_players_yet');
       list.appendChild(empty);
       return;
@@ -129,6 +131,8 @@ export function LeaderboardGridView({
   }
 
   function renderRows(sortedPlayers) {
+    list.classList.remove('is-empty');
+
     if (!sortedPlayers.length) {
       const empty = document.createElement('div');
       empty.className = 'leaderboard__empty';
