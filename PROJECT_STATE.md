@@ -96,8 +96,9 @@ The app is realtime, but not purely realtime. It mixes:
   - host header with lobby/back and round switcher
 - `views/LeaderboardGridView.js`
   - shared leaderboard renderer for page, footer preview, and drawer list
+  - footer preview now renders compact one-line player cards
 - `views/LeaderboardDrawerView.js`
-  - full leaderboard drawer with all players plus QR for the player controller
+  - full leaderboard drawer with all players, inline score controls, swipe-to-delete, and QR for the player controller
 - `views/QuestionModalView.js`
   - modal UI
 - `views/LobbyView.js`
@@ -138,7 +139,7 @@ The app is realtime, but not purely realtime. It mixes:
 6. `AppView` shows:
    - header
    - game grid
-   - embedded footer leaderboard preview
+   - embedded footer leaderboard preview with one-line player cards
    - full leaderboard drawer opened from the footer button
 7. Clicking a cell opens the question modal through `ModalService`.
 8. Opening a question:
@@ -189,10 +190,13 @@ The app is realtime, but not purely realtime. It mixes:
   - `getGame()` hydrates players into the model.
   - `saveGame()` explicitly strips players back out of `games.data`.
 - Host leaderboard state is now owned by `PlayersService`, not by `AppView`.
+- Host footer leaderboard is read-only preview only.
+- Host drawer leaderboard is the editing surface for score changes and player deletion.
 - Board updates are optimistic in `GameService`.
 - Player updates are mostly direct RPC calls in `player.js`.
 - Press runtime is handled separately from board state and separately from players.
 - Modal correctness flow does not go through `GameService`; it calls player score API directly.
+- Host score mutations by `playerId` depend on remote Supabase function `adjust_game_player_score_by_id(...)`.
 
 ### Realtime Reality
 
@@ -201,6 +205,7 @@ The app is realtime, but not purely realtime. It mixes:
 - `player.js` uses `subscribeToPlayers()` and `subscribeToGameRuntime()` and also polls every second.
 - `ModalService` uses `subscribeToGameRuntime()` and also polls every 800ms while open.
 - The app currently relies on overlapping subscriptions and fallback timers rather than a single coherent event model.
+- Remote verification on April 1, 2026 showed that `adjust_game_player_score_by_id(...)` was still missing from the active Supabase schema cache, while `adjust_game_player_score(...)` existed.
 
 ### Local Storage Reality
 
@@ -568,6 +573,17 @@ Ordered refactor and improvement steps. Do not treat all items as immediate.
 - Live host player state now has a single owner: `PlayersService`.
 - `AppView` no longer fetches or subscribes to `game_players` directly.
 - `AppController` now binds board state and player state separately into the same host view.
+
+### 2026-04-01
+
+- Host drawer editing was restored:
+  - inline `-100` / `+100` score controls
+  - swipe-to-reveal delete action
+  - QR-based player join affordance only
+- Footer leaderboard preview stayed read-only and was reduced to compact one-line `name + score` rows.
+- Remote Supabase verification confirmed:
+  - `adjust_game_player_score(...)` exists
+  - `adjust_game_player_score_by_id(...)` is still missing remotely and must be applied manually in Supabase SQL Editor for host-side score controls and modal adjudication to work in production.
 
 ### 2026-04-01
 

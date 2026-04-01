@@ -72,7 +72,6 @@ export function LeaderboardGridView({
   const list = document.createElement('div');
   list.className = 'leaderboard__list';
   if (variant === 'footer') list.classList.add('leaderboard__list--cards');
-  if (variant === 'drawer') list.classList.add('leaderboard__list--drawer');
 
   body.appendChild(list);
   panel.appendChild(body);
@@ -93,8 +92,7 @@ export function LeaderboardGridView({
 
   function update(nextPlayers = []) {
     closeActiveSwipeRow();
-
-    const sortedPlayers = sortPlayersByScore(nextPlayers);
+    const sortedPlayers = sortPlayersByScore(Array.isArray(nextPlayers) ? nextPlayers : []);
 
     if (variant === 'footer') {
       syncFooterCards(sortedPlayers);
@@ -217,23 +215,19 @@ function createFooterCard() {
   const card = document.createElement('div');
   card.className = 'leaderboard__card';
 
-  const rankEl = document.createElement('div');
-  rankEl.className = 'leaderboard__cardRank';
-
   const name = document.createElement('div');
   name.className = 'leaderboard__cardName';
 
   const points = document.createElement('div');
   points.className = 'leaderboard__cardScore';
 
-  card.append(rankEl, name, points);
-  card._parts = { rankEl, name, points };
+  card.append(name, points);
+  card._parts = { name, points };
   return card;
 }
 
 function patchFooterCard(card, player, rank = 0) {
   card.classList.toggle('is-leading', rank === 0);
-  card._parts.rankEl.textContent = getRankLabel(rank);
   card._parts.name.textContent = player?.name || t('player_fallback');
   card._parts.points.textContent = formatPoints(player?.points);
 }

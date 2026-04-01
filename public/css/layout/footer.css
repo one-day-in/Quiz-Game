@@ -120,8 +120,7 @@
   justify-content: center;
 }
 
-.leaderboard__card,
-.leaderboard__emptyCard {
+.leaderboard__card {
   min-width: 0;
   min-height: 0;
   display: flex;
@@ -133,6 +132,12 @@
   border: 1px solid var(--border-2);
   background: linear-gradient(180deg, var(--surface-2), rgba(15, 23, 42, 0.95));
   box-shadow: var(--shadow-sm);
+}
+
+.leaderboard--footer .leaderboard__card:not(.leaderboard__card--more) {
+  align-items: center;
+  flex-direction: row;
+  gap: 16px;
 }
 
 .leaderboard__card.is-leading {
@@ -158,21 +163,9 @@
   filter: brightness(1.06);
 }
 
-.leaderboard__cardRank {
-  align-self: flex-start;
-  padding: 6px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--border-3);
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--warning);
-  font-size: 12px;
-  font-weight: 900;
-  letter-spacing: 0.10em;
-  text-transform: uppercase;
-}
-
 .leaderboard__cardName {
   min-width: 0;
+  flex: 1 1 auto;
   color: var(--text);
   font-size: clamp(18px, 1.8vw, 22px);
   font-weight: 900;
@@ -185,6 +178,7 @@
 
 .leaderboard__cardScore,
 .leaderboard__cardMoreCount {
+  flex: 0 0 auto;
   color: var(--danger);
   font-size: clamp(28px, 3vh, 34px);
   font-weight: 900;
@@ -204,15 +198,6 @@
   text-transform: uppercase;
 }
 
-.leaderboard__emptyCard {
-  align-items: center;
-  justify-content: center;
-  color: var(--text-soft);
-  font-size: clamp(18px, 1.8vw, 22px);
-  font-weight: 700;
-  text-align: center;
-}
-
 .leaderboard__emptyFooter {
   color: var(--text-soft);
   font-size: clamp(20px, 2vw, 26px);
@@ -230,6 +215,45 @@
   border: 1px solid var(--border-2);
   background: linear-gradient(180deg, var(--surface-2), var(--surface-3));
   box-shadow: var(--shadow-sm);
+}
+
+.leaderboard__rowWrap {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.leaderboard__rowWrap .leaderboard__row {
+  position: relative;
+  z-index: 1;
+  box-shadow: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.leaderboard__deleteReveal {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, rgba(220, 38, 38, 0.96), rgba(127, 29, 29, 1));
+}
+
+.leaderboard__deleteRevealBtn {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: #fff5f5;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .leaderboard__row.is-leading {
@@ -310,12 +334,6 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   cursor: pointer;
-}
-
-.leaderboard__rowActionBtn--danger {
-  color: #fff5f5;
-  border-color: rgba(239, 68, 68, 0.45);
-  background: linear-gradient(180deg, rgba(239, 68, 68, 0.28), rgba(127, 29, 29, 0.9));
 }
 
 .leaderboard__empty {
