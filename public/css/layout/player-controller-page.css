@@ -31,9 +31,13 @@ body {
   width: min(100%, 760px);
   height: min(100%, 1040px);
   max-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .player-controller__card {
+  width: 100%;
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-2);
   background: linear-gradient(180deg, var(--surface), var(--surface-3));
@@ -45,6 +49,11 @@ body {
   max-height: 100%;
   box-sizing: border-box;
   overflow: hidden;
+}
+
+.player-controller__card:not(.player-controller__card--controller) {
+  width: min(100%, 560px);
+  margin: auto;
 }
 
 .player-controller__card--controller {
@@ -72,6 +81,17 @@ body {
 .player-controller__hint {
   margin: 0;
   color: var(--text-soft);
+}
+
+.player-controller__card:not(.player-controller__card--controller) .player-controller__eyebrow,
+.player-controller__card:not(.player-controller__card--controller) .player-controller__title,
+.player-controller__card:not(.player-controller__card--controller) .player-controller__copy {
+  text-align: center;
+}
+
+.player-controller__card:not(.player-controller__card--controller) .player-controller__title,
+.player-controller__card:not(.player-controller__card--controller) .player-controller__copy {
+  text-wrap: balance;
 }
 
 .player-controller__topBar {
