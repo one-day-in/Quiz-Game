@@ -99,11 +99,11 @@ export class LeaderboardPanelView {
 
             <div class="leaderboard-panel__qrPopover" role="dialog" aria-label="${t('join_from_phone')}">
               <p class="leaderboard-panel__eyebrow">${t('join_from_phone')}</p>
-              <p class="leaderboard-panel__copy">${t('scan_player_qr')}</p>
               <div class="leaderboard-panel__qrWrap">
                 <div class="leaderboard-panel__qrGlow"></div>
                 <img class="leaderboard-panel__qrImg" alt="${t('player_controller_qr_alt')}">
               </div>
+              <p class="leaderboard-panel__copy">${t('scan_player_qr')}</p>
             </div>
           </div>
         </div>
@@ -121,7 +121,6 @@ export class LeaderboardPanelView {
             <section class="leaderboard-panel__section leaderboard-panel__section--controls">
               <div class="leaderboard-panel__controlsInner">
                 <div class="leaderboard-panel__selectionMeta">
-                  <p class="leaderboard-panel__eyebrow leaderboard-panel__eyebrow--controls">${t('manage_score')}</p>
                   <p class="leaderboard-panel__selectionText">${t('players')}</p>
                 </div>
 
@@ -182,6 +181,17 @@ export class LeaderboardPanelView {
   _wire() {
     this._disposer.addEventListener(this._toggleBtn, 'click', () => this.toggleExpanded());
 
+    this._disposer.addEventListener(document, 'pointerdown', (event) => {
+      if (!this._isExpanded || !this._selectedPlayerId) return;
+
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      if (target.closest('.leaderboard__rowWrap, .leaderboard__row')) return;
+      if (target.closest('.leaderboard-panel__scoreBar, .leaderboard-panel__qrDock, .leaderboard-panel__toggle')) return;
+
+      this._clearSelectedPlayer();
+    }, true);
+
     bindOverlayDismiss({
       disposer: this._disposer,
       overlay: this._backdrop,
@@ -214,6 +224,13 @@ export class LeaderboardPanelView {
     this._renderSelectionState();
   }
 
+  _clearSelectedPlayer() {
+    if (!this._selectedPlayerId) return;
+    this._selectedPlayerId = null;
+    this._fullView?.setSelectedPlayerId?.(this._selectedPlayerId);
+    this._renderSelectionState();
+  }
+
   _syncSelectedPlayer() {
     if (!this._selectedPlayerId) return;
     const stillExists = this._players.some((player) => String(player?.id ?? '') === this._selectedPlayerId);
@@ -225,7 +242,7 @@ export class LeaderboardPanelView {
 
     if (this._selectionText) {
       this._selectionText.textContent = selectedPlayer
-        ? selectedPlayer.name || t('player_fallback')
+        ? t('selected_player_label', { name: selectedPlayer.name || t('player_fallback') })
         : t('select_player_for_manual_score');
       this._selectionText.classList.toggle('is-placeholder', !selectedPlayer);
     }

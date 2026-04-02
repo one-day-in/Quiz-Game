@@ -61,6 +61,7 @@ export function LeaderboardGridView({
 
   const bodyInner = document.createElement('div');
   bodyInner.className = 'leaderboard__bodyInner';
+  if (variant !== 'footer') bodyInner.classList.add('leaderboard__bodyInner--constrained');
 
   const list = document.createElement('div');
   list.className = 'leaderboard__list';
