@@ -32,12 +32,17 @@
   transition: height 220ms var(--ease), box-shadow 220ms var(--ease);
 }
 
+.leaderboard-panel__headerBar {
+  position: relative;
+}
+
 .leaderboard-panel__toggle {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
+  min-height: 58px;
   padding: 14px 16px 12px;
   border: 0;
   background: transparent;
@@ -118,8 +123,9 @@
 
 .leaderboard-panel__qrDock {
   position: absolute;
-  top: 12px;
+  top: 50%;
   right: 14px;
+  transform: translateY(-50%);
   z-index: 4;
   opacity: 0;
   pointer-events: none;
@@ -131,8 +137,8 @@
 }
 
 .leaderboard-panel__qrTrigger {
-  width: 84px;
-  height: 84px;
+  width: 58px;
+  height: 58px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -163,8 +169,8 @@
 }
 
 .leaderboard-panel__qrTriggerIcon {
-  width: 36px;
-  height: 36px;
+  width: 24px;
+  height: 24px;
   stroke: currentColor;
   stroke-width: 1.8;
   stroke-linecap: round;
@@ -214,6 +220,16 @@
 .leaderboard-panel.is-expanded .leaderboard-panel__shell {
   height: var(--leaderboard-panel-expanded-h);
   box-shadow: var(--shadow-lg);
+}
+
+.leaderboard-panel.is-expanded .leaderboard-panel__toggle {
+  min-height: 78px;
+  padding: 18px 20px 16px;
+}
+
+.leaderboard-panel.is-expanded .leaderboard-panel__titleText {
+  font-size: 18px;
+  letter-spacing: 0.14em;
 }
 
 .leaderboard-panel__preview,
@@ -737,6 +753,11 @@
 }
 
 @media (max-width: 900px) {
+  .leaderboard-panel.is-expanded .leaderboard-panel__toggle {
+    min-height: 70px;
+    padding: 16px 16px 14px;
+  }
+
   .leaderboard-panel__expanded {
     padding: 0 16px 16px;
   }
@@ -746,7 +767,6 @@
   }
 
   .leaderboard-panel__qrDock {
-    top: 10px;
     right: 12px;
   }
 

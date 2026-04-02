@@ -63,40 +63,42 @@ export class LeaderboardPanelView {
       <div class="leaderboard-panel__backdrop"></div>
 
       <section class="leaderboard-panel__shell" aria-label="${t('leaderboard')}">
-        <button
-          class="leaderboard__header leaderboard-panel__toggle"
-          type="button"
-          aria-label="${t('show_all_players')}"
-          aria-expanded="false"
-          title="${t('show_all_players')}"
-        >
-          <span class="leaderboard__title leaderboard-panel__titleText">${t('leaderboard')}</span>
-          <span class="leaderboard-panel__titleChevron" aria-hidden="true">
-            <svg class="leaderboard-panel__titleChevronIcon" viewBox="0 0 24 24" focusable="false" aria-hidden="true">
-              <path d="M6 15l6-6 6 6" />
-            </svg>
-          </span>
-        </button>
-
-        <div class="leaderboard-panel__qrDock">
+        <div class="leaderboard-panel__headerBar">
           <button
-            class="leaderboard-panel__qrTrigger"
+            class="leaderboard__header leaderboard-panel__toggle"
             type="button"
-            aria-label="${t('join_from_phone')}"
-            title="${t('join_from_phone')}"
+            aria-label="${t('show_all_players')}"
+            aria-expanded="false"
+            title="${t('show_all_players')}"
           >
-            <svg class="leaderboard-panel__qrTriggerIcon" viewBox="0 0 24 24" focusable="false" aria-hidden="true">
-              <path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4z" />
-              <path d="M16 14h2v2h-2zM18 16h2v2h-2zM14 18h2v2h-2zM16 20h4M20 14v2" />
-            </svg>
+            <span class="leaderboard__title leaderboard-panel__titleText">${t('leaderboard')}</span>
+            <span class="leaderboard-panel__titleChevron" aria-hidden="true">
+              <svg class="leaderboard-panel__titleChevronIcon" viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                <path d="M6 15l6-6 6 6" />
+              </svg>
+            </span>
           </button>
 
-          <div class="leaderboard-panel__qrPopover" role="dialog" aria-label="${t('join_from_phone')}">
-            <p class="leaderboard-panel__eyebrow">${t('join_from_phone')}</p>
-            <p class="leaderboard-panel__copy">${t('scan_player_qr')}</p>
-            <div class="leaderboard-panel__qrWrap">
-              <div class="leaderboard-panel__qrGlow"></div>
-              <img class="leaderboard-panel__qrImg" alt="${t('player_controller_qr_alt')}">
+          <div class="leaderboard-panel__qrDock">
+            <button
+              class="leaderboard-panel__qrTrigger"
+              type="button"
+              aria-label="${t('join_from_phone')}"
+              title="${t('join_from_phone')}"
+            >
+              <svg class="leaderboard-panel__qrTriggerIcon" viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                <path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4z" />
+                <path d="M16 14h2v2h-2zM18 16h2v2h-2zM14 18h2v2h-2zM16 20h4M20 14v2" />
+              </svg>
+            </button>
+
+            <div class="leaderboard-panel__qrPopover" role="dialog" aria-label="${t('join_from_phone')}">
+              <p class="leaderboard-panel__eyebrow">${t('join_from_phone')}</p>
+              <p class="leaderboard-panel__copy">${t('scan_player_qr')}</p>
+              <div class="leaderboard-panel__qrWrap">
+                <div class="leaderboard-panel__qrGlow"></div>
+                <img class="leaderboard-panel__qrImg" alt="${t('player_controller_qr_alt')}">
+              </div>
             </div>
           </div>
         </div>
