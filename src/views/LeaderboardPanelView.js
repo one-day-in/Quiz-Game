@@ -11,10 +11,12 @@ export class LeaderboardPanelView {
     this._onAdjustPlayerScore = onAdjustPlayerScore;
     this._onDeletePlayer = onDeletePlayer;
     this._isExpanded = false;
+    this._selectedPlayerId = null;
 
     this._build();
     this._disposer = new ViewDisposer(this._root);
     this._disposer.autoDestroy();
+    this._buildScoreBar();
     this._wire();
     this.updatePlayers(this._players);
   }
@@ -25,8 +27,11 @@ export class LeaderboardPanelView {
 
   updatePlayers(players = []) {
     this._players = Array.isArray(players) ? players : [];
+    this._syncSelectedPlayer();
     this._previewView?.update?.(this._players);
     this._fullView?.update?.(this._players);
+    this._fullView?.setSelectedPlayerId?.(this._selectedPlayerId);
+    this._renderSelectionState();
   }
 
   toggleExpanded() {
@@ -108,9 +113,22 @@ export class LeaderboardPanelView {
         </div>
 
         <div class="leaderboard-panel__expanded">
-          <section class="leaderboard-panel__section leaderboard-panel__section--board">
-            <div class="leaderboard-panel__boardMount"></div>
-          </section>
+          <div class="leaderboard-panel__expandedInner">
+            <section class="leaderboard-panel__section leaderboard-panel__section--board">
+              <div class="leaderboard-panel__boardMount"></div>
+            </section>
+
+            <section class="leaderboard-panel__section leaderboard-panel__section--controls">
+              <div class="leaderboard-panel__controlsInner">
+                <div class="leaderboard-panel__selectionMeta">
+                  <p class="leaderboard-panel__eyebrow leaderboard-panel__eyebrow--controls">${t('manage_score')}</p>
+                  <p class="leaderboard-panel__selectionText">${t('players')}</p>
+                </div>
+
+                <div class="leaderboard-panel__scoreBar" role="group" aria-label="${t('manage_score')}"></div>
+              </div>
+            </section>
+          </div>
         </div>
       </section>
     `;
@@ -121,6 +139,8 @@ export class LeaderboardPanelView {
     this._toggleChevron = root.querySelector('.leaderboard-panel__titleChevron');
     this._previewMount = root.querySelector('.leaderboard-panel__previewMount');
     this._boardMount = root.querySelector('.leaderboard-panel__boardMount');
+    this._selectionText = root.querySelector('.leaderboard-panel__selectionText');
+    this._scoreBar = root.querySelector('.leaderboard-panel__scoreBar');
     this._qrImg = root.querySelector('.leaderboard-panel__qrImg');
 
     this._previewView = LeaderboardGridView({
@@ -134,7 +154,8 @@ export class LeaderboardPanelView {
       players: this._players,
       variant: 'drawer',
       showHeader: false,
-      onAdjustPlayerScore: this._onAdjustPlayerScore,
+      selectedPlayerId: this._selectedPlayerId,
+      onSelectPlayer: (playerId) => this._setSelectedPlayer(playerId),
       onDeletePlayer: this._onDeletePlayer,
     });
     this._boardMount.appendChild(this._fullView);
@@ -167,5 +188,52 @@ export class LeaderboardPanelView {
       onDismiss: () => this.setExpanded(false),
       shouldDismissOnEscape: () => this._isExpanded,
     });
+  }
+
+  _buildScoreBar() {
+    const deltas = [-500, -400, -300, -200, -100, 100, 200, 300, 400, 500];
+    for (const delta of deltas) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'leaderboard-panel__scoreBtn';
+      button.textContent = delta > 0 ? `+${delta}` : String(delta);
+      button.dataset.delta = String(delta);
+      button.disabled = true;
+      this._disposer.addEventListener(button, 'click', () => {
+        if (!this._selectedPlayerId) return;
+        this._onAdjustPlayerScore?.(this._selectedPlayerId, delta);
+      });
+      this._scoreBar.appendChild(button);
+    }
+  }
+
+  _setSelectedPlayer(playerId) {
+    const nextId = String(playerId ?? '');
+    this._selectedPlayerId = this._selectedPlayerId === nextId ? null : nextId;
+    this._fullView?.setSelectedPlayerId?.(this._selectedPlayerId);
+    this._renderSelectionState();
+  }
+
+  _syncSelectedPlayer() {
+    if (!this._selectedPlayerId) return;
+    const stillExists = this._players.some((player) => String(player?.id ?? '') === this._selectedPlayerId);
+    if (!stillExists) this._selectedPlayerId = null;
+  }
+
+  _renderSelectionState() {
+    const selectedPlayer = this._players.find((player) => String(player?.id ?? '') === this._selectedPlayerId) || null;
+
+    if (this._selectionText) {
+      this._selectionText.textContent = selectedPlayer
+        ? selectedPlayer.name || t('player_fallback')
+        : t('select_player_for_manual_score');
+      this._selectionText.classList.toggle('is-placeholder', !selectedPlayer);
+    }
+
+    if (this._scoreBar) {
+      for (const button of this._scoreBar.querySelectorAll('.leaderboard-panel__scoreBtn')) {
+        button.disabled = !selectedPlayer;
+      }
+    }
   }
 }

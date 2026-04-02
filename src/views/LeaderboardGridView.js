@@ -20,16 +20,19 @@ export function LeaderboardGridView({
   variant = 'page',
   footerLimit = 4,
   showHeader = true,
-  onAdjustPlayerScore = null,
+  selectedPlayerId = null,
+  onSelectPlayer = null,
   onAddPlayer = null,
   onDeletePlayer = null,
 } = {}) {
   const el = document.createElement('footer');
   el.className = `leaderboard leaderboard--${variant}`;
+  let currentSelectedPlayerId = selectedPlayerId;
 
   const panel = document.createElement('div');
   panel.className = 'leaderboard__panel';
   el.appendChild(panel);
+  let renderedPlayers = Array.isArray(players) ? players : [];
 
   let header = null;
   if (showHeader) {
@@ -56,11 +59,15 @@ export function LeaderboardGridView({
   const body = document.createElement('div');
   body.className = 'leaderboard__body';
 
+  const bodyInner = document.createElement('div');
+  bodyInner.className = 'leaderboard__bodyInner';
+
   const list = document.createElement('div');
   list.className = 'leaderboard__list';
   if (variant === 'footer') list.classList.add('leaderboard__list--cards');
 
-  body.appendChild(list);
+  bodyInner.appendChild(list);
+  body.appendChild(bodyInner);
   panel.appendChild(body);
 
   const itemNodes = new Map();
@@ -78,7 +85,8 @@ export function LeaderboardGridView({
   }
 
   function update(nextPlayers = []) {
-    const sortedPlayers = sortPlayersByScore(Array.isArray(nextPlayers) ? nextPlayers : []);
+    renderedPlayers = Array.isArray(nextPlayers) ? nextPlayers : [];
+    const sortedPlayers = sortPlayersByScore(renderedPlayers);
 
     if (variant === 'footer') {
       syncFooterCards(sortedPlayers);
@@ -145,10 +153,10 @@ export function LeaderboardGridView({
       const key = getPlayerKey(player);
       let node = itemNodes.get(key);
       if (!node) {
-        node = createRow(player, { variant, onDeletePlayer, onAdjustPlayerScore });
+        node = createRow(player, { variant, onDeletePlayer, onSelectPlayer });
         itemNodes.set(key, node);
       }
-      patchRow(node, player, index, { variant });
+      patchRow(node, player, index, { variant, selectedPlayerId: currentSelectedPlayerId });
       list.appendChild(node);
     }
   }
@@ -195,6 +203,10 @@ export function LeaderboardGridView({
   update(players);
 
   el.update = update;
+  el.setSelectedPlayerId = (nextSelectedPlayerId) => {
+    currentSelectedPlayerId = nextSelectedPlayerId;
+    update(renderedPlayers);
+  };
   el.destroy = () => {
     if (typeof onDeletePlayer === 'function') {
       document.removeEventListener('pointerdown', onDocPointerDown);
@@ -230,6 +242,7 @@ function patchFooterCard(card, player, rank = 0) {
 function createMoreCard() {
   const moreCard = document.createElement('div');
   moreCard.className = 'leaderboard__card leaderboard__card--more';
+  moreCard.setAttribute('aria-hidden', 'true');
 
   const count = document.createElement('span');
   count.className = 'leaderboard__cardMoreCount';
@@ -247,7 +260,7 @@ function patchMoreCard(moreCard, hiddenCount) {
   moreCard._parts.count.textContent = `+${hiddenCount}`;
 }
 
-function createRow(player, { variant = 'page', onDeletePlayer = null, onAdjustPlayerScore = null } = {}) {
+function createRow(player, { variant = 'page', onDeletePlayer = null, onSelectPlayer = null } = {}) {
   const row = document.createElement('div');
   row.className = 'leaderboard__row';
 
@@ -263,33 +276,20 @@ function createRow(player, { variant = 'page', onDeletePlayer = null, onAdjustPl
   row.append(rankEl, name, points);
   row._parts = { rankEl, name, points };
 
-  if (variant === 'drawer') {
-    const actions = document.createElement('div');
-    actions.className = 'leaderboard__rowActions';
-
-    const minusBtn = document.createElement('button');
-    minusBtn.type = 'button';
-    minusBtn.className = 'leaderboard__rowActionBtn';
-    minusBtn.textContent = '-100';
-    minusBtn.addEventListener('click', (event) => {
-      const playerId = event.currentTarget.closest('.leaderboard__row')?.dataset.playerId;
-      if (playerId) onAdjustPlayerScore?.(playerId, -100);
+  if (variant === 'drawer' && typeof onSelectPlayer === 'function') {
+    row.classList.add('is-selectable');
+    row.tabIndex = 0;
+    row.setAttribute('role', 'button');
+    row.addEventListener('click', () => {
+      const playerId = row.dataset.playerId;
+      if (playerId) onSelectPlayer(playerId);
     });
-
-    const plusBtn = document.createElement('button');
-    plusBtn.type = 'button';
-    plusBtn.className = 'leaderboard__rowActionBtn';
-    plusBtn.textContent = '+100';
-    plusBtn.addEventListener('click', (event) => {
-      const playerId = event.currentTarget.closest('.leaderboard__row')?.dataset.playerId;
-      if (playerId) onAdjustPlayerScore?.(playerId, 100);
+    row.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      const playerId = row.dataset.playerId;
+      if (playerId) onSelectPlayer(playerId);
     });
-
-    actions.append(minusBtn, plusBtn);
-    row.appendChild(actions);
-    row._parts.actions = actions;
-    row._parts.minusBtn = minusBtn;
-    row._parts.plusBtn = plusBtn;
   }
 
   if (typeof onDeletePlayer !== 'function') return row;
@@ -319,11 +319,16 @@ function createRow(player, { variant = 'page', onDeletePlayer = null, onAdjustPl
   return wrap;
 }
 
-function patchRow(node, player, rank = 0, { variant = 'page' } = {}) {
+function patchRow(node, player, rank = 0, { variant = 'page', selectedPlayerId = null } = {}) {
   const row = node._row || node;
+  const isSelected = variant === 'drawer' && String(player?.id ?? '') === String(selectedPlayerId ?? '');
   row.dataset.playerId = String(player?.id ?? '');
   if (node !== row) node.dataset.playerId = String(player?.id ?? '');
   row.classList.toggle('is-leading', rank === 0);
+  row.classList.toggle('is-selected', isSelected);
+  if (row.classList.contains('is-selectable')) {
+    row.setAttribute('aria-pressed', String(isSelected));
+  }
   row._parts.rankEl.textContent = getRankLabel(rank);
   row._parts.name.textContent = player?.name || t('player_fallback');
   row._parts.points.textContent = formatPoints(player?.points);
@@ -342,6 +347,7 @@ function bindSwipeDelete(wrap, row) {
   let isScrolling = false;
   let baseOffset = 0;
   let isOpen = false;
+  let suppressNextClick = false;
 
   function setTranslate(x, animated) {
     wrap.classList.toggle('is-revealing', x < 0);
@@ -413,6 +419,7 @@ function bindSwipeDelete(wrap, row) {
 
     const touch = event.changedTouches[0];
     const total = baseOffset + (touch.clientX - startX);
+    suppressNextClick = true;
     isDragging = false;
     isScrolling = false;
 
@@ -449,6 +456,7 @@ function bindSwipeDelete(wrap, row) {
       document.removeEventListener('mouseup', onUp);
       if (!dragging) return;
       const total = dragBaseOffset + (upEvent.clientX - dragStartX);
+      suppressNextClick = true;
       if (total < -(REVEAL_W / 2)) openRow();
       else closeRow();
     }
@@ -456,6 +464,13 @@ function bindSwipeDelete(wrap, row) {
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
   });
+
+  wrap.addEventListener('click', (event) => {
+    if (!suppressNextClick) return;
+    suppressNextClick = false;
+    event.preventDefault();
+    event.stopPropagation();
+  }, true);
 }
 
 function formatPoints(points) {
