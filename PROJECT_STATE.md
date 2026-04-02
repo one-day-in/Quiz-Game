@@ -17,6 +17,7 @@ Press-race transport is no longer treated as a plain database subscription probl
 - static host/controller/leaderboard pages still build with Vite
 - Supabase still stores persistent state
 - a separate WebSocket coordinator now owns low-latency press activation and first-press fanout
+- local-room play is now the intended primary use case for buzzer transport
 
 The app is realtime, but not purely realtime. It mixes:
 
@@ -137,6 +138,9 @@ The app is realtime, but not purely realtime. It mixes:
   - dedicated WebSocket coordinator for press activation and first-press arbitration fanout
   - verifies host ownership against Supabase auth
   - persists press state back into `game_runtime`
+- `utils/localBuzzerUrl.js`
+  - normalizes and stores the local-room buzzer endpoint
+  - lets the host QR flow inject the local websocket URL into `player.html`
 
 ## Game / App Flow
 
@@ -161,6 +165,7 @@ The app is realtime, but not purely realtime. It mixes:
    - game grid
    - one footer-anchored leaderboard panel
    - the same panel stays compact by default and expands upward as an overlay from the footer slot
+   - the expanded QR panel now includes local-room buzzer server configuration for same-Wi-Fi play
 7. Clicking a cell opens the question modal through `ModalService`.
 8. Opening a question:
    - stores active cell
@@ -175,6 +180,7 @@ The app is realtime, but not purely realtime. It mixes:
 ### Player Flow
 
 1. Player opens `player.html?gameId=...`.
+   - when present, a `buzzer` query param overrides the default websocket endpoint for same-room play
 2. Controller id is read or created in `localStorage`.
 3. App loads current player by `controller_id`.
 4. If no player exists, join form is shown.
@@ -224,6 +230,10 @@ The app is realtime, but not purely realtime. It mixes:
 - Player updates are mostly direct RPC calls in `player.js`.
 - Press runtime is handled separately from board state and separately from players.
 - The buzzer server is now the primary low-latency transport for press activation and winner fanout.
+- The intended production shape is now:
+  - static pages from GitHub Pages
+  - persistence in Supabase
+  - buzzer server running on the host computer or another always-on machine in the same room/network
 - Supabase `game_runtime` remains the persistent snapshot and fallback path, not the preferred live transport.
 - Modal correctness flow does not go through `GameService`; it calls player score API directly.
 - Host score mutations by `playerId` depend on remote Supabase function `adjust_game_player_score_by_id(...)`.
@@ -690,3 +700,10 @@ Ordered refactor and improvement steps. Do not treat all items as immediate.
   - persists authoritative winner state back through Supabase
 - Supabase `game_runtime` remains the persistent snapshot and fallback path.
 - Host and player surfaces now prefer the buzzer socket for press activation instead of driving that interaction from `postgres_changes`.
+
+### 2026-04-02
+
+- Local-room buzzer mode was added as the preferred real-world setup.
+- The host leaderboard QR flow now accepts and stores a local websocket endpoint such as `ws://192.168.0.15:8787`.
+- Player controller URLs can now carry a `buzzer` query param so phones on the same Wi-Fi connect directly to the host computer's buzzer server.
+- This keeps GitHub Pages for UI delivery, Supabase for persistence, and moves latency-sensitive `PRESS` traffic onto the room-local network.

@@ -3,6 +3,14 @@ import { LeaderboardGridView } from './LeaderboardGridView.js';
 import { ViewDisposer } from '../utils/disposer.js';
 import { bindOverlayDismiss } from '../utils/overlayDismiss.js';
 import { t, withLanguageParam } from '../i18n.js';
+import {
+  getActiveBuzzerUrl,
+  getCloudBuzzerUrl,
+  getStoredBuzzerMode,
+  getSuggestedLocalBuzzerUrl,
+  setStoredBuzzerMode,
+  setStoredLocalBuzzerUrl,
+} from '../utils/localBuzzerUrl.js';
 
 export class LeaderboardPanelView {
   constructor({ gameId, players = [], onAdjustPlayerScore = null, onDeletePlayer = null } = {}) {
@@ -12,6 +20,9 @@ export class LeaderboardPanelView {
     this._onDeletePlayer = onDeletePlayer;
     this._isExpanded = false;
     this._selectedPlayerId = null;
+    this._buzzerMode = getStoredBuzzerMode();
+    this._localBuzzerUrl = getSuggestedLocalBuzzerUrl();
+    this._cloudBuzzerUrl = getCloudBuzzerUrl();
 
     this._build();
     this._disposer = new ViewDisposer(this._root);
@@ -99,6 +110,41 @@ export class LeaderboardPanelView {
 
             <div class="leaderboard-panel__qrPopover" role="dialog" aria-label="${t('join_from_phone')}">
               <p class="leaderboard-panel__eyebrow">${t('join_from_phone')}</p>
+              <div class="leaderboard-panel__modeSwitch" role="group" aria-label="${t('buzzer_mode')}">
+                <button
+                  type="button"
+                  class="leaderboard-panel__modeBtn leaderboard-panel__modeBtn--local"
+                  data-mode="local"
+                  aria-pressed="${this._buzzerMode === 'local'}"
+                >${t('local_room_mode')}</button>
+                <button
+                  type="button"
+                  class="leaderboard-panel__modeBtn leaderboard-panel__modeBtn--cloud"
+                  data-mode="cloud"
+                  aria-pressed="${this._buzzerMode === 'cloud'}"
+                  ${this._cloudBuzzerUrl ? '' : 'disabled'}
+                >${t('cloud_room_mode')}</button>
+              </div>
+              <label class="leaderboard-panel__roomField">
+                <span class="leaderboard-panel__roomLabel">${t('local_room_server')}</span>
+                <input
+                  class="leaderboard-panel__roomInput"
+                  type="text"
+                  value="${escapeHtml(this._localBuzzerUrl)}"
+                  placeholder="${t('local_room_server_placeholder')}"
+                  spellcheck="false"
+                  autocomplete="off"
+                >
+              </label>
+              <p class="leaderboard-panel__roomHint"></p>
+              <div class="leaderboard-panel__localGuide">
+                <p class="leaderboard-panel__localGuideTitle">${t('local_room_setup_title')}</p>
+                <ol class="leaderboard-panel__localGuideList">
+                  <li>${t('local_room_setup_step_1')}</li>
+                  <li>${t('local_room_setup_step_2')}</li>
+                  <li>${t('local_room_setup_step_3')}</li>
+                </ol>
+              </div>
               <div class="leaderboard-panel__qrWrap">
                 <div class="leaderboard-panel__qrGlow"></div>
                 <img class="leaderboard-panel__qrImg" alt="${t('player_controller_qr_alt')}">
@@ -141,6 +187,10 @@ export class LeaderboardPanelView {
     this._selectionText = root.querySelector('.leaderboard-panel__selectionText');
     this._scoreBar = root.querySelector('.leaderboard-panel__scoreBar');
     this._qrImg = root.querySelector('.leaderboard-panel__qrImg');
+    this._roomInput = root.querySelector('.leaderboard-panel__roomInput');
+    this._roomHint = root.querySelector('.leaderboard-panel__roomHint');
+    this._localGuide = root.querySelector('.leaderboard-panel__localGuide');
+    this._modeButtons = Array.from(root.querySelectorAll('.leaderboard-panel__modeBtn'));
 
     this._previewView = LeaderboardGridView({
       players: this._players,
@@ -160,15 +210,26 @@ export class LeaderboardPanelView {
     this._boardMount.appendChild(this._fullView);
 
     void this._generateQr();
+    this._renderBuzzerModeState();
   }
 
   async _generateQr() {
     if (!this._gameId || !this._qrImg) return;
 
-    const playerUrl = withLanguageParam(`${import.meta.env.BASE_URL}player.html?gameId=${this._gameId}`);
+    const playerUrl = new URL(withLanguageParam(`${import.meta.env.BASE_URL}player.html?gameId=${this._gameId}`));
+    const buzzerUrl = getActiveBuzzerUrl({
+      mode: this._buzzerMode,
+      overrideUrl: this._buzzerMode === 'local' ? this._localBuzzerUrl : this._cloudBuzzerUrl,
+    });
+    if (buzzerUrl) {
+      playerUrl.searchParams.set('buzzer', buzzerUrl);
+    } else {
+      playerUrl.searchParams.delete('buzzer');
+    }
+    playerUrl.searchParams.set('mode', this._buzzerMode);
 
     try {
-      this._qrImg.src = await QRCode.toDataURL(playerUrl, {
+      this._qrImg.src = await QRCode.toDataURL(playerUrl.toString(), {
         width: 512,
         margin: 2,
         color: { dark: '#f8fafc', light: '#111827' },
@@ -180,6 +241,23 @@ export class LeaderboardPanelView {
 
   _wire() {
     this._disposer.addEventListener(this._toggleBtn, 'click', () => this.toggleExpanded());
+    this._disposer.addEventListener(this._roomInput, 'change', () => this._handleRoomInputCommit());
+    this._disposer.addEventListener(this._roomInput, 'blur', () => this._handleRoomInputCommit());
+    this._disposer.addEventListener(this._roomInput, 'keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        this._roomInput.blur();
+      }
+    });
+    for (const button of this._modeButtons) {
+      this._disposer.addEventListener(button, 'click', () => {
+        const nextMode = button.dataset.mode === 'local' ? 'local' : 'cloud';
+        if (nextMode === 'cloud' && !this._cloudBuzzerUrl) return;
+        this._buzzerMode = setStoredBuzzerMode(nextMode);
+        this._renderBuzzerModeState();
+        void this._generateQr();
+      });
+    }
 
     this._disposer.addEventListener(document, 'pointerdown', (event) => {
       if (!this._isExpanded || !this._selectedPlayerId) return;
@@ -253,4 +331,51 @@ export class LeaderboardPanelView {
       }
     }
   }
+
+  _handleRoomInputCommit() {
+    const nextUrl = setStoredLocalBuzzerUrl(this._roomInput?.value || '');
+    this._localBuzzerUrl = nextUrl;
+    if (this._roomInput) {
+      this._roomInput.value = nextUrl;
+    }
+    this._renderBuzzerModeState();
+    void this._generateQr();
+  }
+
+  _renderBuzzerModeState() {
+    for (const button of this._modeButtons) {
+      const mode = button.dataset.mode === 'local' ? 'local' : 'cloud';
+      button.setAttribute('aria-pressed', String(this._buzzerMode === mode));
+      button.classList.toggle('is-active', this._buzzerMode === mode);
+    }
+
+    const isLocal = this._buzzerMode === 'local';
+    this._root.classList.toggle('is-local-room-mode', isLocal);
+    this._root.classList.toggle('is-cloud-room-mode', !isLocal);
+
+    if (this._roomInput) {
+      this._roomInput.disabled = !isLocal;
+    }
+
+    if (this._roomHint) {
+      this._roomHint.textContent = isLocal
+        ? t('local_room_server_hint')
+        : this._cloudBuzzerUrl
+          ? t('cloud_room_server_hint')
+          : t('cloud_room_server_missing');
+    }
+
+    if (this._localGuide) {
+      this._localGuide.hidden = !isLocal;
+    }
+  }
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
 }

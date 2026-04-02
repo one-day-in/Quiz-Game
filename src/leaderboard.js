@@ -3,6 +3,7 @@ import { LeaderboardGridView } from './views/LeaderboardGridView.js';
 import { bindOverlayDismiss } from './utils/overlayDismiss.js';
 import QRCode from 'qrcode';
 import { initLanguageFromUrl, t, withLanguageParam } from './i18n.js';
+import { getActiveBuzzerUrl, getStoredBuzzerMode } from './utils/localBuzzerUrl.js';
 
 const root = document.getElementById('leaderboard-app');
 initLanguageFromUrl();
@@ -159,12 +160,18 @@ function scheduleRefresh() {
 }
 
 async function renderPlayerJoinQr(joinPanel) {
-    const url = withLanguageParam(`${import.meta.env.BASE_URL}player.html?gameId=${gameId}`);
+    const url = new URL(withLanguageParam(`${import.meta.env.BASE_URL}player.html?gameId=${gameId}`));
+    const mode = getStoredBuzzerMode();
+    const buzzerUrl = getActiveBuzzerUrl({ mode });
+    if (buzzerUrl) {
+        url.searchParams.set('buzzer', buzzerUrl);
+    }
+    url.searchParams.set('mode', mode);
     const qrImg = joinPanel.querySelector('.leaderboard-page__qr');
     if (!qrImg) return;
 
     try {
-        qrImg.src = await QRCode.toDataURL(url, {
+        qrImg.src = await QRCode.toDataURL(url.toString(), {
             width: 512,
             margin: 2,
             color: { dark: '#f8fafc', light: '#111827' }

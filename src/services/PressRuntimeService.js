@@ -5,14 +5,14 @@ import {
   subscribeToGameRuntime,
 } from '../api/gameApi.js';
 import { getSession } from '../api/authApi.js';
+import { getActiveBuzzerUrl } from '../utils/localBuzzerUrl.js';
 
 const DEV_BUZZER_PORT = '8787';
 const FALLBACK_POLL_MS = 1000;
 
-function resolveBuzzerUrl() {
-  const configured = (import.meta.env?.VITE_BUZZER_WS_URL || '').trim();
-  if (configured) return configured;
-
+function resolveBuzzerUrl(overrideUrl = '', mode = null) {
+  const resolved = getActiveBuzzerUrl({ mode: mode || undefined, overrideUrl });
+  if (resolved) return resolved;
   const host = window.location.hostname;
   if (host === 'localhost' || host === '127.0.0.1') {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -389,10 +389,10 @@ class HybridPressRuntimeService {
   }
 }
 
-export function createPressRuntimeService({ gameId, role, controllerId = null }) {
-  const wsUrl = resolveBuzzerUrl();
+export function createPressRuntimeService({ gameId, role, controllerId = null, wsUrl = '', mode = null }) {
+  const resolvedWsUrl = resolveBuzzerUrl(wsUrl, mode);
 
-  if (!wsUrl) {
+  if (!resolvedWsUrl) {
     return new ApiPressRuntimeService({ gameId, controllerId });
   }
 
@@ -400,7 +400,7 @@ export function createPressRuntimeService({ gameId, role, controllerId = null })
     gameId,
     role,
     controllerId,
-    wsUrl,
+    wsUrl: resolvedWsUrl,
     getAccessToken: role === 'host'
       ? async () => {
           const session = await getSession();
