@@ -82,8 +82,6 @@ function renderJoin() {
     <main class="player-controller">
       <section class="player-controller__card">
         <p class="player-controller__eyebrow">${t('join_game')}</p>
-        <h1 class="player-controller__title">${t('choose_player_name')}</h1>
-        <p class="player-controller__copy">${t('players_can_connect', { count: MAX_PLAYERS })}</p>
         <form class="player-controller__joinForm" id="playerJoinForm">
           <label class="player-controller__field">
             <span class="player-controller__label">${t('player_name')}</span>
@@ -98,6 +96,7 @@ function renderJoin() {
             >
           </label>
           <button class="player-controller__primary" type="submit">${t('join_controller')}</button>
+          <p class="player-controller__copy">${t('players_can_connect', { count: MAX_PLAYERS })}</p>
         </form>
         <p id="playerJoinError" class="player-controller__error" hidden></p>
       </section>
