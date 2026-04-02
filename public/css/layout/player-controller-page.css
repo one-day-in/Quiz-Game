@@ -29,7 +29,7 @@ body {
 
 .player-controller {
   width: min(100%, 760px);
-  height: min(100%, 1040px);
+  height: 100%;
   max-height: 100%;
   display: flex;
   align-items: center;
@@ -57,7 +57,7 @@ body {
 }
 
 .player-controller__card--controller {
-  min-height: 100%;
+  height: 100%;
   justify-content: space-between;
   gap: clamp(16px, 2.4dvh, 24px);
 }
