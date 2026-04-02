@@ -84,7 +84,6 @@ function renderJoin() {
         <p class="player-controller__eyebrow">${t('join_game')}</p>
         <form class="player-controller__joinForm" id="playerJoinForm">
           <label class="player-controller__field">
-            <span class="player-controller__label">${t('player_name')}</span>
             <input
               id="playerNameInput"
               class="player-controller__input"
