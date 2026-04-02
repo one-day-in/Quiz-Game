@@ -72,6 +72,13 @@ body {
   color: var(--text-soft);
 }
 
+.player-controller__topBar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .player-controller__field {
   display: flex;
   flex-direction: column;
@@ -112,8 +119,6 @@ body {
 }
 
 .player-controller__primary,
-.player-controller__scoreBtn,
-.player-controller__secondary,
 .player-controller__pressBtn {
   min-height: clamp(48px, 6.4dvh, 56px);
   border-radius: 18px;
@@ -136,20 +141,15 @@ body {
   box-shadow: var(--shadow-btn);
 }
 
-.player-controller__scoreBtn,
-.player-controller__secondary {
-  background: var(--btn-bg);
-  box-shadow: var(--shadow-sm);
-  font-size: clamp(16px, 3.6vw, 22px);
-}
-
 .player-controller__pressBtn {
-  width: min(100%, min(200px, 24dvh));
-  aspect-ratio: 1;
+  width: min(100%, min(420px, 72dvw));
+  aspect-ratio: 1 / 1;
   min-height: 0;
   align-self: center;
   justify-self: center;
-  border-radius: 999px;
+  border-radius: 38px;
+  display: grid;
+  place-items: center;
   border-color: rgba(248, 113, 113, 0.58);
   background:
     radial-gradient(circle at 30% 25%, rgba(254, 202, 202, 0.38), transparent 28%),
@@ -159,10 +159,56 @@ body {
     inset 0 2px 0 rgba(255, 255, 255, 0.18),
     0 24px 44px rgba(127, 29, 29, 0.34),
     0 0 28px rgba(239, 68, 68, 0.24);
-  font-size: clamp(24px, 5.8vw, 36px);
+  font-size: clamp(36px, 9vw, 68px);
   letter-spacing: 0.14em;
   user-select: none;
   -webkit-user-select: none;
+}
+
+.player-controller__leaveBtn {
+  flex: 0 0 auto;
+  width: 56px;
+  height: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(248, 113, 113, 0.28);
+  background: rgba(15, 23, 42, 0.88);
+  color: #fecaca;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform var(--t-fast) var(--ease),
+    box-shadow var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease),
+    filter var(--t-fast) var(--ease);
+}
+
+.player-controller__leaveBtn:hover {
+  transform: translateY(calc(-1 * (var(--lift-y) / 3)));
+  border-color: rgba(248, 113, 113, 0.46);
+  box-shadow:
+    0 0 0 1px rgba(248, 113, 113, 0.16),
+    0 14px 28px rgba(2, 6, 23, 0.36);
+  filter: brightness(1.06);
+}
+
+.player-controller__leaveBtn:focus-visible {
+  outline: none;
+  box-shadow: var(--ring), var(--shadow-md);
+}
+
+.player-controller__leaveIcon {
+  width: 24px;
+  height: 24px;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
 }
 
 /* Not yet enabled by host — still clickable, just slightly dimmed */
@@ -175,8 +221,6 @@ body {
 }
 
 .player-controller__primary:hover,
-.player-controller__scoreBtn:hover,
-.player-controller__secondary:hover,
 .player-controller__pressBtn:hover {
   transform: translateY(calc(-1 * (var(--lift-y) / 2)));
   border-color: var(--btn-outline-hover);
@@ -206,8 +250,7 @@ body {
 }
 
 .player-controller__primary:disabled,
-.player-controller__scoreBtn:disabled,
-.player-controller__secondary:disabled,
+.player-controller__leaveBtn:disabled,
 .player-controller__input:disabled {
   cursor: wait;
   opacity: 0.65;
@@ -224,14 +267,6 @@ body {
   align-items: center;
 }
 
-.player-controller__scoreLabel {
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
 .player-controller__scoreValue {
   font-size: clamp(42px, 10vw, 72px);
   line-height: 1;
@@ -241,25 +276,6 @@ body {
     0 0 10px var(--danger-a35),
     0 0 22px var(--danger-a35),
     0 0 36px var(--danger-a18);
-}
-
-.player-controller__actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.player-controller__secondary--danger {
-  color: #fecaca;
-  margin-top: clamp(8px, 2dvh, 20px);
-}
-
-.player-controller__scoreBtn--minus {
-  color: #fecaca;
-}
-
-.player-controller__scoreBtn--plus {
-  color: #bbf7d0;
 }
 
 .player-controller__status,

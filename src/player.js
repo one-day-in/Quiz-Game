@@ -1,6 +1,5 @@
 import {
   MAX_PLAYERS,
-  adjustPlayerScoreByController,
   claimPlayerSlot,
   claimGamePress,
   getGameRuntime,
@@ -25,14 +24,10 @@ let stopPlayersSubscription = null;
 let stopRuntimeSubscription = null;
 let gameRefreshTimer = null;
 let confirmedScore = 0;
-let pendingScoreDelta = 0;
-let isScoreSyncInFlight = false;
-let scoreFlushTimer = null;
 let isPressEnabled = false;
 let pressWinnerPlayerId = null;
 
-const SCORE_FLUSH_DELAY_MS = 220;
-const CONTROLLER_DISABLED_SELECTOR = '.player-controller__input, .player-controller__scoreBtn';
+const CONTROLLER_DISABLED_SELECTOR = '.player-controller__input, .player-controller__leaveBtn';
 
 async function startPlayerController() {
   if (!gameId) {
@@ -138,15 +133,19 @@ function renderJoin() {
 function renderController(currentPlayer) {
   player = currentPlayer;
   confirmedScore = Number(currentPlayer.points) || 0;
-  pendingScoreDelta = 0;
-  clearTimeout(scoreFlushTimer);
-  scoreFlushTimer = null;
 
   root.innerHTML = `
     <main class="player-controller">
       <section class="player-controller__card player-controller__card--controller">
-        <p class="player-controller__eyebrow">${t('player_controller')}</p>
-        <h1 class="player-controller__title">${t('manage_score')}</h1>
+        <div class="player-controller__topBar">
+          <p class="player-controller__eyebrow">${t('player_controller')}</p>
+          <button id="playerDeleteBtn" class="player-controller__leaveBtn" type="button" aria-label="${t('leave_game')}" title="${t('leave_game')}">
+            <svg class="player-controller__leaveIcon" viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+              <path d="M12 3v8" />
+              <path d="M7.05 5.05a9 9 0 1 0 9.9 0" />
+            </svg>
+          </button>
+        </div>
         <label class="player-controller__field">
           <span class="player-controller__label">${t('your_name')}</span>
           <input
@@ -158,15 +157,9 @@ function renderController(currentPlayer) {
           >
         </label>
         <div class="player-controller__scoreCard">
-          <span class="player-controller__scoreLabel">${t('current_score')}</span>
           <strong id="playerScoreValue" class="player-controller__scoreValue">${formatPoints(currentPlayer.points)}</strong>
         </div>
-        <div class="player-controller__actions">
-          <button class="player-controller__scoreBtn player-controller__scoreBtn--minus" data-delta="-100" type="button">-100</button>
-          <button class="player-controller__scoreBtn player-controller__scoreBtn--plus" data-delta="100" type="button">+100</button>
-        </div>
         <button id="playerPressBtn" class="player-controller__pressBtn" type="button">PRESS</button>
-        <button id="playerDeleteBtn" class="player-controller__secondary player-controller__secondary--danger" type="button">${t('leave_game')}</button>
         <p id="playerControllerStatus" class="player-controller__status" hidden></p>
       </section>
     </main>
@@ -177,13 +170,6 @@ function renderController(currentPlayer) {
   const nameInput = document.getElementById('playerControllerName');
   const pressBtn = document.getElementById('playerPressBtn');
   const deleteBtn = document.getElementById('playerDeleteBtn');
-
-  root.querySelectorAll('[data-delta]').forEach((button) => {
-    button.addEventListener('click', async () => {
-      const delta = Number(button.dataset.delta);
-      queueScoreDelta(delta, scoreEl, statusEl);
-    });
-  });
 
   pressBtn?.addEventListener('click', () => {
     // Always give tactile feedback so the button feels alive
@@ -317,46 +303,6 @@ async function claimPress(statusEl) {
   }
 }
 
-function queueScoreDelta(delta, scoreEl, statusEl) {
-  pendingScoreDelta += Number(delta) || 0;
-  updateScoreDisplay(scoreEl);
-  hideStatus(statusEl);
-
-  clearTimeout(scoreFlushTimer);
-  scoreFlushTimer = window.setTimeout(() => {
-    void flushQueuedScoreDelta(scoreEl, statusEl);
-  }, SCORE_FLUSH_DELAY_MS);
-}
-
-async function flushQueuedScoreDelta(scoreEl, statusEl) {
-  if (isScoreSyncInFlight || pendingScoreDelta === 0 || !controllerId) return;
-
-  const delta = pendingScoreDelta;
-  pendingScoreDelta = 0;
-  isScoreSyncInFlight = true;
-
-  try {
-    player = await adjustPlayerScoreByController(gameId, controllerId, delta);
-    confirmedScore = Number(player.points) || 0;
-    updateScoreDisplay(scoreEl);
-    hideStatus(statusEl);
-  } catch (error) {
-    pendingScoreDelta += delta;
-    updateScoreDisplay(scoreEl);
-    statusEl.textContent = error.message || t('could_not_update_score');
-    statusEl.hidden = false;
-  } finally {
-    isScoreSyncInFlight = false;
-
-    if (pendingScoreDelta !== 0) {
-      clearTimeout(scoreFlushTimer);
-      scoreFlushTimer = window.setTimeout(() => {
-        void flushQueuedScoreDelta(scoreEl, statusEl);
-      }, SCORE_FLUSH_DELAY_MS);
-    }
-  }
-}
-
 function toggleJoinPending(isPending) {
   const form = document.getElementById('playerJoinForm');
   form?.querySelectorAll('input, button').forEach((element) => {
@@ -375,7 +321,7 @@ function hideStatus(statusEl) {
 }
 
 function updateScoreDisplay(scoreEl) {
-  if (scoreEl) scoreEl.textContent = formatPoints(confirmedScore + pendingScoreDelta);
+  if (scoreEl) scoreEl.textContent = formatPoints(confirmedScore);
 }
 
 function getOrCreateControllerId(gameIdValue) {
@@ -441,5 +387,4 @@ startPlayerController().catch((error) => {
 window.addEventListener('beforeunload', () => {
   stopPlayersSubscription?.();
   stopRuntimeSubscription?.();
-  clearTimeout(scoreFlushTimer);
 });
