@@ -2,13 +2,14 @@ import { isQuizSpinnerMedia } from '../constants/quizSpinnerMedia.js';
 import { QuestionModalView } from '../views/QuestionModalView.js';
 import { Disposer } from '../utils/disposer.js';
 import { showConfirm } from '../utils/confirm.js';
-import { adjustPlayerScore, getGameRuntime, subscribeToGameRuntime } from '../api/gameApi.js';
+import { adjustPlayerScore } from '../api/gameApi.js';
 import { t } from '../i18n.js';
 
 export class ModalService {
-  constructor(gameService, mediaService) {
+  constructor(gameService, mediaService, pressRuntime) {
     this._game = gameService;
     this._media = mediaService;
+    this._pressRuntime = pressRuntime;
 
     this._disposer = new Disposer();
     this.view = null;
@@ -271,7 +272,7 @@ export class ModalService {
     this.activeCell = null;
     this._pressWinnerId = null;
     this._cellValue = 0;
-    void this._game.setPressEnabled(false);
+    void this._pressRuntime?.closePress?.();
     if (this.container?.isConnected) this.container.innerHTML = '';
 
     // Targeted patch — only the closed cell's is-answered state updates
@@ -304,42 +305,25 @@ export class ModalService {
       clearTimeout(this._pressEnableTimer);
       this._pressEnableTimer = null;
 
-      await this._game.setPressEnabled(false);
-      const runtime = await getGameRuntime(this._game.getGameId());
-      this._pressWinnerId = runtime?.winnerPlayerId || null;
-      this.view?.updateWinnerName(runtime?.winnerName || '');
-      await this._game.setPressEnabled(true);
+      this._pressWinnerId = null;
+      this.view?.updateWinnerName('');
+      await this._pressRuntime?.openPress?.();
     } catch (error) {
       console.error('[ModalService] Failed to reset press runtime:', error);
     }
   }
 
   _bindPressRuntime() {
-    const gameId = this._game.getGameId();
-    if (!gameId) return;
-
-    const emitRuntime = async () => {
-      try {
-        const runtime = await getGameRuntime(gameId);
-        this._pressWinnerId = runtime?.winnerPlayerId || null;
-        this.view?.updateWinnerName(runtime?.winnerName || '');
-      } catch (_) {}
-    };
-
     this._stopRuntimeSubscription?.();
+    if (!this._pressRuntime) return;
 
-    // Realtime fires instantly when DB changes (requires realtime enabled on game_runtime table)
-    const stopSub = subscribeToGameRuntime(gameId, (runtime) => {
+    const stopSub = this._pressRuntime.subscribe((runtime) => {
       this._pressWinnerId = runtime?.winnerPlayerId || null;
       this.view?.updateWinnerName(runtime?.winnerName || '');
     });
 
-    // Polling fallback at 800ms in case realtime is not configured for game_runtime
-    const pollTimer = window.setInterval(emitRuntime, 800);
-
     this._stopRuntimeSubscription = () => {
       stopSub?.();
-      clearInterval(pollTimer);
     };
   }
 
@@ -350,6 +334,6 @@ export class ModalService {
   }
 }
 
-export function createModalService(gameService, mediaService) {
-  return new ModalService(gameService, mediaService);
+export function createModalService(gameService, mediaService, pressRuntime) {
+  return new ModalService(gameService, mediaService, pressRuntime);
 }

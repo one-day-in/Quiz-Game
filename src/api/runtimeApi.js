@@ -1,6 +1,35 @@
 import { supabase } from './supabaseClient.js';
 import { GAME_RUNTIME_COLUMNS } from './gameApi.shared.js';
 
+const winnerNameCache = new Map();
+
+function mapRuntimeRow(gameId, row, winnerName = null) {
+    return {
+        gameId: row?.game_id || gameId,
+        pressEnabled: !!row?.press_enabled,
+        winnerPlayerId: row?.winner_player_id || null,
+        winnerName: winnerName || null,
+        pressedAt: row?.pressed_at || null,
+        updatedAt: row?.updated_at || null,
+    };
+}
+
+async function fetchWinnerName(winnerPlayerId) {
+    if (!winnerPlayerId) return null;
+    if (winnerNameCache.has(winnerPlayerId)) return winnerNameCache.get(winnerPlayerId);
+
+    const { data, error } = await supabase
+        .from('game_players')
+        .select('name')
+        .eq('id', winnerPlayerId)
+        .maybeSingle();
+
+    if (error) throw new Error(`[Game] getGameRuntime winner failed: ${error.message}`);
+    const winnerName = data?.name || null;
+    winnerNameCache.set(winnerPlayerId, winnerName);
+    return winnerName;
+}
+
 export async function getGameRuntime(gameId) {
     const { data, error } = await supabase
         .from('game_runtime')
@@ -9,26 +38,8 @@ export async function getGameRuntime(gameId) {
         .maybeSingle();
 
     if (error) throw new Error(`[Game] getGameRuntime failed: ${error.message}`);
-    let winnerName = null;
-    if (data?.winner_player_id) {
-        const { data: winnerRow, error: winnerError } = await supabase
-            .from('game_players')
-            .select('name')
-            .eq('id', data.winner_player_id)
-            .maybeSingle();
-
-        if (winnerError) throw new Error(`[Game] getGameRuntime winner failed: ${winnerError.message}`);
-        winnerName = winnerRow?.name || null;
-    }
-
-    return {
-        gameId,
-        pressEnabled: !!data?.press_enabled,
-        winnerPlayerId: data?.winner_player_id || null,
-        winnerName,
-        pressedAt: data?.pressed_at || null,
-        updatedAt: data?.updated_at || null,
-    };
+    const winnerName = await fetchWinnerName(data?.winner_player_id);
+    return mapRuntimeRow(gameId, data, winnerName);
 }
 
 export async function setPressEnabled(gameId, enabled) {
@@ -45,14 +56,7 @@ export async function setPressEnabled(gameId, enabled) {
         .single();
 
     if (error) throw new Error(`[Game] setPressEnabled failed: ${error.message}`);
-    return {
-        gameId: data.game_id,
-        pressEnabled: !!data.press_enabled,
-        winnerPlayerId: data.winner_player_id || null,
-        winnerName: null,
-        pressedAt: data.pressed_at || null,
-        updatedAt: data.updated_at,
-    };
+    return mapRuntimeRow(gameId, data, null);
 }
 
 export async function claimGamePress(gameId, controllerId) {
@@ -75,11 +79,13 @@ export async function claimGamePress(gameId, controllerId) {
 
 export function subscribeToGameRuntime(gameId, onRuntimeChange) {
     let disposed = false;
+    let lastWinnerPlayerId = null;
 
     async function emitRuntime() {
         if (disposed) return;
         try {
             const runtime = await getGameRuntime(gameId);
+            lastWinnerPlayerId = runtime?.winnerPlayerId || null;
             if (!disposed) onRuntimeChange(runtime);
         } catch (error) {
             console.error('[Game] subscribeToGameRuntime refresh failed:', error);
@@ -96,7 +102,25 @@ export function subscribeToGameRuntime(gameId, onRuntimeChange) {
                 table: 'game_runtime',
                 filter: `game_id=eq.${gameId}`,
             },
-            () => { void emitRuntime(); }
+            (payload) => {
+                const runtime = mapRuntimeRow(gameId, payload?.new || null, null);
+                const nextWinnerPlayerId = runtime?.winnerPlayerId || null;
+
+                if (!disposed) onRuntimeChange(runtime);
+
+                if (nextWinnerPlayerId && nextWinnerPlayerId !== lastWinnerPlayerId) {
+                    void fetchWinnerName(nextWinnerPlayerId)
+                        .then((winnerName) => {
+                            if (disposed) return;
+                            onRuntimeChange({ ...runtime, winnerName });
+                        })
+                        .catch((error) => {
+                            console.error('[Game] subscribeToGameRuntime winner refresh failed:', error);
+                        });
+                }
+
+                lastWinnerPlayerId = nextWinnerPlayerId;
+            }
         )
         .subscribe();
 

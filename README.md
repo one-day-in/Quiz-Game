@@ -7,6 +7,7 @@ Browser-based quiz board with three surfaces:
 - `player.html`: mobile player controller
 
 The app is built with Vite and uses Supabase for auth, storage, realtime, and game data.
+Board/player persistence stays in Supabase, while low-latency buzzer transport is now handled by a dedicated WebSocket coordinator in `server/buzzerServer.js`.
 
 ## Features
 
@@ -39,6 +40,12 @@ Run locally:
 npm run dev
 ```
 
+Run the dedicated buzzer server locally in a second terminal:
+
+```bash
+npm run buzzer:dev
+```
+
 Build for production:
 
 ```bash
@@ -59,6 +66,7 @@ The project expects:
 - a `game_players` table and RPC functions for player join/rename/score/leave
 - a `game_runtime` table and `claim_game_press(...)` for press winner state
 - a `media` storage bucket
+- a `service_role` key for the dedicated buzzer server
 
 Apply the SQL files in [/Users/oneday_in/Desktop/Quiz-Game/supabase](/Users/oneday_in/Desktop/Quiz-Game/supabase):
 
@@ -70,6 +78,33 @@ Recommended `games` RLS:
 - `SELECT`: authenticated users can read
 - `INSERT`: authenticated users can create with `created_by = auth.uid()`
 - `UPDATE`/`DELETE`: only the owner can modify
+
+## Buzzer Server
+
+The buzzer server is a separate runtime from GitHub Pages. It is responsible for:
+
+- low-latency `PRESS` activation
+- first-press arbitration
+- broadcasting winner state to all connected controllers
+- persisting winner state back to Supabase
+
+Required environment variables:
+
+- `VITE_SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `BUZZER_PORT`
+- `VITE_BUZZER_WS_URL` for the frontend build
+
+The repository includes:
+
+- [server/buzzerServer.js](/Users/oneday_in/Desktop/Quiz-Game/server/buzzerServer.js)
+- [Dockerfile](/Users/oneday_in/Desktop/Quiz-Game/Dockerfile)
+
+Example production run:
+
+```bash
+npm run buzzer:start
+```
 
 ## Main Flow
 

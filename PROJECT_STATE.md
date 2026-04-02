@@ -1,6 +1,6 @@
 # PROJECT_STATE
 
-Last updated: 2026-04-01
+Last updated: 2026-04-02
 
 ## Real Project Overview
 
@@ -10,7 +10,13 @@ Quiz-Game is a browser-based realtime quiz board built with vanilla JavaScript a
 - Standalone leaderboard at `leaderboard.html`
 - Mobile player controller at `player.html`
 
-The host signs in with Google, creates or opens a game, edits board content, opens question modals, and controls answer adjudication. Players join the game through a QR flow, claim a controller slot, can rename themselves, can manually adjust their own score from the phone UI, and can race to press during an open question. Scores and player identity live in Supabase tables, while board content lives as JSON in the `games` table.
+The host signs in with Google, creates or opens a game, edits board content, opens question modals, and controls answer adjudication. Players join the game through a QR flow, claim a controller slot, can rename themselves, can leave the game, and can race to press during an open question. Scores and player identity live in Supabase tables, while board content lives as JSON in the `games` table.
+
+Press-race transport is no longer treated as a plain database subscription problem. The project now has a dedicated buzzer runtime path:
+
+- static host/controller/leaderboard pages still build with Vite
+- Supabase still stores persistent state
+- a separate WebSocket coordinator now owns low-latency press activation and first-press fanout
 
 The app is realtime, but not purely realtime. It mixes:
 
@@ -60,6 +66,10 @@ The app is realtime, but not purely realtime. It mixes:
 - `services/PlayersService.js`
   - owns host-side live player state
   - performs initial fetch, realtime subscription, and fallback refresh
+- `services/PressRuntimeService.js`
+  - owns press-race transport selection
+  - prefers dedicated WebSocket buzzer transport
+  - falls back to Supabase runtime subscription + polling if the buzzer server is unavailable
 - `services/MediaService.js`
   - view/media mapping and upload/delete orchestration
 - `services/RoundNavigationService.js`
@@ -78,7 +88,7 @@ The app is realtime, but not purely realtime. It mixes:
 - `api/playersApi.js`
   - player CRUD, score mutation, player subscriptions
 - `api/runtimeApi.js`
-  - press race reads/writes and runtime subscriptions
+  - fallback press-race reads/writes and runtime subscriptions
 - `api/authApi.js`
   - Google sign-in and auth session helpers
 - `api/profileApi.js`
@@ -123,6 +133,10 @@ The app is realtime, but not purely realtime. It mixes:
   - user profile cache
 - Supabase storage bucket `media`
   - board media and audio files
+- `server/buzzerServer.js`
+  - dedicated WebSocket coordinator for press activation and first-press arbitration fanout
+  - verifies host ownership against Supabase auth
+  - persists press state back into `game_runtime`
 
 ## Game / App Flow
 
@@ -134,6 +148,7 @@ The app is realtime, but not purely realtime. It mixes:
    - `GameRepository`
    - `GameService`
    - `PlayersService`
+   - `PressRuntimeService`
    - `MediaService`
    - `RoundNavigationService`
    - `ModalService`
@@ -150,9 +165,9 @@ The app is realtime, but not purely realtime. It mixes:
 8. Opening a question:
    - stores active cell
    - marks unanswered cells as answered immediately
-   - resets press runtime
-   - subscribes to `game_runtime`
-9. Player presses are claimed through `claim_game_press(...)`.
+   - opens press runtime through `PressRuntimeService`
+   - listens for winner updates through the same runtime service
+9. Player presses are claimed through the buzzer server first, and the server persists the result through `claim_game_press(...)`.
 10. Host clicks:
    - `Correct` -> adds cell value to winner score
    - `Not Correct` -> subtracts cell value and reopens press race
@@ -166,10 +181,9 @@ The app is realtime, but not purely realtime. It mixes:
 5. Joining calls RPC `claim_game_player(...)`.
 6. Controller screen then allows:
    - rename via RPC `rename_game_player(...)`
-   - manual score delta buttons via RPC `adjust_game_player_score(...)`
-   - press race participation via RPC `claim_game_press(...)`
+   - press race participation through `PressRuntimeService`
    - leave game via RPC `leave_game_player(...)`
-7. Controller also uses realtime plus polling fallback.
+7. Controller keeps score/player sync from Supabase and keeps press activation from the buzzer runtime service.
 
 ### Standalone Leaderboard Flow
 
@@ -186,6 +200,7 @@ The app is realtime, but not purely realtime. It mixes:
 - Board content truth: `games.data`
 - Player/score truth: `game_players`
 - Press race truth: `game_runtime`
+- Press race transport truth: `PressRuntimeService` backed by the buzzer server when available
 - Host local UI truth: `GameService.uiState` and some view-local state
 - Player local controller identity truth: `localStorage`
 
@@ -208,6 +223,8 @@ The app is realtime, but not purely realtime. It mixes:
 - Board updates are optimistic in `GameService`.
 - Player updates are mostly direct RPC calls in `player.js`.
 - Press runtime is handled separately from board state and separately from players.
+- The buzzer server is now the primary low-latency transport for press activation and winner fanout.
+- Supabase `game_runtime` remains the persistent snapshot and fallback path, not the preferred live transport.
 - Modal correctness flow does not go through `GameService`; it calls player score API directly.
 - Host score mutations by `playerId` depend on remote Supabase function `adjust_game_player_score_by_id(...)`.
 
@@ -215,9 +232,18 @@ The app is realtime, but not purely realtime. It mixes:
 
 - `gameApi.subscribeToGame()` listens to both `games` and `game_players`.
 - `PlayersService` uses `subscribeToPlayers()` plus a 1.5s fallback refresh loop for the host surface.
-- `player.js` uses `subscribeToPlayers()` and `subscribeToGameRuntime()` and also polls every second.
-- `ModalService` uses `subscribeToGameRuntime()` and also polls every 800ms while open.
-- The app currently relies on overlapping subscriptions and fallback timers rather than a single coherent event model.
+- `PressRuntimeService` is now the canonical press-race transport boundary.
+- Primary path:
+  - host and player connect to the dedicated buzzer WebSocket server
+  - host opens/closes press through that channel
+  - players receive activation instantly from the same channel
+  - first claim is serialized by the buzzer server and persisted via Supabase RPC
+- Fallback path:
+  - if the buzzer server is unavailable, `PressRuntimeService` drops back to `runtimeApi`
+  - that fallback still uses Supabase realtime plus polling
+- `player.js` still polls players every second for score/name sync, but no longer polls `game_runtime` while the buzzer runtime is healthy.
+- `ModalService` no longer owns its own runtime polling loop; it listens through `PressRuntimeService`.
+- `runtimeApi.subscribeToGameRuntime()` still emits the raw realtime payload immediately for `press_enabled` and `winner_player_id` changes, then lazily enriches `winnerName` only when that extra lookup is actually needed.
 - Remote verification on April 1, 2026 showed that `adjust_game_player_score_by_id(...)` was still missing from the active Supabase schema cache, while `adjust_game_player_score(...)` existed.
 
 ### Local Storage Reality
@@ -241,16 +267,9 @@ The old `src/api/gameApi.js` monolith was split into focused modules:
 
 This removes the single-file bottleneck, but the split is still mostly mechanical. Shared helpers and service boundaries still need further cleanup.
 
-### 2. Realtime and polling are duplicated across surfaces
+### 2. Standalone leaderboard still keeps a separate transport strategy
 
-The codebase uses overlapping subscription strategies:
-
-- host view
-- standalone leaderboard
-- player controller
-- modal runtime handling
-
-This makes correctness harder to reason about and increases redundant network work.
+Press-race transport is now cleaner on host and controller, but standalone leaderboard still owns its own player subscription + polling stack outside the host service layer. That is acceptable, but it remains a separate transport path to keep aligned.
 
 ### 3. State ownership is fragmented
 
@@ -330,9 +349,10 @@ Each of these had local `click` and `keydown` dismissal wiring. That made a simp
 
 Ordered refactor and improvement steps. Do not treat all items as immediate.
 
-1. Unify realtime and polling strategy for players and runtime.
-   - keep fallbacks
-   - remove duplicate subscriptions where they are redundant
+1. Harden dedicated buzzer deployment and operations.
+   - provision a real production WebSocket host for `server/buzzerServer.js`
+   - wire `VITE_BUZZER_WS_URL` in all environments
+   - monitor reconnect/fallback behavior on mobile networks
 2. Revisit standalone leaderboard page vs host leaderboard panel responsibilities.
    - keep the host panel as the primary host UX
    - avoid unnecessary divergence in QR and player-management affordances
@@ -377,20 +397,20 @@ Ordered refactor and improvement steps. Do not treat all items as immediate.
 - Estimated complexity:
   Medium
 
-### 2. Introduce a dedicated runtime/press store
+### 2. Harden the dedicated buzzer runtime service
 
 - Problem description:
-  Press runtime logic is duplicated across `ModalService`, `player.js`, and raw API helpers, with each surface deciding its own polling and subscription behavior.
+  Press-race transport now has a dedicated service and coordinator, but it adds an extra runtime surface that must be deployed and monitored separately from GitHub Pages.
 - Why it matters:
-  Press-race correctness is gameplay-critical. Duplication increases the risk of race-condition fixes landing in one surface but not the others.
+  The new architecture is faster and cleaner for gameplay, but it is only as stable as its websocket deployment and reconnect behavior.
 - Suggested solution:
-  Create a small `RuntimeStore` or `PressRuntimeService` that standardizes:
-  - current runtime snapshot
-  - realtime subscription
-  - optional polling fallback
-  - reset/open/claim operations
+  Keep `PressRuntimeService` as the single frontend boundary and add operational hardening:
+  - production websocket hosting
+  - health checks
+  - reconnect telemetry
+  - explicit fallback monitoring
 - Expected impact:
-  Better consistency between host and player controller behavior; easier reasoning about winner state.
+  Better long-term stability for the new low-latency buzzer path.
 - Estimated complexity:
   Medium
 
@@ -653,3 +673,20 @@ Ordered refactor and improvement steps. Do not treat all items as immediate.
 - The same toggle button now controls compact and expanded states.
 - Expanded mode grows upward as an overlay without resizing the grid or header areas.
 - `LeaderboardDrawerView.js` was removed after the host surface stopped referencing it.
+
+### 2026-04-02
+
+- Press-race runtime delivery was tightened without removing fallbacks.
+- `runtimeApi.subscribeToGameRuntime()` now pushes `press_enabled` and winner id changes straight from the Supabase realtime payload instead of always waiting for a follow-up `getGameRuntime()` fetch.
+- Winner name enrichment is now deferred and cached, so the controller can light up the `PRESS` button first and resolve the winner label second.
+- `ModalService._resetPressRuntime()` was simplified to avoid an extra runtime fetch between the disable and enable writes when a host opens a question.
+
+### 2026-04-02
+
+- Press-race transport was moved behind a dedicated `PressRuntimeService`.
+- Primary runtime delivery now uses `server/buzzerServer.js`, a standalone WebSocket coordinator that:
+  - verifies host ownership
+  - broadcasts press-open and winner updates directly to clients
+  - persists authoritative winner state back through Supabase
+- Supabase `game_runtime` remains the persistent snapshot and fallback path.
+- Host and player surfaces now prefer the buzzer socket for press activation instead of driving that interaction from `postgres_changes`.

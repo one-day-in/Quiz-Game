@@ -1,16 +1,14 @@
 import {
   MAX_PLAYERS,
   claimPlayerSlot,
-  claimGamePress,
-  getGameRuntime,
   getPlayerByController,
   getPlayers,
   removePlayerByController,
-  subscribeToGameRuntime,
   subscribeToPlayers,
   updatePlayerByController,
 } from './api/gameApi.js';
 import { initLanguageFromUrl, t } from './i18n.js';
+import { createPressRuntimeService } from './services/PressRuntimeService.js';
 
 const root = document.getElementById('player-controller-app');
 initLanguageFromUrl();
@@ -21,11 +19,11 @@ const STORAGE_PREFIX = 'quiz-game:player-controller';
 let player = null;
 let controllerId = null;
 let stopPlayersSubscription = null;
-let stopRuntimeSubscription = null;
 let gameRefreshTimer = null;
 let confirmedScore = 0;
 let isPressEnabled = false;
 let pressWinnerPlayerId = null;
+let pressRuntime = null;
 
 const CONTROLLER_DISABLED_SELECTOR = '.player-controller__input, .player-controller__leaveBtn';
 
@@ -40,7 +38,8 @@ async function startPlayerController() {
 
   try {
     player = await getPlayerByController(gameId, controllerId);
-    await syncPressRuntime();
+    pressRuntime = createPressRuntimeService({ gameId, role: 'player', controllerId });
+    await pressRuntime.connect();
     bindRealtimePlayers();
     bindRuntimeState();
     startGameRefreshLoop();
@@ -228,8 +227,7 @@ function bindRealtimePlayers() {
 }
 
 function bindRuntimeState() {
-  stopRuntimeSubscription?.();
-  stopRuntimeSubscription = subscribeToGameRuntime(gameId, (runtime) => {
+  pressRuntime?.subscribe((runtime) => {
     applyRuntimeState(runtime);
   });
 }
@@ -240,9 +238,6 @@ function startGameRefreshLoop() {
     void Promise.allSettled([
       getPlayers(gameId)
         .then((players) => syncControllerFromPlayers(players))
-        .catch(() => {}),
-      getGameRuntime(gameId)
-        .then((runtime) => { applyRuntimeState(runtime); })
         .catch(() => {}),
     ]);
   }, 1000);
@@ -282,18 +277,9 @@ function applyRuntimeState(runtime) {
   pressBtn.classList.toggle('is-enabled', !!isPressEnabled && !pressWinnerPlayerId);
 }
 
-async function syncPressRuntime() {
-  try {
-    applyRuntimeState(await getGameRuntime(gameId));
-  } catch (_) {
-    isPressEnabled = false;
-    pressWinnerPlayerId = null;
-  }
-}
-
 async function claimPress(statusEl) {
   try {
-    applyRuntimeState(await claimGamePress(gameId, controllerId));
+    applyRuntimeState(await pressRuntime.claimPress());
     hideStatus(statusEl);
   } catch (error) {
     statusEl.textContent = error.message || t('could_not_claim_press');
@@ -384,5 +370,5 @@ startPlayerController().catch((error) => {
 
 window.addEventListener('beforeunload', () => {
   stopPlayersSubscription?.();
-  stopRuntimeSubscription?.();
+  pressRuntime?.destroy?.();
 });
