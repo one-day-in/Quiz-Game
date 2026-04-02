@@ -387,20 +387,20 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
 .leaderboard-panel__scoreBtn {
   font-family: var(--font-label);
-  min-width: 72px;
-  min-height: 42px;
-  padding: 0 14px;
+  min-width: 86px;
+  min-height: 50px;
+  padding: 0 18px;
   border-radius: 999px;
   border: 1px solid var(--btn-outline);
   background: var(--btn-bg);
   color: var(--text);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 900;
   letter-spacing: 0.06em;
   font-variant-numeric: tabular-nums;
@@ -781,13 +781,16 @@
 }
 
 .leaderboard__row.is-selected {
-  border-color: rgba(96, 165, 250, 0.48);
+  border-color: rgba(96, 165, 250, 0.72);
   background:
-    linear-gradient(180deg, rgba(37, 99, 235, 0.16), rgba(15, 23, 42, 0.96)),
-    linear-gradient(90deg, rgba(96, 165, 250, 0.14), transparent 65%);
+    linear-gradient(180deg, rgba(59, 130, 246, 0.22), rgba(15, 23, 42, 0.98)),
+    linear-gradient(90deg, rgba(147, 197, 253, 0.18), transparent 68%);
   box-shadow:
-    0 0 0 1px rgba(96, 165, 250, 0.20),
-    0 16px 30px rgba(2, 6, 23, 0.42);
+    0 0 0 1px rgba(147, 197, 253, 0.34),
+    0 0 0 3px rgba(59, 130, 246, 0.16),
+    0 18px 34px rgba(2, 6, 23, 0.48),
+    0 0 26px rgba(59, 130, 246, 0.22);
+  transform: translateY(-1px);
 }
 
 .leaderboard__rank {
@@ -812,10 +815,12 @@
 }
 
 .leaderboard__row.is-selected .leaderboard__rank {
-  border-color: rgba(96, 165, 250, 0.5);
-  background: linear-gradient(180deg, rgba(96, 165, 250, 0.18), rgba(37, 99, 235, 0.08));
-  color: #bfdbfe;
-  box-shadow: 0 0 16px rgba(96, 165, 250, 0.14);
+  border-color: rgba(147, 197, 253, 0.68);
+  background: linear-gradient(180deg, rgba(147, 197, 253, 0.24), rgba(37, 99, 235, 0.12));
+  color: #dbeafe;
+  box-shadow:
+    0 0 0 1px rgba(147, 197, 253, 0.18),
+    0 0 18px rgba(96, 165, 250, 0.18);
 }
 
 .leaderboard__nameLabel {
@@ -834,6 +839,11 @@
   text-overflow: ellipsis;
 }
 
+.leaderboard__row.is-selected .leaderboard__nameLabel {
+  color: #eff6ff;
+  text-shadow: 0 0 18px rgba(147, 197, 253, 0.12);
+}
+
 .leaderboard__scoreValue {
   flex: 0 0 auto;
   font-family: var(--font-numeric);
@@ -847,6 +857,14 @@
     0 0 10px var(--danger-a35),
     0 0 22px var(--danger-a35),
     0 0 36px var(--danger-a18);
+}
+
+.leaderboard__row.is-selected .leaderboard__scoreValue {
+  color: #fca5a5;
+  text-shadow:
+    0 0 12px rgba(252, 165, 165, 0.36),
+    0 0 26px rgba(239, 68, 68, 0.26),
+    0 0 42px rgba(239, 68, 68, 0.18);
 }
 
 .leaderboard--drawer .leaderboard__emptyState,
