@@ -5,6 +5,13 @@ import { escapeHtml } from '../utils/utils.js';
 import { showConfirm, showPrompt } from '../utils/confirm.js';
 import { isGameDeleteAdminUser } from '../utils/adminAccess.js';
 import { formatLocaleDate, getLanguage, getSupportedLanguages, setLanguage, subscribeLanguage, t } from '../i18n.js';
+import {
+    getCloudBuzzerUrl,
+    getStoredBuzzerMode,
+    getSuggestedLocalBuzzerUrl,
+    setStoredBuzzerMode,
+    setStoredLocalBuzzerUrl,
+} from '../utils/localBuzzerUrl.js';
 
 export class LobbyView {
     constructor({ currentUser, onOpen, onCreate, onLogout }) {
@@ -15,6 +22,8 @@ export class LobbyView {
         this._games = [];
         this._loading = true;
         this._error = null;
+        this._settingsOpen = false;
+        this._handleSettingsKeydown = null;
         this._stopLanguageSubscription = subscribeLanguage(() => this._render());
 
         this._render();
@@ -24,6 +33,10 @@ export class LobbyView {
     get el() { return this._root; }
 
     destroy() {
+        if (this._handleSettingsKeydown) {
+            document.removeEventListener('keydown', this._handleSettingsKeydown);
+            this._handleSettingsKeydown = null;
+        }
         this._stopLanguageSubscription?.();
         this._root.remove();
     }
@@ -124,15 +137,12 @@ export class LobbyView {
         this._root.innerHTML = `
             <div class="lobby__header">
                 <h1 class="lobby__title">🎮 ${t('quiz_games')}</h1>
-                <div class="lobby__langSwitch" role="group" aria-label="${t('language')}">
-                    ${getSupportedLanguages().map((language) => `
-                        <button
-                            class="lobby__langBtn${language === getLanguage() ? ' is-active' : ''}"
-                            type="button"
-                            data-language="${language}"
-                        >${escapeHtml(t(`language_${language}`))}</button>
-                    `).join('')}
-                </div>
+                <button class="lobby__settingsBtn" type="button" aria-label="${t('settings')}" title="${t('settings')}">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 3.75a1.5 1.5 0 0 1 1.46 1.15l.23.93a6.94 6.94 0 0 1 1.27.53l.83-.49a1.5 1.5 0 0 1 1.83.23l.55.55a1.5 1.5 0 0 1 .23 1.83l-.49.83c.2.41.38.83.53 1.27l.93.23A1.5 1.5 0 0 1 20.25 12a1.5 1.5 0 0 1-1.15 1.46l-.93.23a6.94 6.94 0 0 1-.53 1.27l.49.83a1.5 1.5 0 0 1-.23 1.83l-.55.55a1.5 1.5 0 0 1-1.83.23l-.83-.49a6.94 6.94 0 0 1-1.27.53l-.23.93A1.5 1.5 0 0 1 12 20.25a1.5 1.5 0 0 1-1.46-1.15l-.23-.93a6.94 6.94 0 0 1-1.27-.53l-.83.49a1.5 1.5 0 0 1-1.83-.23l-.55-.55a1.5 1.5 0 0 1-.23-1.83l.49-.83a6.94 6.94 0 0 1-.53-1.27l-.93-.23A1.5 1.5 0 0 1 3.75 12a1.5 1.5 0 0 1 1.15-1.46l.93-.23c.15-.44.33-.86.53-1.27l-.49-.83a1.5 1.5 0 0 1 .23-1.83l.55-.55a1.5 1.5 0 0 1 1.83-.23l.83.49c.41-.2.83-.38 1.27-.53l.23-.93A1.5 1.5 0 0 1 12 3.75Z" />
+                        <circle cx="12" cy="12" r="2.75" />
+                    </svg>
+                </button>
                 <button class="lobby__logout-btn" type="button" aria-label="${t('logout')}" title="${t('logout')}">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                         <path d="M14 3h-4a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h4" />
@@ -209,17 +219,19 @@ export class LobbyView {
                     `).join('')}
                 </div>
             </div>
+
+            ${this._settingsOpen ? this._renderSettings() : ''}
         `;
 
         // Logout
+        this._root.querySelector('.lobby__settingsBtn')
+            ?.addEventListener('click', () => {
+                this._settingsOpen = true;
+                this._render();
+            });
+
         this._root.querySelector('.lobby__logout-btn')
             ?.addEventListener('click', () => onLogout?.());
-
-        this._root.querySelectorAll('.lobby__langBtn').forEach((btn) => {
-            btn.addEventListener('click', () => {
-                setLanguage(btn.dataset.language);
-            });
-        });
 
         // Create new game
         this._root.querySelector('.lobby__create-btn')
@@ -263,6 +275,156 @@ export class LobbyView {
                 this._handleDelete(id, name);
             });
         });
+
+        this._wireSettings();
+    }
+
+    _renderSettings() {
+        const buzzerMode = getStoredBuzzerMode();
+        const localBuzzerUrl = getSuggestedLocalBuzzerUrl();
+        const cloudBuzzerUrl = getCloudBuzzerUrl();
+
+        return `
+            <div class="lobby__settingsOverlay"></div>
+            <aside class="lobby__settingsPanel" role="dialog" aria-modal="true" aria-label="${t('settings')}">
+                <div class="lobby__settingsHead">
+                    <div>
+                        <p class="lobby__settingsEyebrow">${t('settings')}</p>
+                        <h2 class="lobby__settingsTitle">${t('settings')}</h2>
+                    </div>
+                    <button class="lobby__settingsClose" type="button" aria-label="${t('close')}" title="${t('close')}">&times;</button>
+                </div>
+
+                <section class="lobby__settingsSection">
+                    <p class="lobby__settingsLabel">${t('language')}</p>
+                    <div class="lobby__langSwitch" role="group" aria-label="${t('language')}">
+                        ${getSupportedLanguages().map((language) => `
+                            <button
+                                class="lobby__langBtn${language === getLanguage() ? ' is-active' : ''}"
+                                type="button"
+                                data-language="${language}"
+                            >${escapeHtml(t(`language_${language}`))}</button>
+                        `).join('')}
+                    </div>
+                </section>
+
+                <section class="lobby__settingsSection">
+                    <p class="lobby__settingsLabel">${t('game_mode')}</p>
+                    <div class="lobby__modeSwitch" role="group" aria-label="${t('game_mode')}">
+                        <button
+                            class="lobby__modeBtn${buzzerMode === 'local' ? ' is-active' : ''}"
+                            type="button"
+                            data-buzzer-mode="local"
+                        >${t('local_room_mode')}</button>
+                        <button
+                            class="lobby__modeBtn${buzzerMode === 'cloud' ? ' is-active' : ''}"
+                            type="button"
+                            data-buzzer-mode="cloud"
+                            ${cloudBuzzerUrl ? '' : 'disabled'}
+                        >${t('cloud_room_mode')}</button>
+                    </div>
+                    <p class="lobby__settingsHint">
+                        ${buzzerMode === 'local'
+                            ? t('local_room_server_hint')
+                            : (cloudBuzzerUrl ? t('cloud_room_server_hint') : t('cloud_room_server_missing'))}
+                    </p>
+                </section>
+
+                <section class="lobby__settingsSection${buzzerMode === 'local' ? '' : ' is-disabled'}">
+                    <label class="lobby__settingsField">
+                        <span class="lobby__settingsLabel">${t('local_room_server')}</span>
+                        <input
+                            class="lobby__settingsInput"
+                            type="text"
+                            value="${escapeHtml(localBuzzerUrl)}"
+                            placeholder="${t('local_room_server_placeholder')}"
+                            spellcheck="false"
+                            autocomplete="off"
+                            ${buzzerMode === 'local' ? '' : 'disabled'}
+                        >
+                    </label>
+                    <button
+                        class="lobby__settingsLaunchBtn"
+                        type="button"
+                        ${buzzerMode === 'local' ? '' : 'disabled'}
+                    >${t('launch_local_room')}</button>
+                    <div class="lobby__settingsGuide">
+                        <p class="lobby__settingsGuideTitle">${t('local_room_setup_title')}</p>
+                        <ol class="lobby__settingsGuideList">
+                            <li>${t('local_room_setup_step_1')}</li>
+                            <li>${t('local_room_setup_step_2')}</li>
+                            <li>${t('local_room_setup_step_3')}</li>
+                        </ol>
+                    </div>
+                </section>
+            </aside>
+        `;
+    }
+
+    _wireSettings() {
+        const close = () => {
+            if (!this._settingsOpen) return;
+            this._settingsOpen = false;
+            if (this._handleSettingsKeydown) {
+                document.removeEventListener('keydown', this._handleSettingsKeydown);
+                this._handleSettingsKeydown = null;
+            }
+            this._render();
+        };
+
+        this._root.querySelector('.lobby__settingsOverlay')
+            ?.addEventListener('click', close);
+        this._root.querySelector('.lobby__settingsClose')
+            ?.addEventListener('click', close);
+        this._root.querySelector('.lobby__settingsPanel')
+            ?.addEventListener('click', (event) => event.stopPropagation());
+
+        if (this._settingsOpen) {
+            if (this._handleSettingsKeydown) {
+                document.removeEventListener('keydown', this._handleSettingsKeydown);
+            }
+            this._handleSettingsKeydown = (event) => {
+                if (event.key === 'Escape' && this._settingsOpen) close();
+            };
+            document.addEventListener('keydown', this._handleSettingsKeydown);
+        }
+
+        this._root.querySelectorAll('.lobby__langBtn').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                setLanguage(btn.dataset.language);
+            });
+        });
+
+        this._root.querySelectorAll('[data-buzzer-mode]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const mode = btn.dataset.buzzerMode === 'local' ? 'local' : 'cloud';
+                if (mode === 'cloud' && !getCloudBuzzerUrl()) return;
+                setStoredBuzzerMode(mode);
+                this._render();
+            });
+        });
+
+        const input = this._root.querySelector('.lobby__settingsInput');
+        if (input) {
+            input.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    this._root.querySelector('.lobby__settingsLaunchBtn')?.click();
+                }
+                if (event.key === 'Escape') {
+                    event.preventDefault();
+                    close();
+                }
+            });
+        }
+
+        this._root.querySelector('.lobby__settingsLaunchBtn')
+            ?.addEventListener('click', () => {
+                const next = setStoredLocalBuzzerUrl(input?.value || '');
+                if (input) input.value = next;
+                setStoredBuzzerMode('local');
+                window.location.reload();
+            });
     }
 
     _groupGamesByCreator() {

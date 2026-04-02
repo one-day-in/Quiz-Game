@@ -119,6 +119,8 @@ The app is realtime, but not purely realtime. It mixes:
   - shared close-on-overlay and close-on-Escape wiring for dismissable layers
 - `views/LobbyView.js`
   - game list, rename, create, delete
+  - settings overlay for interface language and buzzer room mode
+  - local-room endpoint is applied through an explicit launch action that reloads the host page
 - `views/LoginView.js`
   - sign-in screen
 
@@ -165,7 +167,8 @@ The app is realtime, but not purely realtime. It mixes:
    - game grid
    - one footer-anchored leaderboard panel
    - the same panel stays compact by default and expands upward as an overlay from the footer slot
-   - the expanded QR panel now includes local-room buzzer server configuration for same-Wi-Fi play
+   - the expanded QR panel stays focused on player join only
+   - room mode and buzzer endpoint live in lobby settings instead of the QR overlay
 7. Clicking a cell opens the question modal through `ModalService`.
 8. Opening a question:
    - stores active cell
@@ -262,6 +265,8 @@ The app is realtime, but not purely realtime. It mixes:
 - `activeRoundId` in `GameService`
 - `quiz-game:player-controller:<gameId>` for player/controller binding
 - `quiz-game:ui-language` in `i18n.js`
+- `quiz-game:buzzer-mode` in `localBuzzerUrl.js`
+- `quiz-game:local-buzzer-url` in `localBuzzerUrl.js`
 
 ## Code Smells and Structural Problems
 
@@ -704,6 +709,16 @@ Ordered refactor and improvement steps. Do not treat all items as immediate.
 ### 2026-04-02
 
 - Local-room buzzer mode was added as the preferred real-world setup.
-- The host leaderboard QR flow now accepts and stores a local websocket endpoint such as `ws://192.168.0.15:8787`.
 - Player controller URLs can now carry a `buzzer` query param so phones on the same Wi-Fi connect directly to the host computer's buzzer server.
 - This keeps GitHub Pages for UI delivery, Supabase for persistence, and moves latency-sensitive `PRESS` traffic onto the room-local network.
+
+### 2026-04-02
+
+- Room mode and interface language controls were moved into lobby settings.
+- The host QR overlay was simplified back to a join-only surface instead of doubling as a transport configuration panel.
+- Local/cloud buzzer configuration remains persistent, but it is now edited before entering a game instead of inside the expanded leaderboard.
+
+### 2026-04-02
+
+- Local buzzer server changes now apply through an explicit `Launch` action in lobby settings.
+- Pressing that action stores the local websocket endpoint and reloads the host page so `PressRuntimeService` reconnects cleanly to the new transport.
