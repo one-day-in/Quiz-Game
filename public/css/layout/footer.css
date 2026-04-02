@@ -1,4 +1,174 @@
-/* footer.css — footer preview leaderboard + full drawer view */
+/* footer.css — host leaderboard panel + shared leaderboard list styles */
+
+.leaderboard-panel {
+  position: relative;
+  overflow: visible;
+  z-index: 20;
+}
+
+.leaderboard-panel__backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--modal-overlay, var(--overlay-medium));
+  backdrop-filter: blur(10px) saturate(140%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease-out;
+}
+
+.leaderboard-panel__shell {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--footer-preview-h);
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-1);
+  background: linear-gradient(180deg, var(--surface), var(--surface-3));
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  transition: height 220ms var(--ease), box-shadow 220ms var(--ease);
+}
+
+.leaderboard-panel.is-expanded .leaderboard-panel__backdrop {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.leaderboard-panel.is-expanded .leaderboard-panel__shell {
+  height: var(--leaderboard-panel-expanded-h);
+  box-shadow: var(--shadow-lg);
+}
+
+.leaderboard-panel__preview,
+.leaderboard-panel__expanded {
+  min-height: 0;
+}
+
+.leaderboard-panel__preview {
+  flex: 1 1 auto;
+}
+
+.leaderboard-panel__previewMount,
+.leaderboard-panel__previewMount > .leaderboard,
+.leaderboard-panel__previewMount .leaderboard__panel,
+.leaderboard-panel__previewMount .leaderboard__body {
+  height: 100%;
+}
+
+.leaderboard-panel__previewMount .leaderboard__panel {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.leaderboard-panel__previewMount .leaderboard__panel::before {
+  display: none;
+}
+
+.leaderboard-panel__previewMount .leaderboard__list {
+  padding-top: 0;
+}
+
+.leaderboard-panel__expanded {
+  display: none;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0 20px 20px;
+  gap: 20px;
+  background: linear-gradient(180deg, var(--surface), var(--surface-3));
+}
+
+.leaderboard-panel.is-expanded .leaderboard-panel__expanded {
+  display: flex;
+}
+
+.leaderboard-panel.is-expanded .leaderboard-panel__preview {
+  display: none;
+}
+
+.leaderboard-panel__section {
+  min-height: 0;
+  padding: 16px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-2);
+  background: linear-gradient(180deg, rgba(31, 41, 55, 0.96), rgba(15, 23, 42, 0.98));
+  box-shadow: var(--shadow-sm);
+}
+
+.leaderboard-panel__section--board {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.leaderboard-panel__boardMount {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.leaderboard-panel__section--qr {
+  flex: 0 0 min(28%, 320px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.leaderboard-panel__eyebrow {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.leaderboard-panel__copy {
+  margin: 0;
+  color: var(--text-soft);
+}
+
+.leaderboard-panel__qrWrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 0 4px;
+}
+
+.leaderboard-panel__qrGlow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 80% 60% at 50% 40%, var(--brand-a18), transparent 70%);
+  border-radius: var(--radius-lg);
+}
+
+.leaderboard-panel__qrImg {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 260px);
+  aspect-ratio: 1 / 1;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-2);
+  background: var(--surface-3);
+  display: block;
+  object-fit: contain;
+}
+
+.leaderboard-panel__expanded .leaderboard--drawer,
+.leaderboard-panel__expanded .leaderboard--drawer .leaderboard__panel,
+.leaderboard-panel__expanded .leaderboard--drawer .leaderboard__body {
+  height: 100%;
+}
+
+.leaderboard-panel__expanded .leaderboard--drawer .leaderboard__list {
+  padding: 0;
+}
 
 .leaderboard {
   position: relative;
@@ -419,6 +589,22 @@
 }
 
 @media (max-width: 900px) {
+  .leaderboard-panel__expanded {
+    flex-direction: column;
+    padding: 0 16px 16px;
+    gap: 16px;
+  }
+
+  .leaderboard-panel__section--qr {
+    flex-basis: auto;
+  }
+
+  .leaderboard-panel__qrImg {
+    width: min(100%, 220px);
+  }
+}
+
+@media (max-width: 900px) {
   .leaderboard__rank {
     min-width: 48px;
     padding: 8px 10px;
@@ -462,6 +648,11 @@
   .leaderboard__addPlayerBtn,
   .leaderboard__row,
   .leaderboard__card--more {
+    transition: none;
+  }
+
+  .leaderboard-panel__shell,
+  .leaderboard-panel__backdrop {
     transition: none;
   }
 }

@@ -26,9 +26,7 @@ export function LeaderboardGridView({
   onDeletePlayer = null,
 } = {}) {
   const el = document.createElement('footer');
-  el.className = variant === 'drawer'
-    ? `leaderboard leaderboard--${variant}`
-    : `app-footer leaderboard leaderboard--${variant}`;
+  el.className = `leaderboard leaderboard--${variant}`;
 
   const panel = document.createElement('div');
   panel.className = 'leaderboard__panel';

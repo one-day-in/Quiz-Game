@@ -1,8 +1,7 @@
 // src/views/AppView.js
 import { HeaderView } from './HeaderView.js';
 import { GameGridView } from './GameGridView.js';
-import { LeaderboardGridView } from './LeaderboardGridView.js';
-import { LeaderboardDrawerView } from './LeaderboardDrawerView.js';
+import { LeaderboardPanelView } from './LeaderboardPanelView.js';
 import { ViewDisposer } from '../utils/disposer.js';
 import { fitAllCells } from '../utils/fitText.js';
 
@@ -12,8 +11,7 @@ export function AppView({ model, uiState, players = [], actions, gameId, gameNam
 
   const disposer = new ViewDisposer(container);
   let gridEl = null;
-  let footerEl = null;
-  let drawerView = null;
+  let leaderboardPanel = null;
   let leaderboardPlayers = Array.isArray(players) ? players : [];
 
   // ResizeObserver — recalculate fitText on resize
@@ -55,39 +53,21 @@ export function AppView({ model, uiState, players = [], actions, gameId, gameNam
     fit();
   }
 
-  function openLeaderboardView() {
-    if (drawerView) return;
-
-    drawerView = new LeaderboardDrawerView({
-      gameId,
-      players: leaderboardPlayers,
-      onAdjustPlayerScore: (playerId, delta) => actions.adjustPlayerScore?.(playerId, delta),
-      onDeletePlayer: (playerId) => actions.removePlayer?.(playerId),
-      onClose: () => {
-        drawerView = null;
-      },
-    });
-
-    document.body.appendChild(drawerView.el);
-    drawerView.beginOpen();
-  }
-
   function renderLeaderboard(players = leaderboardPlayers) {
     leaderboardPlayers = Array.isArray(players) ? players : [];
 
-    if (!footerEl) {
-      footerEl = LeaderboardGridView({
+    if (!leaderboardPanel) {
+      leaderboardPanel = new LeaderboardPanelView({
+        gameId,
         players: leaderboardPlayers,
-        variant: 'footer',
-        onOpenExpanded: () => openLeaderboardView(),
+        onAdjustPlayerScore: (playerId, delta) => actions.adjustPlayerScore?.(playerId, delta),
+        onDeletePlayer: (playerId) => actions.removePlayer?.(playerId),
       });
-      container.appendChild(footerEl);
+      container.appendChild(leaderboardPanel.el);
       fit();
     } else {
-      footerEl.update?.(leaderboardPlayers);
+      leaderboardPanel.updatePlayers?.(leaderboardPlayers);
     }
-
-    drawerView?.updatePlayers?.(leaderboardPlayers);
   }
 
   // Public update — called on every subsequent state change
@@ -114,8 +94,7 @@ export function AppView({ model, uiState, players = [], actions, gameId, gameNam
 
   renderGrid(model, uiState);
   renderLeaderboard(leaderboardPlayers);
-  disposer.add(() => footerEl?.destroy?.());
-  disposer.add(() => drawerView?.destroy?.());
+  disposer.add(() => leaderboardPanel?.destroy?.());
 
   return { el: container, update, updatePlayers, patchCell, syncLive };
 }

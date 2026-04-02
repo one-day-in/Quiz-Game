@@ -1,6 +1,41 @@
 /* components/leaderboard-drawer/leaderboardDrawer.controls.css */
 
-/* Drawer close button intentionally reuses the shared leaderboard chevron button styles. */
 .leaderboard-drawer__close {
     flex: 0 0 auto;
+    width: 46px;
+    height: 46px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--btn-outline);
+    background: var(--btn-bg);
+    color: var(--text);
+    font-size: 26px;
+    line-height: 1;
+    cursor: pointer;
+    user-select: none;
+    box-shadow: var(--shadow-btn), var(--btn-glow);
+    transition:
+        transform var(--t-fast) var(--ease),
+        filter var(--t-fast) var(--ease),
+        box-shadow var(--t-fast) var(--ease),
+        border-color var(--t-fast) var(--ease);
+}
+
+.leaderboard-drawer__close:hover {
+    transform: translateY(calc(-1 * (var(--lift-y) / 4)));
+    border-color: var(--btn-outline-hover);
+    box-shadow: var(--shadow-md), var(--btn-glow-hover);
+    filter: brightness(1.06);
+}
+
+.leaderboard-drawer__close:active {
+    transform: translateY(var(--btn-press-y));
+    filter: brightness(0.98);
+}
+
+.leaderboard-drawer__close:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-md), var(--ring);
 }

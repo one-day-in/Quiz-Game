@@ -39,4 +39,6 @@
   flex: 0 0 var(--footer-preview-h);
   height: var(--footer-preview-h);
   min-height: var(--footer-preview-h);
+  position: relative;
+  overflow: visible;
 }
