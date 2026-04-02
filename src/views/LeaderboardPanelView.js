@@ -39,7 +39,7 @@ export class LeaderboardPanelView {
 
     this._isExpanded = isExpanded;
     this._root.classList.toggle('is-expanded', isExpanded);
-    this._toggleChevron.textContent = isExpanded ? '⌄' : '⌃';
+    this._toggleChevron.classList.toggle('is-down', isExpanded);
     this._toggleBtn.setAttribute('aria-expanded', String(isExpanded));
     this._toggleBtn.setAttribute('aria-label', isExpanded ? t('close') : t('show_all_players'));
     this._toggleBtn.setAttribute('title', isExpanded ? t('close') : t('show_all_players'));
@@ -71,7 +71,11 @@ export class LeaderboardPanelView {
           title="${t('show_all_players')}"
         >
           <span class="leaderboard__title leaderboard-panel__titleText">${t('leaderboard')}</span>
-          <span class="leaderboard-panel__titleChevron" aria-hidden="true">⌃</span>
+          <span class="leaderboard-panel__titleChevron" aria-hidden="true">
+            <svg class="leaderboard-panel__titleChevronIcon" viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+              <path d="M6 15l6-6 6 6" />
+            </svg>
+          </span>
         </button>
 
         <div class="leaderboard-panel__preview">

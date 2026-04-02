@@ -44,6 +44,10 @@
   color: inherit;
   cursor: pointer;
   text-align: center;
+  transition:
+    background 180ms var(--ease),
+    box-shadow 180ms var(--ease),
+    filter 180ms var(--ease);
 }
 
 .leaderboard-panel__titleText,
@@ -62,9 +66,25 @@
   left: 50%;
   transform: translateX(-50%) translateY(4px);
   opacity: 0;
-  font-size: 26px;
-  line-height: 1;
-  color: var(--muted);
+  color: rgba(255, 255, 255, 0.96);
+  text-shadow:
+    0 0 10px rgba(255, 255, 255, 0.28),
+    0 0 24px rgba(255, 255, 255, 0.18);
+}
+
+.leaderboard-panel__titleChevronIcon {
+  display: block;
+  width: 22px;
+  height: 22px;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+.leaderboard-panel__titleChevron.is-down .leaderboard-panel__titleChevronIcon {
+  transform: rotate(180deg);
 }
 
 .leaderboard-panel__toggle:hover .leaderboard-panel__titleText,
@@ -77,11 +97,34 @@
 .leaderboard-panel__toggle:focus-visible .leaderboard-panel__titleChevron {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
+  animation: leaderboardChevronPulse 900ms ease-in-out infinite;
+}
+
+.leaderboard-panel__toggle:hover,
+.leaderboard-panel__toggle:focus-visible {
+  background:
+    radial-gradient(420px 90px at 50% 50%, rgba(255, 255, 255, 0.14), transparent 65%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 80%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    0 0 22px rgba(255, 255, 255, 0.10);
+  filter: brightness(1.03);
 }
 
 .leaderboard-panel__toggle:focus-visible {
   outline: none;
   box-shadow: inset 0 0 0 1px var(--brand-a35), inset 0 0 0 3px rgba(59, 130, 246, 0.12);
+}
+
+@keyframes leaderboardChevronPulse {
+  0%, 100% {
+    transform: translateX(-50%) translateY(0) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translateX(-50%) translateY(-2px) scale(1.06);
+    opacity: 0.86;
+  }
 }
 
 .leaderboard-panel.is-expanded .leaderboard-panel__backdrop {
@@ -419,9 +462,10 @@
 }
 
 .leaderboard__emptyFooter {
-  color: var(--text-soft);
-  font-size: clamp(20px, 2vw, 26px);
-  font-weight: 700;
+  color: rgba(248, 250, 252, 0.54);
+  font-size: clamp(16px, 1.4vw, 20px);
+  font-weight: 500;
+  letter-spacing: 0.02em;
   text-align: center;
 }
 
@@ -673,5 +717,12 @@
   .leaderboard-panel__shell,
   .leaderboard-panel__backdrop {
     transition: none;
+  }
+
+  .leaderboard-panel__titleText,
+  .leaderboard-panel__titleChevron,
+  .leaderboard-panel__toggle {
+    transition: none;
+    animation: none;
   }
 }
