@@ -20,7 +20,6 @@ export function LeaderboardGridView({
   variant = 'page',
   footerLimit = 4,
   showHeader = true,
-  onOpenExpanded = null,
   onAdjustPlayerScore = null,
   onAddPlayer = null,
   onDeletePlayer = null,
@@ -49,17 +48,6 @@ export function LeaderboardGridView({
       addButton.textContent = t('add_player');
       addButton.addEventListener('click', () => onAddPlayer());
       header.appendChild(addButton);
-    }
-
-    if (variant === 'footer' && typeof onOpenExpanded === 'function') {
-      const openButton = document.createElement('button');
-      openButton.type = 'button';
-      openButton.className = 'leaderboard__toggleBtn leaderboard__chevronBtn leaderboard__chevronBtn--up';
-      openButton.textContent = '⌃';
-      openButton.setAttribute('aria-label', t('show_all_players'));
-      openButton.setAttribute('title', t('show_all_players'));
-      openButton.addEventListener('click', () => onOpenExpanded());
-      header.appendChild(openButton);
     }
 
     panel.appendChild(header);
@@ -130,7 +118,7 @@ export function LeaderboardGridView({
     const hiddenCount = sortedPlayers.length - visiblePlayers.length;
     if (hiddenCount > 0) {
       if (!moreNode) {
-        moreNode = createMoreCard(onOpenExpanded);
+        moreNode = createMoreCard();
       }
       patchMoreCard(moreNode, hiddenCount);
       list.appendChild(moreNode);
@@ -239,9 +227,8 @@ function patchFooterCard(card, player, rank = 0) {
   card._parts.points.textContent = formatPoints(player?.points);
 }
 
-function createMoreCard(onOpenExpanded) {
-  const moreCard = document.createElement('button');
-  moreCard.type = 'button';
+function createMoreCard() {
+  const moreCard = document.createElement('div');
   moreCard.className = 'leaderboard__card leaderboard__card--more';
 
   const count = document.createElement('span');
@@ -253,7 +240,6 @@ function createMoreCard(onOpenExpanded) {
 
   moreCard.append(count, label);
   moreCard._parts = { count, label };
-  moreCard.addEventListener('click', () => onOpenExpanded?.());
   return moreCard;
 }
 

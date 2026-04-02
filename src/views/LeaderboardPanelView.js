@@ -39,7 +39,7 @@ export class LeaderboardPanelView {
 
     this._isExpanded = isExpanded;
     this._root.classList.toggle('is-expanded', isExpanded);
-    this._toggleBtn.textContent = isExpanded ? '⌄' : '⌃';
+    this._toggleChevron.textContent = isExpanded ? '⌄' : '⌃';
     this._toggleBtn.setAttribute('aria-expanded', String(isExpanded));
     this._toggleBtn.setAttribute('aria-label', isExpanded ? t('close') : t('show_all_players'));
     this._toggleBtn.setAttribute('title', isExpanded ? t('close') : t('show_all_players'));
@@ -63,16 +63,16 @@ export class LeaderboardPanelView {
       <div class="leaderboard-panel__backdrop"></div>
 
       <section class="leaderboard-panel__shell" aria-label="${t('leaderboard')}">
-        <header class="leaderboard__header leaderboard-panel__header">
-          <div class="leaderboard__title">${t('leaderboard')}</div>
-          <button
-            class="leaderboard__toggleBtn leaderboard__chevronBtn leaderboard__chevronBtn--up"
-            type="button"
-            aria-label="${t('show_all_players')}"
-            aria-expanded="false"
-            title="${t('show_all_players')}"
-          >⌃</button>
-        </header>
+        <button
+          class="leaderboard__header leaderboard-panel__toggle"
+          type="button"
+          aria-label="${t('show_all_players')}"
+          aria-expanded="false"
+          title="${t('show_all_players')}"
+        >
+          <span class="leaderboard__title leaderboard-panel__titleText">${t('leaderboard')}</span>
+          <span class="leaderboard-panel__titleChevron" aria-hidden="true">⌃</span>
+        </button>
 
         <div class="leaderboard-panel__preview">
           <div class="leaderboard-panel__previewMount"></div>
@@ -97,7 +97,8 @@ export class LeaderboardPanelView {
 
     this._root = root;
     this._backdrop = root.querySelector('.leaderboard-panel__backdrop');
-    this._toggleBtn = root.querySelector('.leaderboard__toggleBtn');
+    this._toggleBtn = root.querySelector('.leaderboard-panel__toggle');
+    this._toggleChevron = root.querySelector('.leaderboard-panel__titleChevron');
     this._previewMount = root.querySelector('.leaderboard-panel__previewMount');
     this._boardMount = root.querySelector('.leaderboard-panel__boardMount');
     this._qrImg = root.querySelector('.leaderboard-panel__qrImg');
@@ -106,7 +107,6 @@ export class LeaderboardPanelView {
       players: this._players,
       variant: 'footer',
       showHeader: false,
-      onOpenExpanded: () => this.setExpanded(true),
     });
     this._previewMount.appendChild(this._previewView);
 
