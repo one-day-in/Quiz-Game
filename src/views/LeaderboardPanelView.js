@@ -78,6 +78,29 @@ export class LeaderboardPanelView {
           </span>
         </button>
 
+        <div class="leaderboard-panel__qrDock">
+          <button
+            class="leaderboard-panel__qrTrigger"
+            type="button"
+            aria-label="${t('join_from_phone')}"
+            title="${t('join_from_phone')}"
+          >
+            <svg class="leaderboard-panel__qrTriggerIcon" viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+              <path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4z" />
+              <path d="M16 14h2v2h-2zM18 16h2v2h-2zM14 18h2v2h-2zM16 20h4M20 14v2" />
+            </svg>
+          </button>
+
+          <div class="leaderboard-panel__qrPopover" role="dialog" aria-label="${t('join_from_phone')}">
+            <p class="leaderboard-panel__eyebrow">${t('join_from_phone')}</p>
+            <p class="leaderboard-panel__copy">${t('scan_player_qr')}</p>
+            <div class="leaderboard-panel__qrWrap">
+              <div class="leaderboard-panel__qrGlow"></div>
+              <img class="leaderboard-panel__qrImg" alt="${t('player_controller_qr_alt')}">
+            </div>
+          </div>
+        </div>
+
         <div class="leaderboard-panel__preview">
           <div class="leaderboard-panel__previewMount"></div>
         </div>
@@ -85,15 +108,6 @@ export class LeaderboardPanelView {
         <div class="leaderboard-panel__expanded">
           <section class="leaderboard-panel__section leaderboard-panel__section--board">
             <div class="leaderboard-panel__boardMount"></div>
-          </section>
-
-          <section class="leaderboard-panel__section leaderboard-panel__section--qr">
-            <p class="leaderboard-panel__eyebrow">${t('join_from_phone')}</p>
-            <p class="leaderboard-panel__copy">${t('scan_player_qr')}</p>
-            <div class="leaderboard-panel__qrWrap">
-              <div class="leaderboard-panel__qrGlow"></div>
-              <img class="leaderboard-panel__qrImg" alt="${t('player_controller_qr_alt')}">
-            </div>
           </section>
         </div>
       </section>

@@ -94,7 +94,7 @@ export function LeaderboardGridView({
     if (!sortedPlayers.length) {
       clearPlayerNodes();
       removeMoreNode();
-      ensureEmptyNode('leaderboard__emptyFooter');
+      ensureEmptyNode();
       return;
     }
 
@@ -132,7 +132,7 @@ export function LeaderboardGridView({
 
     if (!sortedPlayers.length) {
       clearPlayerNodes();
-      ensureEmptyNode('leaderboard__empty');
+      ensureEmptyNode();
       return;
     }
 
@@ -153,11 +153,11 @@ export function LeaderboardGridView({
     }
   }
 
-  function ensureEmptyNode(className) {
+  function ensureEmptyNode() {
     if (!emptyNode) {
       emptyNode = document.createElement('div');
     }
-    emptyNode.className = className;
+    emptyNode.className = 'leaderboard__emptyState';
     emptyNode.textContent = t('no_players_yet');
     list.appendChild(emptyNode);
   }
