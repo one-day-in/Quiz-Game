@@ -89,7 +89,7 @@ export class LeaderboardDrawerView {
             <p class="leaderboard-drawer__eyebrow">${t('leaderboard')}</p>
             <h3 class="leaderboard-drawer__title">${t('show_all_players')}</h3>
           </div>
-          <button class="leaderboard-drawer__close" type="button" aria-label="${t('close')}" title="${t('close')}">⌄</button>
+          <button class="leaderboard-drawer__close leaderboard__chevronBtn leaderboard__chevronBtn--down" type="button" aria-label="${t('close')}" title="${t('close')}">⌄</button>
         </header>
 
         <div class="leaderboard-drawer__body">

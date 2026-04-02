@@ -72,21 +72,42 @@
     transform var(--t-fast) var(--ease);
 }
 
-.leaderboard__toggleBtn {
-  min-width: 42px;
-  padding: 0;
-  font-size: 26px;
-  line-height: 1;
-  letter-spacing: 0;
-  text-transform: none;
-}
-
 .leaderboard__toggleBtn:hover,
 .leaderboard__addPlayerBtn:hover {
   transform: translateY(calc(-1 * (var(--lift-y) / 4)));
   border-color: var(--btn-outline-hover);
   box-shadow: 0 0 0 1px var(--brand-a35), 0 0 22px var(--brand-a18);
   filter: brightness(1.08);
+}
+
+.leaderboard__chevronBtn {
+  width: 42px;
+  min-width: 42px;
+  min-height: 42px;
+  height: 42px;
+  padding: 0;
+  border-radius: 999px;
+  font-size: 26px;
+  line-height: 1;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.leaderboard__chevronBtn:hover {
+  transform: translateY(calc(-1 * (var(--lift-y) / 4)));
+  border-color: var(--btn-outline-hover);
+  box-shadow: 0 0 0 1px var(--brand-a35), 0 0 22px var(--brand-a18);
+  filter: brightness(1.08);
+}
+
+.leaderboard__chevronBtn:active {
+  transform: translateY(var(--btn-press-y));
+  filter: brightness(0.98);
+}
+
+.leaderboard__chevronBtn:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-md), var(--ring);
 }
 
 .leaderboard__body {

@@ -56,7 +56,7 @@ export function LeaderboardGridView({
     if (variant === 'footer' && typeof onOpenExpanded === 'function') {
       const openButton = document.createElement('button');
       openButton.type = 'button';
-      openButton.className = 'leaderboard__toggleBtn';
+      openButton.className = 'leaderboard__toggleBtn leaderboard__chevronBtn leaderboard__chevronBtn--up';
       openButton.textContent = '⌃';
       openButton.setAttribute('aria-label', t('show_all_players'));
       openButton.setAttribute('title', t('show_all_players'));
