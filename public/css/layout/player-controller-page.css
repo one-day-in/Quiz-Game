@@ -64,6 +64,7 @@ body {
 
 .player-controller__eyebrow {
   margin: 0;
+  font-family: var(--font-label);
   font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.18em;
@@ -73,13 +74,18 @@ body {
 
 .player-controller__title {
   margin: 0;
+  font-family: var(--font-display);
   font-size: clamp(24px, 5vw, 36px);
   line-height: 1.05;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .player-controller__copy,
 .player-controller__hint {
   margin: 0;
+  font-family: var(--font-ui);
   color: var(--text-soft);
 }
 
@@ -108,6 +114,7 @@ body {
 }
 
 .player-controller__label {
+  font-family: var(--font-label);
   font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -116,6 +123,7 @@ body {
 }
 
 .player-controller__input {
+  font-family: var(--font-ui);
   width: 100%;
   box-sizing: border-box;
   min-height: 54px;
@@ -142,6 +150,7 @@ body {
 
 .player-controller__primary,
 .player-controller__pressBtn {
+  font-family: var(--font-label);
   min-height: clamp(48px, 6.4dvh, 56px);
   border-radius: 18px;
   border: 1px solid var(--btn-outline);
@@ -165,6 +174,7 @@ body {
 
 .player-controller__pressBtn {
   width: min(100%, min(520px, 82dvw));
+  font-family: var(--font-display);
   aspect-ratio: 1 / 1;
   min-height: 0;
   align-self: center;
@@ -181,8 +191,10 @@ body {
     inset 0 2px 0 rgba(255, 255, 255, 0.18),
     0 24px 44px rgba(127, 29, 29, 0.34),
     0 0 28px rgba(239, 68, 68, 0.24);
-  font-size: clamp(36px, 9vw, 68px);
+  font-size: clamp(40px, 9vw, 72px);
+  font-weight: 400;
   letter-spacing: 0.14em;
+  text-transform: uppercase;
   user-select: none;
   -webkit-user-select: none;
 }
@@ -290,6 +302,7 @@ body {
 }
 
 .player-controller__scoreValue {
+  font-family: var(--font-numeric);
   font-size: clamp(42px, 10vw, 72px);
   line-height: 1;
   font-weight: 900;
@@ -303,6 +316,7 @@ body {
 .player-controller__status,
 .player-controller__error {
   margin: 0;
+  font-family: var(--font-ui);
   color: #fecaca;
   font-weight: 700;
 }

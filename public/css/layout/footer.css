@@ -63,7 +63,10 @@
 .leaderboard-panel__titleText {
   display: block;
   width: 100%;
+  font-family: var(--font-display);
+  font-weight: 400;
   text-align: center;
+  text-transform: uppercase;
 }
 
 .leaderboard-panel__titleChevron {
@@ -335,6 +338,7 @@
 
 .leaderboard-panel__eyebrow {
   margin: 0;
+  font-family: var(--font-label);
   font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.18em;
@@ -345,6 +349,7 @@
 
 .leaderboard-panel__copy {
   margin: 0;
+  font-family: var(--font-ui);
   color: rgba(226, 232, 240, 0.74);
   text-align: center;
   font-size: 15px;
@@ -362,6 +367,7 @@
 
 .leaderboard-panel__selectionText {
   margin: 0;
+  font-family: var(--font-ui);
   color: var(--text);
   font-size: 18px;
   font-weight: 800;
@@ -386,6 +392,7 @@
 }
 
 .leaderboard-panel__scoreBtn {
+  font-family: var(--font-label);
   min-width: 72px;
   min-height: 42px;
   padding: 0 14px;
@@ -504,14 +511,16 @@
 
 .leaderboard__title {
   margin: 0;
+  font-family: var(--font-display);
   font-size: var(--fs-1);
-  font-weight: 900;
+  font-weight: 400;
   letter-spacing: 0.10em;
   text-transform: uppercase;
   color: var(--muted);
 }
 
 .leaderboard__addPlayerBtn {
+  font-family: var(--font-label);
   flex: 0 0 auto;
   min-height: 42px;
   padding: 0 14px;
@@ -624,9 +633,10 @@
 .leaderboard__cardName {
   min-width: 0;
   flex: 1 1 auto;
+  font-family: var(--font-display);
   color: var(--text);
   font-size: clamp(18px, 1.8vw, 22px);
-  font-weight: 900;
+  font-weight: 400;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   white-space: nowrap;
@@ -637,6 +647,7 @@
 .leaderboard__cardScore,
 .leaderboard__cardMoreCount {
   flex: 0 0 auto;
+  font-family: var(--font-numeric);
   color: var(--danger);
   font-size: clamp(28px, 3vh, 34px);
   font-weight: 900;
@@ -649,6 +660,7 @@
 }
 
 .leaderboard__cardMoreLabel {
+  font-family: var(--font-label);
   color: var(--muted);
   font-size: 12px;
   font-weight: 800;
@@ -657,6 +669,7 @@
 }
 
 .leaderboard__emptyState {
+  font-family: var(--font-ui);
   color: rgba(248, 250, 252, 0.54);
   font-size: clamp(16px, 1.4vw, 20px);
   font-weight: 500;
@@ -733,6 +746,7 @@
 }
 
 .leaderboard__deleteRevealBtn {
+  font-family: var(--font-label);
   width: 100%;
   height: 100%;
   border: none;
@@ -777,6 +791,7 @@
 
 .leaderboard__rank {
   flex: 0 0 auto;
+  font-family: var(--font-numeric);
   min-width: 56px;
   padding: 10px 12px;
   border-radius: 999px;
@@ -805,10 +820,11 @@
 .leaderboard__nameLabel {
   min-width: 0;
   flex: 1 1 auto;
+  font-family: var(--font-display);
   color: var(--text);
   text-align: left;
   font-size: clamp(20px, 2vw, 28px);
-  font-weight: 900;
+  font-weight: 400;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   line-height: 1;
@@ -819,6 +835,7 @@
 
 .leaderboard__scoreValue {
   flex: 0 0 auto;
+  font-family: var(--font-numeric);
   text-align: right;
   font-size: clamp(28px, 3.2vh, 42px);
   font-weight: 900;

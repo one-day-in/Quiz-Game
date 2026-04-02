@@ -64,6 +64,7 @@
 }
 
 .round-indicator {
+  font-family: var(--font-label);
   color: var(--muted);
   font-size: var(--fs-1);
   font-weight: 900;
@@ -99,6 +100,7 @@
 }
 
 .round-indicator b {
+  font-family: var(--font-numeric);
   padding: 2px 10px;
   border-radius: 999px;
 
@@ -126,10 +128,12 @@
 
 .app-title {
   margin: 0;
+  font-family: var(--font-display);
 
   font-size: var(--fs-5);
-  font-weight: 900;
-  letter-spacing: -0.03em;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 
   color: var(--text);
 
@@ -147,6 +151,7 @@
 }
 
 .hdr-leaderboard-btn {
+  font-family: var(--font-label);
   height: 44px;
   padding: 0 16px;
 
@@ -174,6 +179,7 @@
 }
 
 .hdr-live-btn {
+  font-family: var(--font-label);
   height: 44px;
   padding: 0 16px;
 
