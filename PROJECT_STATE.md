@@ -1,6 +1,6 @@
 # PROJECT_STATE
 
-Last updated: 2026-04-02
+Last updated: 2026-04-03
 
 ## Real Project Overview
 
@@ -70,6 +70,7 @@ The app is realtime, but not purely realtime. It mixes:
 - `services/PressRuntimeService.js`
   - owns press-race transport selection
   - prefers dedicated WebSocket buzzer transport
+  - keeps a live Supabase fallback subscription active as a safety net when websocket transport is primary
   - falls back to Supabase runtime subscription + polling if the buzzer server is unavailable
 - `services/MediaService.js`
   - view/media mapping and upload/delete orchestration
@@ -175,6 +176,7 @@ The app is realtime, but not purely realtime. It mixes:
    - opens press runtime through `PressRuntimeService`
    - listens for winner updates through the same runtime service
 9. Player presses are claimed through the buzzer server first, and the server persists the result through `claim_game_press(...)`.
+   - `claim_game_press(...)` now returns `jsonb` to avoid PL/pgSQL output-column ambiguity in production
 10. Host clicks:
    - `Correct` -> adds cell value to winner score
    - `Not Correct` -> subtracts cell value and reopens press race
@@ -235,7 +237,7 @@ The app is realtime, but not purely realtime. It mixes:
 - The intended production shape is now:
   - static pages from GitHub Pages
   - persistence in Supabase
-  - buzzer server running on the host computer or another always-on machine in the same room/network
+  - an always-on remote buzzer server
 - Supabase `game_runtime` remains the persistent snapshot and fallback path, not the preferred live transport.
 - Modal correctness flow does not go through `GameService`; it calls player score API directly.
 - Host score mutations by `playerId` depend on remote Supabase function `adjust_game_player_score_by_id(...)`.
@@ -253,10 +255,15 @@ The app is realtime, but not purely realtime. It mixes:
 - Fallback path:
   - if the buzzer server is unavailable, `PressRuntimeService` drops back to `runtimeApi`
   - that fallback still uses Supabase realtime plus polling
+- Safety-net path:
+  - even while websocket transport is active, `PressRuntimeService` also keeps a fallback runtime subscription connected
+  - this prevents host-on-fallback / player-on-socket drift from dropping `PRESS` activation updates
 - `player.js` still polls players every second for score/name sync, but no longer polls `game_runtime` while the buzzer runtime is healthy.
 - `ModalService` no longer owns its own runtime polling loop; it listens through `PressRuntimeService`.
 - `runtimeApi.subscribeToGameRuntime()` still emits the raw realtime payload immediately for `press_enabled` and `winner_player_id` changes, then lazily enriches `winnerName` only when that extra lookup is actually needed.
-- Remote verification on April 1, 2026 showed that `adjust_game_player_score_by_id(...)` was still missing from the active Supabase schema cache, while `adjust_game_player_score(...)` existed.
+- Remote Supabase now has both score RPC paths required by the host and player surfaces:
+  - `adjust_game_player_score(...)`
+  - `adjust_game_player_score_by_id(...)`
 
 ### Local Storage Reality
 
@@ -708,3 +715,15 @@ Ordered refactor and improvement steps. Do not treat all items as immediate.
 - The experiment with local-room buzzer mode was rolled back.
 - Browser mixed-content limits made the GitHub Pages + local `ws://` combination unreliable for controllers.
 - The app again assumes one optional remote buzzer endpoint and otherwise falls back to the older Supabase runtime path.
+
+### 2026-04-03
+
+- The Render-hosted buzzer server became the active production websocket endpoint.
+- GitHub Pages now builds with `VITE_BUZZER_WS_URL` pointing at the Render service.
+- `PressRuntimeService` now keeps a shadow fallback subscription alive so `PRESS` still propagates if one side drops from websocket transport onto Supabase runtime.
+
+### 2026-04-03
+
+- `claim_game_press(...)` was hardened again after production exposed PostgreSQL ambiguity around `RETURNS TABLE(...)`.
+- The function now returns `jsonb` instead of a table row, which removes output-column name collisions while keeping the JS API contract simple.
+- The repo SQL and remote Supabase function were brought back into sync.

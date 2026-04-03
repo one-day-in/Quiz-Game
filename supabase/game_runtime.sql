@@ -48,13 +48,7 @@ create or replace function public.claim_game_press(
     p_game_id uuid,
     p_controller_id text
 )
-returns table (
-    game_id uuid,
-    press_enabled boolean,
-    winner_player_id uuid,
-    winner_name text,
-    pressed_at timestamptz
-)
+returns jsonb
 language plpgsql
 security definer
 set search_path = public
@@ -63,6 +57,10 @@ declare
     v_controller_id text := trim(coalesce(p_controller_id, ''));
     v_player_id uuid;
     v_player_name text;
+    v_runtime_game_id uuid;
+    v_runtime_press_enabled boolean;
+    v_runtime_winner_player_id uuid;
+    v_runtime_pressed_at timestamptz;
 begin
     if v_controller_id = '' then
         raise exception 'Controller ID is required';
@@ -95,15 +93,26 @@ begin
         raise exception 'Press is closed';
     end if;
 
-    return query
     select
-        gr.game_id as game_id,
-        gr.press_enabled as press_enabled,
-        gr.winner_player_id as winner_player_id,
-        v_player_name as winner_name,
-        gr.pressed_at as pressed_at
+        gr.game_id,
+        gr.press_enabled,
+        gr.winner_player_id,
+        gr.pressed_at
+    into
+        v_runtime_game_id,
+        v_runtime_press_enabled,
+        v_runtime_winner_player_id,
+        v_runtime_pressed_at
     from public.game_runtime gr
     where gr.game_id = p_game_id;
+
+    return jsonb_build_object(
+        'game_id', v_runtime_game_id,
+        'press_enabled', v_runtime_press_enabled,
+        'winner_player_id', v_runtime_winner_player_id,
+        'winner_name', v_player_name,
+        'pressed_at', v_runtime_pressed_at
+    );
 end;
 $$;
 
