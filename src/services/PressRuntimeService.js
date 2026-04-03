@@ -313,13 +313,23 @@ class HybridPressRuntimeService {
     this._active = null;
     this._subs = new Map();
     this._connectPromise = null;
+    this._shadowFallbackConnected = false;
   }
 
   subscribe(fn) {
-    this._subs.set(fn, null);
+    const entry = { active: null, fallback: null };
+    this._subs.set(fn, entry);
     void this.connect();
+    if (this._active) {
+      entry.active = this._active.subscribe(fn);
+    }
+    if (this._shadowFallbackConnected) {
+      entry.fallback = this._fallback.subscribe(fn);
+    }
     return () => {
-      this._subs.get(fn)?.();
+      const current = this._subs.get(fn);
+      current?.active?.();
+      current?.fallback?.();
       this._subs.delete(fn);
     };
   }
@@ -335,6 +345,7 @@ class HybridPressRuntimeService {
       try {
         await this._primary.connect();
         this._activate(this._primary);
+        void this._connectFallbackShadow();
       } catch (error) {
         console.warn('[PressRuntimeService] websocket runtime unavailable, using API fallback:', error);
         await this._fallback.connect();
@@ -360,7 +371,10 @@ class HybridPressRuntimeService {
   }
 
   destroy() {
-    for (const unsubscribe of this._subs.values()) unsubscribe?.();
+    for (const entry of this._subs.values()) {
+      entry?.active?.();
+      entry?.fallback?.();
+    }
     this._subs.clear();
     this._primary?.destroy?.();
     this._fallback?.destroy?.();
@@ -381,11 +395,29 @@ class HybridPressRuntimeService {
 
   _activate(service) {
     if (this._active === service) return;
-    for (const unsubscribe of this._subs.values()) unsubscribe?.();
-    for (const [fn] of this._subs) {
-      this._subs.set(fn, service.subscribe(fn));
+    for (const entry of this._subs.values()) {
+      entry?.active?.();
+      if (entry) entry.active = null;
+    }
+    for (const [fn, entry] of this._subs) {
+      entry.active = service.subscribe(fn);
     }
     this._active = service;
+  }
+
+  async _connectFallbackShadow() {
+    if (this._shadowFallbackConnected) return;
+    try {
+      await this._fallback.connect();
+      this._shadowFallbackConnected = true;
+      for (const [fn, entry] of this._subs) {
+        if (!entry.fallback) {
+          entry.fallback = this._fallback.subscribe(fn);
+        }
+      }
+    } catch (error) {
+      console.warn('[PressRuntimeService] background fallback subscription failed:', error);
+    }
   }
 }
 
