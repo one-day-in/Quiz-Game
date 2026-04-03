@@ -80,7 +80,7 @@ begin
     limit 1;
 
     if v_player_id is null then
-        raise exception 'Player not found';
+        raise exception 'Player not found for controller %', v_controller_id;
     end if;
 
     update public.game_runtime gr
@@ -96,7 +96,12 @@ begin
     end if;
 
     return query
-    select gr.game_id, gr.press_enabled, gr.winner_player_id, v_player_name, gr.pressed_at
+    select
+        gr.game_id as game_id,
+        gr.press_enabled as press_enabled,
+        gr.winner_player_id as winner_player_id,
+        v_player_name as winner_name,
+        gr.pressed_at as pressed_at
     from public.game_runtime gr
     where gr.game_id = p_game_id;
 end;
