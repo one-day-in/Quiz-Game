@@ -9,14 +9,13 @@ import {
 } from './api/gameApi.js';
 import { initLanguageFromUrl, t } from './i18n.js';
 import { createPressRuntimeService } from './services/PressRuntimeService.js';
-import { normalizeBuzzerUrl, setStoredBuzzerMode, setStoredLocalBuzzerUrl } from './utils/localBuzzerUrl.js';
+import { normalizeBuzzerUrl } from './utils/localBuzzerUrl.js';
 
 const root = document.getElementById('player-controller-app');
 initLanguageFromUrl();
 const params = new URLSearchParams(window.location.search);
 const gameId = params.get('gameId');
 const buzzerUrl = normalizeBuzzerUrl(params.get('buzzer') || '');
-const buzzerMode = params.get('mode') === 'local' ? 'local' : params.get('mode') === 'cloud' ? 'cloud' : null;
 const STORAGE_PREFIX = 'quiz-game:player-controller';
 
 let player = null;
@@ -40,14 +39,8 @@ async function startPlayerController() {
   renderLoading(t('loading_player_controller'));
 
   try {
-    if (buzzerUrl) {
-      setStoredLocalBuzzerUrl(buzzerUrl);
-    }
-    if (buzzerMode) {
-      setStoredBuzzerMode(buzzerMode);
-    }
     player = await getPlayerByController(gameId, controllerId);
-    pressRuntime = createPressRuntimeService({ gameId, role: 'player', controllerId, wsUrl: buzzerUrl, mode: buzzerMode });
+    pressRuntime = createPressRuntimeService({ gameId, role: 'player', controllerId, wsUrl: buzzerUrl });
     await pressRuntime.connect();
     bindRealtimePlayers();
     bindRuntimeState();

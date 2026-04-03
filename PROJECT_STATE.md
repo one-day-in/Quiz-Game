@@ -17,7 +17,7 @@ Press-race transport is no longer treated as a plain database subscription probl
 - static host/controller/leaderboard pages still build with Vite
 - Supabase still stores persistent state
 - a separate WebSocket coordinator now owns low-latency press activation and first-press fanout
-- local-room play is now the intended primary use case for buzzer transport
+- the remote buzzer server is optional and only used when a websocket endpoint is configured
 
 The app is realtime, but not purely realtime. It mixes:
 
@@ -119,8 +119,7 @@ The app is realtime, but not purely realtime. It mixes:
   - shared close-on-overlay and close-on-Escape wiring for dismissable layers
 - `views/LobbyView.js`
   - game list, rename, create, delete
-  - settings overlay for interface language and buzzer room mode
-  - local-room endpoint is applied through an explicit launch action that reloads the host page
+  - settings overlay for interface language
 - `views/LoginView.js`
   - sign-in screen
 
@@ -141,8 +140,8 @@ The app is realtime, but not purely realtime. It mixes:
   - verifies host ownership against Supabase auth
   - persists press state back into `game_runtime`
 - `utils/localBuzzerUrl.js`
-  - normalizes and stores the local-room buzzer endpoint
-  - lets the host QR flow inject the local websocket URL into `player.html`
+  - normalizes the configured remote buzzer endpoint
+  - lets QR flows include that websocket URL when it exists
 
 ## Game / App Flow
 
@@ -168,7 +167,7 @@ The app is realtime, but not purely realtime. It mixes:
    - one footer-anchored leaderboard panel
    - the same panel stays compact by default and expands upward as an overlay from the footer slot
    - the expanded QR panel stays focused on player join only
-   - room mode and buzzer endpoint live in lobby settings instead of the QR overlay
+   - the QR panel stays join-focused and only includes a buzzer endpoint when one is configured
 7. Clicking a cell opens the question modal through `ModalService`.
 8. Opening a question:
    - stores active cell
@@ -183,7 +182,7 @@ The app is realtime, but not purely realtime. It mixes:
 ### Player Flow
 
 1. Player opens `player.html?gameId=...`.
-   - when present, a `buzzer` query param overrides the default websocket endpoint for same-room play
+   - when present, a `buzzer` query param overrides the default remote websocket endpoint
 2. Controller id is read or created in `localStorage`.
 3. App loads current player by `controller_id`.
 4. If no player exists, join form is shown.
@@ -265,8 +264,6 @@ The app is realtime, but not purely realtime. It mixes:
 - `activeRoundId` in `GameService`
 - `quiz-game:player-controller:<gameId>` for player/controller binding
 - `quiz-game:ui-language` in `i18n.js`
-- `quiz-game:buzzer-mode` in `localBuzzerUrl.js`
-- `quiz-game:local-buzzer-url` in `localBuzzerUrl.js`
 
 ## Code Smells and Structural Problems
 
@@ -708,17 +705,6 @@ Ordered refactor and improvement steps. Do not treat all items as immediate.
 
 ### 2026-04-02
 
-- Local-room buzzer mode was added as the preferred real-world setup.
-- Player controller URLs can now carry a `buzzer` query param so phones on the same Wi-Fi connect directly to the host computer's buzzer server.
-- This keeps GitHub Pages for UI delivery, Supabase for persistence, and moves latency-sensitive `PRESS` traffic onto the room-local network.
-
-### 2026-04-02
-
-- Room mode and interface language controls were moved into lobby settings.
-- The host QR overlay was simplified back to a join-only surface instead of doubling as a transport configuration panel.
-- Local/cloud buzzer configuration remains persistent, but it is now edited before entering a game instead of inside the expanded leaderboard.
-
-### 2026-04-02
-
-- Local buzzer server changes now apply through an explicit `Launch` action in lobby settings.
-- Pressing that action stores the local websocket endpoint and reloads the host page so `PressRuntimeService` reconnects cleanly to the new transport.
+- The experiment with local-room buzzer mode was rolled back.
+- Browser mixed-content limits made the GitHub Pages + local `ws://` combination unreliable for controllers.
+- The app again assumes one optional remote buzzer endpoint and otherwise falls back to the older Supabase runtime path.

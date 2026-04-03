@@ -3,10 +3,7 @@ import { LeaderboardGridView } from './LeaderboardGridView.js';
 import { ViewDisposer } from '../utils/disposer.js';
 import { bindOverlayDismiss } from '../utils/overlayDismiss.js';
 import { t, withLanguageParam } from '../i18n.js';
-import {
-  getActiveBuzzerUrl,
-  getStoredBuzzerMode,
-} from '../utils/localBuzzerUrl.js';
+import { getActiveBuzzerUrl } from '../utils/localBuzzerUrl.js';
 
 export class LeaderboardPanelView {
   constructor({ gameId, players = [], onAdjustPlayerScore = null, onDeletePlayer = null } = {}) {
@@ -16,7 +13,6 @@ export class LeaderboardPanelView {
     this._onDeletePlayer = onDeletePlayer;
     this._isExpanded = false;
     this._selectedPlayerId = null;
-    this._buzzerMode = getStoredBuzzerMode();
 
     this._build();
     this._disposer = new ViewDisposer(this._root);
@@ -170,17 +166,13 @@ export class LeaderboardPanelView {
   async _generateQr() {
     if (!this._gameId || !this._qrImg) return;
 
-    this._buzzerMode = getStoredBuzzerMode();
     const playerUrl = new URL(withLanguageParam(`${import.meta.env.BASE_URL}player.html?gameId=${this._gameId}`));
-    const buzzerUrl = getActiveBuzzerUrl({
-      mode: this._buzzerMode,
-    });
+    const buzzerUrl = getActiveBuzzerUrl();
     if (buzzerUrl) {
       playerUrl.searchParams.set('buzzer', buzzerUrl);
     } else {
       playerUrl.searchParams.delete('buzzer');
     }
-    playerUrl.searchParams.set('mode', this._buzzerMode);
 
     try {
       this._qrImg.src = await QRCode.toDataURL(playerUrl.toString(), {

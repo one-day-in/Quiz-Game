@@ -5,13 +5,6 @@ import { escapeHtml } from '../utils/utils.js';
 import { showConfirm, showPrompt } from '../utils/confirm.js';
 import { isGameDeleteAdminUser } from '../utils/adminAccess.js';
 import { formatLocaleDate, getLanguage, getSupportedLanguages, setLanguage, subscribeLanguage, t } from '../i18n.js';
-import {
-    getCloudBuzzerUrl,
-    getStoredBuzzerMode,
-    getSuggestedLocalBuzzerUrl,
-    setStoredBuzzerMode,
-    setStoredLocalBuzzerUrl,
-} from '../utils/localBuzzerUrl.js';
 
 export class LobbyView {
     constructor({ currentUser, onOpen, onCreate, onLogout }) {
@@ -280,10 +273,6 @@ export class LobbyView {
     }
 
     _renderSettings() {
-        const buzzerMode = getStoredBuzzerMode();
-        const localBuzzerUrl = getSuggestedLocalBuzzerUrl();
-        const cloudBuzzerUrl = getCloudBuzzerUrl();
-
         return `
             <div class="lobby__settingsOverlay"></div>
             <aside class="lobby__settingsPanel" role="dialog" aria-modal="true" aria-label="${t('settings')}">
@@ -305,56 +294,6 @@ export class LobbyView {
                                 data-language="${language}"
                             >${escapeHtml(t(`language_${language}`))}</button>
                         `).join('')}
-                    </div>
-                </section>
-
-                <section class="lobby__settingsSection">
-                    <p class="lobby__settingsLabel">${t('game_mode')}</p>
-                    <div class="lobby__modeSwitch" role="group" aria-label="${t('game_mode')}">
-                        <button
-                            class="lobby__modeBtn${buzzerMode === 'local' ? ' is-active' : ''}"
-                            type="button"
-                            data-buzzer-mode="local"
-                        >${t('local_room_mode')}</button>
-                        <button
-                            class="lobby__modeBtn${buzzerMode === 'cloud' ? ' is-active' : ''}"
-                            type="button"
-                            data-buzzer-mode="cloud"
-                            ${cloudBuzzerUrl ? '' : 'disabled'}
-                        >${t('cloud_room_mode')}</button>
-                    </div>
-                    <p class="lobby__settingsHint">
-                        ${buzzerMode === 'local'
-                            ? t('local_room_server_hint')
-                            : (cloudBuzzerUrl ? t('cloud_room_server_hint') : t('cloud_room_server_missing'))}
-                    </p>
-                </section>
-
-                <section class="lobby__settingsSection${buzzerMode === 'local' ? '' : ' is-disabled'}">
-                    <label class="lobby__settingsField">
-                        <span class="lobby__settingsLabel">${t('local_room_server')}</span>
-                        <input
-                            class="lobby__settingsInput"
-                            type="text"
-                            value="${escapeHtml(localBuzzerUrl)}"
-                            placeholder="${t('local_room_server_placeholder')}"
-                            spellcheck="false"
-                            autocomplete="off"
-                            ${buzzerMode === 'local' ? '' : 'disabled'}
-                        >
-                    </label>
-                    <button
-                        class="lobby__settingsLaunchBtn"
-                        type="button"
-                        ${buzzerMode === 'local' ? '' : 'disabled'}
-                    >${t('launch_local_room')}</button>
-                    <div class="lobby__settingsGuide">
-                        <p class="lobby__settingsGuideTitle">${t('local_room_setup_title')}</p>
-                        <ol class="lobby__settingsGuideList">
-                            <li>${t('local_room_setup_step_1')}</li>
-                            <li>${t('local_room_setup_step_2')}</li>
-                            <li>${t('local_room_setup_step_3')}</li>
-                        </ol>
                     </div>
                 </section>
             </aside>
@@ -394,37 +333,6 @@ export class LobbyView {
                 setLanguage(btn.dataset.language);
             });
         });
-
-        this._root.querySelectorAll('[data-buzzer-mode]').forEach((btn) => {
-            btn.addEventListener('click', () => {
-                const mode = btn.dataset.buzzerMode === 'local' ? 'local' : 'cloud';
-                if (mode === 'cloud' && !getCloudBuzzerUrl()) return;
-                setStoredBuzzerMode(mode);
-                this._render();
-            });
-        });
-
-        const input = this._root.querySelector('.lobby__settingsInput');
-        if (input) {
-            input.addEventListener('keydown', (event) => {
-                if (event.key === 'Enter') {
-                    event.preventDefault();
-                    this._root.querySelector('.lobby__settingsLaunchBtn')?.click();
-                }
-                if (event.key === 'Escape') {
-                    event.preventDefault();
-                    close();
-                }
-            });
-        }
-
-        this._root.querySelector('.lobby__settingsLaunchBtn')
-            ?.addEventListener('click', () => {
-                const next = setStoredLocalBuzzerUrl(input?.value || '');
-                if (input) input.value = next;
-                setStoredBuzzerMode('local');
-                window.location.reload();
-            });
     }
 
     _groupGamesByCreator() {

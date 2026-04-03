@@ -10,8 +10,8 @@ import { getActiveBuzzerUrl } from '../utils/localBuzzerUrl.js';
 const DEV_BUZZER_PORT = '8787';
 const FALLBACK_POLL_MS = 1000;
 
-function resolveBuzzerUrl(overrideUrl = '', mode = null) {
-  const resolved = getActiveBuzzerUrl({ mode: mode || undefined, overrideUrl });
+function resolveBuzzerUrl(overrideUrl = '') {
+  const resolved = getActiveBuzzerUrl({ overrideUrl });
   if (resolved) return resolved;
   const host = window.location.hostname;
   if (host === 'localhost' || host === '127.0.0.1') {
@@ -389,8 +389,8 @@ class HybridPressRuntimeService {
   }
 }
 
-export function createPressRuntimeService({ gameId, role, controllerId = null, wsUrl = '', mode = null }) {
-  const resolvedWsUrl = resolveBuzzerUrl(wsUrl, mode);
+export function createPressRuntimeService({ gameId, role, controllerId = null, wsUrl = '' }) {
+  const resolvedWsUrl = resolveBuzzerUrl(wsUrl);
 
   if (!resolvedWsUrl) {
     return new ApiPressRuntimeService({ gameId, controllerId });
