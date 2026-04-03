@@ -2,7 +2,7 @@ import { createServer } from 'node:http';
 import { WebSocketServer, WebSocket } from 'ws';
 import { createClient } from '@supabase/supabase-js';
 
-const port = Number(process.env.BUZZER_PORT || 8787);
+const port = Number(process.env.PORT || process.env.BUZZER_PORT || 8787);
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -255,5 +255,5 @@ wss.on('connection', (ws) => {
 });
 
 server.listen(port, () => {
-  console.log(`[buzzer] listening on ws://localhost:${port}`);
+  console.log(`[buzzer] listening on port ${port}`);
 });

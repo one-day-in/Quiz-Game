@@ -13,6 +13,7 @@ import { createModalService } from './services/ModalService.js';
 import { createMediaService } from './services/MediaService.js';
 import { createPlayersService } from './services/PlayersService.js';
 import { createPressRuntimeService } from './services/PressRuntimeService.js';
+import { getBuzzerWakeUrl } from './utils/localBuzzerUrl.js';
 
 import { renderLogin } from './views/LoginView.js';
 import { LobbyView } from './views/LobbyView.js';
@@ -40,6 +41,30 @@ function getLastGame() {
     const id = localStorage.getItem(LAST_GAME_ID_KEY);
     if (!id) return null;
     return { id, name: localStorage.getItem(LAST_GAME_NAME_KEY) || t('new_game') };
+}
+
+async function warmBuzzerServer() {
+    const wakeUrl = getBuzzerWakeUrl();
+    if (!wakeUrl) return;
+
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 4500);
+
+    try {
+        const response = await fetch(wakeUrl, {
+            method: 'GET',
+            cache: 'no-store',
+            signal: controller.signal,
+        });
+
+        if (!response.ok) {
+            throw new Error(`Wake request failed with ${response.status}`);
+        }
+    } catch (error) {
+        console.warn('[Bootstrap] buzzer warm-up failed, continuing with runtime fallback:', error);
+    } finally {
+        window.clearTimeout(timeoutId);
+    }
 }
 
 // Track current view/app cleanup
@@ -115,6 +140,7 @@ async function renderGame(user, gameId, gameName) {
 
         await gameService.initialize();
         await playersService.initialize();
+        await warmBuzzerServer();
         await pressRuntimeService.connect();
         gameService.restoreUiState();
 

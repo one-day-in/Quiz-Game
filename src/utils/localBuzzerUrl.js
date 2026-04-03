@@ -27,3 +27,21 @@ export function getActiveBuzzerUrl({ overrideUrl = '' } = {}) {
   if (normalizedOverride) return normalizedOverride;
   return getCloudBuzzerUrl();
 }
+
+export function getBuzzerWakeUrl({ overrideUrl = '' } = {}) {
+  const wsUrl = getActiveBuzzerUrl({ overrideUrl });
+  if (!wsUrl) return '';
+
+  try {
+    const url = new URL(wsUrl);
+    if (url.protocol === 'wss:') url.protocol = 'https:';
+    if (url.protocol === 'ws:') url.protocol = 'http:';
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return '';
+    url.pathname = '/';
+    url.search = '';
+    url.hash = '';
+    return url.toString();
+  } catch {
+    return '';
+  }
+}

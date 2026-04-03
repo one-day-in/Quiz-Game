@@ -72,6 +72,8 @@ The app is realtime, but not purely realtime. It mixes:
   - prefers dedicated WebSocket buzzer transport
   - keeps a live Supabase fallback subscription active as a safety net when websocket transport is primary
   - falls back to Supabase runtime subscription + polling if the buzzer server is unavailable
+- `bootstrap.js`
+  - warms the remote buzzer server with a short HTTP health request before connecting host runtime for an opened game
 - `services/MediaService.js`
   - view/media mapping and upload/delete orchestration
 - `services/RoundNavigationService.js`
@@ -161,23 +163,24 @@ The app is realtime, but not purely realtime. It mixes:
    - `AppController`
 4. `GameService.initialize()` loads board JSON.
 5. `PlayersService.initialize()` hydrates live host-side player state from `game_players`.
-5. `AppController` renders `AppView`.
-6. `AppView` shows:
+6. Host sends a short wake-up request to the configured remote buzzer server before opening its websocket runtime.
+7. `AppController` renders `AppView`.
+8. `AppView` shows:
    - header
    - game grid
    - one footer-anchored leaderboard panel
    - the same panel stays compact by default and expands upward as an overlay from the footer slot
    - the expanded QR panel stays focused on player join only
    - the QR panel stays join-focused and only includes a buzzer endpoint when one is configured
-7. Clicking a cell opens the question modal through `ModalService`.
-8. Opening a question:
+9. Clicking a cell opens the question modal through `ModalService`.
+10. Opening a question:
    - stores active cell
    - marks unanswered cells as answered immediately
    - opens press runtime through `PressRuntimeService`
    - listens for winner updates through the same runtime service
-9. Player presses are claimed through the buzzer server first, and the server persists the result through `claim_game_press(...)`.
+11. Player presses are claimed through the buzzer server first, and the server persists the result through `claim_game_press(...)`.
    - `claim_game_press(...)` now returns `jsonb` to avoid PL/pgSQL output-column ambiguity in production
-10. Host clicks:
+12. Host clicks:
    - `Correct` -> adds cell value to winner score
    - `Not Correct` -> subtracts cell value and reopens press race
 
@@ -238,6 +241,7 @@ The app is realtime, but not purely realtime. It mixes:
   - static pages from GitHub Pages
   - persistence in Supabase
   - an always-on remote buzzer server
+- Host game open now attempts to wake the remote buzzer server before establishing websocket transport.
 - Supabase `game_runtime` remains the persistent snapshot and fallback path, not the preferred live transport.
 - Modal correctness flow does not go through `GameService`; it calls player score API directly.
 - Host score mutations by `playerId` depend on remote Supabase function `adjust_game_player_score_by_id(...)`.
@@ -432,6 +436,16 @@ Ordered refactor and improvement steps. Do not treat all items as immediate.
   Better long-term stability for the new low-latency buzzer path.
 - Estimated complexity:
   Medium
+
+## Decisions Log
+
+### 2026-04-03
+
+- Kept the dedicated remote buzzer server as the primary press-race transport, with Supabase runtime remaining the fallback safety net.
+- Removed the earlier local-room buzzer mode because HTTPS GitHub Pages plus local `ws://` created mixed-content and deployment friction.
+- Changed `claim_game_press(...)` to return `jsonb` instead of `returns table (...)` to eliminate persistent PL/pgSQL output-column ambiguity in production.
+- Added a host-side buzzer warm-up request during game open so the Render service gets a wake-up hit before websocket runtime connection is attempted.
+- Normalized `server/buzzerServer.js` to honor `process.env.PORT` first so hosted platforms like Render do not depend on a hardcoded port.
 
 ### 3. Move view-level data fetching back into controller/service boundaries
 
