@@ -15,6 +15,12 @@ export function shouldPlayPlayerPressWinnerTone({
   return previousWinnerPlayerId !== localPlayerId;
 }
 
+export function getPlayerPressWinnerToneKey(runtime = null, localPlayerId = null) {
+  const winnerPlayerId = runtime?.winnerPlayerId || null;
+  if (!winnerPlayerId || !localPlayerId || winnerPlayerId !== localPlayerId) return null;
+  return `${winnerPlayerId}:${runtime?.pressedAt || runtime?.updatedAt || 'no-timestamp'}`;
+}
+
 export function createPlayerPressAudio() {
   let audioContext = null;
 
@@ -28,8 +34,28 @@ export function createPlayerPressAudio() {
 
   async function unlock() {
     const context = ensureContext();
-    if (!context || context.state !== 'suspended') return;
-    await context.resume();
+    if (!context) return false;
+    if (context.state === 'suspended') {
+      await context.resume();
+    }
+
+    // Prime the output path inside the same user gesture so later winner
+    // playback survives stricter mobile autoplay policies.
+    const gain = context.createGain();
+    gain.gain.value = 0.00001;
+    gain.connect(context.destination);
+
+    const oscillator = context.createOscillator();
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(1, context.currentTime);
+    oscillator.connect(gain);
+    oscillator.start();
+    oscillator.stop(context.currentTime + 0.01);
+    oscillator.onended = () => {
+      oscillator.disconnect();
+      gain.disconnect();
+    };
+    return true;
   }
 
   async function playWinnerTone() {
@@ -55,10 +81,10 @@ export function createPlayerPressAudio() {
     oscillator.start(now);
     oscillator.stop(now + 0.18);
 
-    oscillator.addEventListener('ended', () => {
+    oscillator.onended = () => {
       oscillator.disconnect();
       gain.disconnect();
-    }, { once: true });
+    };
 
     return true;
   }

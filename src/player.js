@@ -10,7 +10,11 @@ import {
 import { initLanguageFromUrl, t } from './i18n.js';
 import { createPressRuntimeService } from './services/PressRuntimeService.js';
 import { normalizeBuzzerUrl } from './utils/localBuzzerUrl.js';
-import { createPlayerPressAudio, shouldPlayPlayerPressWinnerTone } from './utils/playerPressAudio.js';
+import {
+  createPlayerPressAudio,
+  getPlayerPressWinnerToneKey,
+  shouldPlayPlayerPressWinnerTone,
+} from './utils/playerPressAudio.js';
 
 const root = document.getElementById('player-controller-app');
 initLanguageFromUrl();
@@ -28,6 +32,7 @@ let isPressEnabled = false;
 let pressWinnerPlayerId = null;
 let pressRuntime = null;
 let hasSeenRuntimeState = false;
+let lastPlayedWinnerToneKey = null;
 const playerPressAudio = createPlayerPressAudio();
 
 const CONTROLLER_DISABLED_SELECTOR = '.player-controller__input, .player-controller__leaveBtn';
@@ -281,15 +286,23 @@ function applyRuntimeState(runtime) {
   isPressEnabled = !!runtime?.pressEnabled;
   pressWinnerPlayerId = nextWinnerPlayerId;
 
-  if (shouldPlayPlayerPressWinnerTone({
+  const shouldPlayFromTransition = shouldPlayPlayerPressWinnerTone({
     hasInitializedRuntime: hasSeenRuntimeState,
     previousWinnerPlayerId,
     nextWinnerPlayerId,
     localPlayerId: player?.id || null,
-  })) {
+  });
+  const winnerToneKey = getPlayerPressWinnerToneKey(runtime, player?.id || null);
+
+  if (shouldPlayFromTransition && winnerToneKey && winnerToneKey !== lastPlayedWinnerToneKey) {
+    lastPlayedWinnerToneKey = winnerToneKey;
     void playerPressAudio.playWinnerTone().catch((error) => {
       console.warn('[player] winner tone playback failed:', error);
     });
+  }
+
+  if (!winnerToneKey) {
+    lastPlayedWinnerToneKey = null;
   }
 
   hasSeenRuntimeState = true;
