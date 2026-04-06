@@ -22,6 +22,7 @@ const params = new URLSearchParams(window.location.search);
 const gameId = params.get('gameId');
 const buzzerUrl = normalizeBuzzerUrl(params.get('buzzer') || '');
 const STORAGE_PREFIX = 'quiz-game:player-controller';
+const STATUS_AUTO_HIDE_MS = 10000;
 
 let player = null;
 let controllerId = null;
@@ -33,6 +34,7 @@ let pressWinnerPlayerId = null;
 let pressRuntime = null;
 let hasSeenRuntimeState = false;
 let lastPlayedWinnerToneKey = null;
+let statusHideTimer = null;
 const playerPressAudio = createPlayerPressAudio();
 
 const CONTROLLER_DISABLED_SELECTOR = '.player-controller__input, .player-controller__leaveBtn';
@@ -130,7 +132,7 @@ function renderJoin() {
       renderController(player);
       bindRealtimePlayers();
     } catch (error) {
-      errorEl.textContent = error.message || t('could_not_join_game');
+      errorEl.textContent = t('player_join_failed');
       errorEl.hidden = false;
       toggleJoinPending(false);
     }
@@ -187,8 +189,16 @@ function renderController(currentPlayer) {
     pressBtn.classList.add('is-pressed');
     window.setTimeout(() => pressBtn.classList.remove('is-pressed'), 160);
 
-    // Only actually claim the press when the host has opened a question
-    if (!isPressEnabled || pressWinnerPlayerId) return;
+    if (!isPressEnabled) {
+      showStatus(statusEl, t('player_press_not_ready'), 'info');
+      return;
+    }
+
+    if (pressWinnerPlayerId) {
+      showStatus(statusEl, t('player_press_taken'), 'info');
+      return;
+    }
+
     void playerPressAudio.unlock();
     void claimPress(statusEl);
   });
@@ -204,9 +214,9 @@ function renderController(currentPlayer) {
     try {
       player = await updatePlayerByController(gameId, controllerId, { name: nextName });
       nameInput.value = player.name;
-      hideStatus(statusEl);
+      showStatus(statusEl, t('player_name_updated'), 'success');
     } catch (error) {
-      showStatus(statusEl, error.message || t('could_not_update_name'));
+      showStatus(statusEl, t('player_name_update_failed'));
       nameInput.value = player.name;
     } finally {
       setControllerPending(false);
@@ -223,7 +233,7 @@ function renderController(currentPlayer) {
       player = null;
       renderJoin();
     } catch (error) {
-      showStatus(statusEl, error.message || t('could_not_leave_game'));
+      showStatus(statusEl, t('player_leave_failed'));
     } finally {
       setControllerPending(false);
     }
@@ -316,7 +326,7 @@ async function claimPress(statusEl) {
     applyRuntimeState(await pressRuntime.claimPress());
     hideStatus(statusEl);
   } catch (error) {
-    showStatus(statusEl, error.message || t('could_not_claim_press'));
+    showStatus(statusEl, t('player_press_failed'));
   }
 }
 
@@ -335,6 +345,8 @@ function setControllerPending(isPending) {
 
 function hideStatus(statusEl) {
   if (!statusEl) return;
+  window.clearTimeout(statusHideTimer);
+  statusHideTimer = null;
   statusEl.hidden = true;
   statusEl.textContent = '';
   statusEl.dataset.variant = 'error';
@@ -342,9 +354,13 @@ function hideStatus(statusEl) {
 
 function showStatus(statusEl, message, variant = 'error') {
   if (!statusEl) return;
+  window.clearTimeout(statusHideTimer);
   statusEl.textContent = message;
   statusEl.dataset.variant = variant;
   statusEl.hidden = false;
+  statusHideTimer = window.setTimeout(() => {
+    if (document.body.contains(statusEl)) hideStatus(statusEl);
+  }, STATUS_AUTO_HIDE_MS);
 }
 
 function updateScoreDisplay(scoreEl) {
@@ -414,5 +430,6 @@ startPlayerController().catch((error) => {
 window.addEventListener('beforeunload', () => {
   stopPlayersSubscription?.();
   pressRuntime?.destroy?.();
+  window.clearTimeout(statusHideTimer);
   playerPressAudio?.destroy?.();
 });
