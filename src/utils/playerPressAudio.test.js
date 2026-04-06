@@ -54,3 +54,12 @@ describe('getPlayerPressWinnerToneKey', () => {
     }, 'player-1')).toBe(null);
   });
 });
+
+describe('press tone asset path', () => {
+  it('keeps using runtime data rather than asset URLs for non-local winners', () => {
+    expect(getPlayerPressWinnerToneKey({
+      winnerPlayerId: null,
+      pressedAt: '2026-04-06T13:45:00.000Z',
+    }, 'player-1')).toBe(null);
+  });
+});

@@ -2,6 +2,10 @@ function getAudioContextCtor() {
   return window.AudioContext || window.webkitAudioContext || null;
 }
 
+function getPressToneSrc() {
+  return `${import.meta.env.BASE_URL}audio/press-tone.mp3`;
+}
+
 export function shouldPlayPlayerPressWinnerTone({
   hasInitializedRuntime = false,
   previousWinnerPlayerId = null,
@@ -23,6 +27,16 @@ export function getPlayerPressWinnerToneKey(runtime = null, localPlayerId = null
 
 export function createPlayerPressAudio() {
   let audioContext = null;
+  let htmlAudio = null;
+
+  function ensureHtmlAudio() {
+    if (htmlAudio) return htmlAudio;
+    const audio = new Audio(getPressToneSrc());
+    audio.preload = 'auto';
+    audio.playsInline = true;
+    htmlAudio = audio;
+    return htmlAudio;
+  }
 
   function ensureContext() {
     if (audioContext) return audioContext;
@@ -33,32 +47,46 @@ export function createPlayerPressAudio() {
   }
 
   async function unlock() {
+    const audio = ensureHtmlAudio();
+    audio.load();
+
     const context = ensureContext();
-    if (!context) return false;
-    if (context.state === 'suspended') {
+    if (context && context.state === 'suspended') {
       await context.resume();
     }
 
-    // Prime the output path inside the same user gesture so later winner
-    // playback survives stricter mobile autoplay policies.
-    const gain = context.createGain();
-    gain.gain.value = 0.00001;
-    gain.connect(context.destination);
+    if (context) {
+      // Prime the output path inside the same user gesture so later winner
+      // playback survives stricter mobile autoplay policies.
+      const gain = context.createGain();
+      gain.gain.value = 0.00001;
+      gain.connect(context.destination);
 
-    const oscillator = context.createOscillator();
-    oscillator.type = 'sine';
-    oscillator.frequency.setValueAtTime(1, context.currentTime);
-    oscillator.connect(gain);
-    oscillator.start();
-    oscillator.stop(context.currentTime + 0.01);
-    oscillator.onended = () => {
-      oscillator.disconnect();
-      gain.disconnect();
-    };
+      const oscillator = context.createOscillator();
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(1, context.currentTime);
+      oscillator.connect(gain);
+      oscillator.start();
+      oscillator.stop(context.currentTime + 0.01);
+      oscillator.onended = () => {
+        oscillator.disconnect();
+        gain.disconnect();
+      };
+    }
+
     return true;
   }
 
   async function playWinnerTone() {
+    const audio = ensureHtmlAudio();
+    try {
+      audio.currentTime = 0;
+      await audio.play();
+      return true;
+    } catch {
+      // Fall back to generated audio if the browser rejects HTMLAudio playback.
+    }
+
     const context = ensureContext();
     if (!context) return false;
     if (context.state === 'suspended') {
@@ -118,6 +146,12 @@ export function createPlayerPressAudio() {
   }
 
   function destroy() {
+    if (htmlAudio) {
+      htmlAudio.pause();
+      htmlAudio.src = '';
+      htmlAudio.load();
+      htmlAudio = null;
+    }
     if (!audioContext) return;
     try {
       audioContext.close();
