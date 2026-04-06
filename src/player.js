@@ -195,7 +195,11 @@ function renderController(currentPlayer) {
     }
 
     if (pressWinnerPlayerId) {
-      showStatus(statusEl, t('player_press_taken'), 'info');
+      if (isLocalPressWinner(pressWinnerPlayerId)) {
+        hideStatus(statusEl);
+      } else {
+        showStatus(statusEl, t('player_press_taken'), 'info');
+      }
       return;
     }
 
@@ -315,6 +319,11 @@ function applyRuntimeState(runtime) {
     lastPlayedWinnerToneKey = null;
   }
 
+  const statusEl = document.getElementById('playerControllerStatus');
+  if (!pressWinnerPlayerId || isLocalPressWinner(pressWinnerPlayerId)) {
+    hideStatus(statusEl);
+  }
+
   hasSeenRuntimeState = true;
   const pressBtn = document.getElementById('playerPressBtn');
   if (!pressBtn) return;
@@ -326,6 +335,16 @@ async function claimPress(statusEl) {
     applyRuntimeState(await pressRuntime.claimPress());
     hideStatus(statusEl);
   } catch (error) {
+    if (isLocalPressWinner(pressWinnerPlayerId)) {
+      hideStatus(statusEl);
+      return;
+    }
+
+    if (pressWinnerPlayerId) {
+      showStatus(statusEl, t('player_press_taken'), 'info');
+      return;
+    }
+
     showStatus(statusEl, t('player_press_failed'));
   }
 }
@@ -365,6 +384,10 @@ function showStatus(statusEl, message, variant = 'error') {
 
 function updateScoreDisplay(scoreEl) {
   if (scoreEl) scoreEl.textContent = formatPoints(confirmedScore);
+}
+
+function isLocalPressWinner(winnerPlayerId) {
+  return !!winnerPlayerId && !!player?.id && winnerPlayerId === player.id;
 }
 
 function getOrCreateControllerId(gameIdValue) {

@@ -78,7 +78,8 @@ Recommended `games` RLS:
 
 - `SELECT`: authenticated users can read
 - `INSERT`: authenticated users can create with `created_by = auth.uid()`
-- `UPDATE`/`DELETE`: only the owner can modify
+- `UPDATE`: the owner can modify, or an admin account can modify if your production rules require it
+- `DELETE`: owner-only or admin-only depending on your production policy
 
 ## Buzzer Server
 
@@ -115,8 +116,9 @@ npm run buzzer:start
 4. Host opens a question modal.
 5. `PRESS` becomes active after 2 seconds.
 6. The first player to press becomes the modal winner.
-7. `✕ Not Correct` subtracts the cell value and re-opens the press race.
-8. `✓ Correct` adds the cell value and closes the modal.
+7. Audio-only question/answer sections now show a larger custom modal player instead of browser-native controls.
+8. `✕ Not Correct` subtracts the cell value and re-opens the press race.
+9. `✓ Correct` adds the cell value and closes the modal.
 
 ## Project Structure
 

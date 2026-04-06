@@ -119,6 +119,7 @@ The app is realtime, but not purely realtime. It mixes:
 - `views/QuestionModalView.js`
   - modal UI
   - question/answer audio tracks now render through a custom player UI instead of browser-native `audio[controls]`
+  - audio-only sections can promote that player into a larger hero-style block when there is no competing text/media
 - `utils/overlayDismiss.js`
   - shared close-on-overlay and close-on-Escape wiring for dismissable layers
 - `views/LobbyView.js`
@@ -267,6 +268,7 @@ The app is realtime, but not purely realtime. It mixes:
   - this prevents host-on-fallback / player-on-socket drift from dropping `PRESS` activation updates
 - `player.js` still polls players every second for score/name sync, but no longer polls `game_runtime` while the buzzer runtime is healthy.
 - `player.js` now prefers a bundled `/public/audio/press-tone.mp3` winner alarm with Web Audio fallback, and only plays it for the controller whose `player.id` matches the newly confirmed `winnerPlayerId`.
+- `player.js` now suppresses loser/failure press toasts when this controller is already the confirmed runtime winner.
 - `ModalService` no longer owns its own runtime polling loop; it listens through `PressRuntimeService`.
 - `runtimeApi.subscribeToGameRuntime()` still emits the raw realtime payload immediately for `press_enabled` and `winner_player_id` changes, then lazily enriches `winnerName` only when that extra lookup is actually needed.
 - Remote Supabase now has both score RPC paths required by the host and player surfaces:
@@ -451,8 +453,10 @@ Ordered refactor and improvement steps. Do not treat all items as immediate.
 - Retuned the generated winner tone to be lower, longer, and louder so it reads more like an alarm on mobile player controllers.
 - Switched the preferred winner sound path to the bundled `public/audio/press-tone.mp3`, keeping Web Audio only as a playback fallback for browsers that reject the media element path.
 - Replaced the question modal's native audio controls with a custom in-app player UI built on top of `HTMLAudioElement`.
+- Expanded the question modal audio player into a larger hero-style layout when a section contains only audio.
 - Tightened lobby game rename so Supabase must return the updated `games` row, which exposes missing owner-update RLS instead of silently pretending the rename persisted.
 - Added `supabase/games.sql` to document the expected `public.games` select/insert/update policies in source control.
+- Fixed player-controller status messaging so the local winner no longer sees the "someone was faster" toast on their own successful press.
 
 ### 2026-04-03
 
