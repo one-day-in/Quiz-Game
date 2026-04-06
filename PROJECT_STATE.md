@@ -78,6 +78,7 @@ The app is realtime, but not purely realtime. It mixes:
   - view/media mapping and upload/delete orchestration
 - `services/RoundNavigationService.js`
   - round picker state helper
+  - round changes now flow through a short controlled transition/loading state before the grid swaps
 
 ### API Layer
 
@@ -457,6 +458,7 @@ Ordered refactor and improvement steps. Do not treat all items as immediate.
 - Tightened lobby game rename so Supabase must return the updated `games` row, which exposes missing owner-update RLS instead of silently pretending the rename persisted.
 - Added `supabase/games.sql` to document the expected `public.games` select/insert/update policies in source control.
 - Fixed player-controller status messaging so the local winner no longer sees the "someone was faster" toast on their own successful press.
+- Replaced the earlier flash-style round change overlay with a calmer loader-style transition so round switches feel intentional instead of laggy.
 
 ### 2026-04-03
 

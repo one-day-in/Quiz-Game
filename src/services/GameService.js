@@ -30,8 +30,9 @@ class GameService {
     constructor(repo) {
         this.repo = repo;
         this.model = null;
-        this.uiState = { activeRoundId: 0 };
+        this.uiState = { activeRoundId: 0, isRoundTransitioning: false, pendingRoundId: null };
         this._subs = new Set();
+        this._roundTransitionToken = 0;
     }
 
     subscribe(fn) {
@@ -64,26 +65,52 @@ class GameService {
     getGameId() { return this.repo.getGameId(); }
     isInitialized() { return this.model !== null; }
 
-    _flashAnnouncement(label, sub = '') {
+    _showRoundTransition(label, sub = '') {
         const el = document.getElementById('mode-transition');
         if (!el) return;
-        el.innerHTML = `<span class="mode-transition__label">${label}</span>${sub ? `<span class="mode-transition__sub">${sub}</span>` : ''}`;
-        el.classList.remove('mode-transition--visible');
-        void el.offsetWidth;
+        el.innerHTML = `
+            <div class="mode-transition__panel">
+                <div class="mode-transition__ring" aria-hidden="true"></div>
+                <span class="mode-transition__label">${label}</span>
+                ${sub ? `<span class="mode-transition__sub">${sub}</span>` : ''}
+            </div>
+        `;
         el.classList.add('mode-transition--visible');
     }
 
-    setActiveRound(roundId) {
+    _hideRoundTransition() {
+        const el = document.getElementById('mode-transition');
+        if (!el) return;
+        el.classList.remove('mode-transition--visible');
+    }
+
+    async setActiveRound(roundId) {
         const id = Number(roundId);
         if (!Number.isFinite(id) || id < 0) return;
         if (this.uiState.activeRoundId === id) return;
+        if (this.uiState.isRoundTransitioning) return;
 
         const roundName = this.model?.rounds?.[id]?.name;
-        this._flashAnnouncement(`Round ${id + 1}`, roundName || '');
+        const token = ++this._roundTransitionToken;
+
+        this.uiState.pendingRoundId = id;
+        this.uiState.isRoundTransitioning = true;
+        this._emit();
+        this._showRoundTransition(`Loading Round ${id + 1}`, roundName || '');
+
+        await new Promise((resolve) => window.setTimeout(resolve, 260));
+        if (token !== this._roundTransitionToken) return;
 
         this.uiState.activeRoundId = id;
+        this.uiState.pendingRoundId = null;
+        this.uiState.isRoundTransitioning = false;
         localStorage.setItem('activeRoundId', String(id));
         this._emit();
+
+        window.setTimeout(() => {
+            if (token !== this._roundTransitionToken) return;
+            this._hideRoundTransition();
+        }, 140);
     }
 
     restoreUiState() {

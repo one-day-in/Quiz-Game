@@ -471,6 +471,13 @@
 .leaderboard {
   position: relative;
   color: var(--text);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.leaderboard * {
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .leaderboard__panel {

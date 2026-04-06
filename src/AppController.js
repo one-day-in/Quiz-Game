@@ -68,6 +68,12 @@ export function createAppController({ root, gameService, playersService, modalSe
       return;
     }
 
+    appViewRef.setRoundTransition?.(uiState);
+
+    if (uiState?.isRoundTransitioning) {
+      return;
+    }
+
     // Targeted single-cell patch — no full grid rebuild
     if (_cellHint) {
       const cell = model.getCell(_cellHint.roundId, _cellHint.rowId, _cellHint.cellId);

@@ -72,14 +72,21 @@ export function AppView({ model, uiState, players = [], actions, gameId, gameNam
 
   // Public update — called on every subsequent state change
   function update(m, ui) {
+    container.classList.toggle('is-round-transitioning', !!ui?.isRoundTransitioning);
     header.update(ui);
     renderGrid(m, ui);
     renderLeaderboard(leaderboardPlayers);
   }
 
   function syncLive(m, ui = uiState) {
+    container.classList.toggle('is-round-transitioning', !!ui?.isRoundTransitioning);
     header.update(ui);
     renderLeaderboard(leaderboardPlayers);
+  }
+
+  function setRoundTransition(ui = uiState) {
+    container.classList.toggle('is-round-transitioning', !!ui?.isRoundTransitioning);
+    header.update(ui);
   }
 
   function updatePlayers(nextPlayers = []) {
@@ -96,5 +103,5 @@ export function AppView({ model, uiState, players = [], actions, gameId, gameNam
   renderLeaderboard(leaderboardPlayers);
   disposer.add(() => leaderboardPanel?.destroy?.());
 
-  return { el: container, update, updatePlayers, patchCell, syncLive };
+  return { el: container, update, updatePlayers, patchCell, syncLive, setRoundTransition };
 }

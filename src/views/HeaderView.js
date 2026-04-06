@@ -23,7 +23,10 @@ export function HeaderView({ uiState, gameName, onBackToLobby, onRoundClick }) {
   const roundValueEl = el.querySelector('.js-round-value');
 
   function update(ui) {
-    roundValueEl.textContent = String((ui?.activeRoundId ?? 0) + 1);
+    const displayRound = ui?.isRoundTransitioning
+      ? (ui?.pendingRoundId ?? ui?.activeRoundId ?? 0)
+      : (ui?.activeRoundId ?? 0);
+    roundValueEl.textContent = String(displayRound + 1);
   }
 
   // Initial render
