@@ -66,24 +66,52 @@ export function createPlayerPressAudio() {
     }
 
     const now = context.currentTime;
-    const gain = context.createGain();
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(0.18, now + 0.01);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
-    gain.connect(context.destination);
+    const masterGain = context.createGain();
+    masterGain.gain.setValueAtTime(0.0001, now);
+    masterGain.gain.exponentialRampToValueAtTime(0.42, now + 0.03);
+    masterGain.gain.setValueAtTime(0.42, now + 0.03);
+    masterGain.gain.exponentialRampToValueAtTime(0.0001, now + 1.1);
+    masterGain.connect(context.destination);
 
-    const oscillator = context.createOscillator();
-    oscillator.type = 'triangle';
-    oscillator.frequency.setValueAtTime(740, now);
-    oscillator.frequency.exponentialRampToValueAtTime(1040, now + 0.08);
-    oscillator.frequency.exponentialRampToValueAtTime(880, now + 0.18);
-    oscillator.connect(gain);
-    oscillator.start(now);
-    oscillator.stop(now + 0.18);
+    const lfo = context.createOscillator();
+    lfo.type = 'sine';
+    lfo.frequency.setValueAtTime(5.5, now);
 
-    oscillator.onended = () => {
-      oscillator.disconnect();
-      gain.disconnect();
+    const lfoGain = context.createGain();
+    lfoGain.gain.setValueAtTime(90, now);
+    lfo.connect(lfoGain);
+
+    const lowOscillator = context.createOscillator();
+    lowOscillator.type = 'sawtooth';
+    lowOscillator.frequency.setValueAtTime(165, now);
+    lfoGain.connect(lowOscillator.frequency);
+    lowOscillator.connect(masterGain);
+
+    const supportGain = context.createGain();
+    supportGain.gain.setValueAtTime(0.16, now);
+    supportGain.gain.exponentialRampToValueAtTime(0.0001, now + 1.0);
+    supportGain.connect(context.destination);
+
+    const supportOscillator = context.createOscillator();
+    supportOscillator.type = 'triangle';
+    supportOscillator.frequency.setValueAtTime(110, now);
+    supportOscillator.connect(supportGain);
+
+    lfo.start(now);
+    lowOscillator.start(now);
+    supportOscillator.start(now);
+
+    lfo.stop(now + 1.1);
+    lowOscillator.stop(now + 1.1);
+    supportOscillator.stop(now + 1.0);
+
+    lowOscillator.onended = () => {
+      lfo.disconnect();
+      lfoGain.disconnect();
+      lowOscillator.disconnect();
+      supportOscillator.disconnect();
+      masterGain.disconnect();
+      supportGain.disconnect();
     };
 
     return true;

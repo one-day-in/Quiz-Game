@@ -264,7 +264,7 @@ The app is realtime, but not purely realtime. It mixes:
   - even while websocket transport is active, `PressRuntimeService` also keeps a fallback runtime subscription connected
   - this prevents host-on-fallback / player-on-socket drift from dropping `PRESS` activation updates
 - `player.js` still polls players every second for score/name sync, but no longer polls `game_runtime` while the buzzer runtime is healthy.
-- `player.js` now derives a local Web Audio winner tone from runtime transitions and only plays it for the controller whose `player.id` matches the newly confirmed `winnerPlayerId`.
+- `player.js` now derives a local low-pitch alarm-like Web Audio winner tone from runtime transitions and only plays it for the controller whose `player.id` matches the newly confirmed `winnerPlayerId`.
 - `ModalService` no longer owns its own runtime polling loop; it listens through `PressRuntimeService`.
 - `runtimeApi.subscribeToGameRuntime()` still emits the raw realtime payload immediately for `press_enabled` and `winner_player_id` changes, then lazily enriches `winnerName` only when that extra lookup is actually needed.
 - Remote Supabase now has both score RPC paths required by the host and player surfaces:
@@ -446,6 +446,7 @@ Ordered refactor and improvement steps. Do not treat all items as immediate.
 - Added a local winner-only `PRESS` tone on `player.html`.
 - The tone is generated with Web Audio in the controller client instead of shipping a media asset, so the change stays isolated to the player surface.
 - Playback is gated on a runtime transition to `winnerPlayerId === local player.id`, which prevents the initial snapshot, duplicate fallback events, or other players' updates from triggering sound.
+- Retuned the generated winner tone to be lower, longer, and louder so it reads more like an alarm on mobile player controllers.
 
 ### 2026-04-03
 
