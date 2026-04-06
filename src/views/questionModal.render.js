@@ -351,6 +351,13 @@ function checkMediaCollapse(view, refs, type) {
   }
 }
 
+function applyAudioLayoutState(refs, type, { isHero = false, trackCount = 0 } = {}) {
+  const listEl = refs[`${type}AudioList`];
+  if (!listEl) return;
+  listEl.classList.toggle('qmodal__audioList--hero', !!isHero);
+  listEl.classList.toggle('qmodal__audioList--multi', trackCount > 1);
+}
+
 /* ------------------------ Render ------------------------ */
 
 export function renderAll(view, refs) {
@@ -385,6 +392,8 @@ export function renderAll(view, refs) {
   const aHasAudio = sections.answer.audio.length   > 0;
   const qHasAny   = qHasText || qHasMedia || qHasAudio;
   const aHasAny   = aHasText || aHasMedia || aHasAudio;
+  const qHeroAudio = view._mode === 'view' && !qHasText && !qHasMedia && qHasAudio;
+  const aHeroAudio = view._mode === 'view' && !aHasText && !aHasMedia && aHasAudio;
 
   if (view._mode === 'view') {
     if (!aHasAny) view._isAnswerShown = false;
@@ -426,6 +435,14 @@ export function renderAll(view, refs) {
   renderMedia(view, refs, 'answer');
   renderAudioList(view, refs, 'question');
   renderAudioList(view, refs, 'answer');
+  applyAudioLayoutState(refs, 'question', {
+    isHero: qHeroAudio,
+    trackCount: sections.question.audio.length,
+  });
+  applyAudioLayoutState(refs, 'answer', {
+    isHero: aHeroAudio,
+    trackCount: sections.answer.audio.length,
+  });
 
   // View-mode visibility
   if (view._mode === 'view') {
