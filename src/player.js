@@ -10,6 +10,7 @@ import {
 import { initLanguageFromUrl, t } from './i18n.js';
 import { createPressRuntimeService } from './services/PressRuntimeService.js';
 import { normalizeBuzzerUrl } from './utils/localBuzzerUrl.js';
+import { createPlayerPressAudio, shouldPlayPlayerPressWinnerTone } from './utils/playerPressAudio.js';
 
 const root = document.getElementById('player-controller-app');
 initLanguageFromUrl();
@@ -26,6 +27,8 @@ let confirmedScore = 0;
 let isPressEnabled = false;
 let pressWinnerPlayerId = null;
 let pressRuntime = null;
+let hasSeenRuntimeState = false;
+const playerPressAudio = createPlayerPressAudio();
 
 const CONTROLLER_DISABLED_SELECTOR = '.player-controller__input, .player-controller__leaveBtn';
 
@@ -179,6 +182,7 @@ function renderController(currentPlayer) {
 
     // Only actually claim the press when the host has opened a question
     if (!isPressEnabled || pressWinnerPlayerId) return;
+    void playerPressAudio.unlock();
     void claimPress(statusEl);
   });
 
@@ -272,8 +276,23 @@ function syncControllerFromPlayers(players = []) {
 }
 
 function applyRuntimeState(runtime) {
+  const previousWinnerPlayerId = pressWinnerPlayerId;
+  const nextWinnerPlayerId = runtime?.winnerPlayerId || null;
   isPressEnabled = !!runtime?.pressEnabled;
-  pressWinnerPlayerId = runtime?.winnerPlayerId || null;
+  pressWinnerPlayerId = nextWinnerPlayerId;
+
+  if (shouldPlayPlayerPressWinnerTone({
+    hasInitializedRuntime: hasSeenRuntimeState,
+    previousWinnerPlayerId,
+    nextWinnerPlayerId,
+    localPlayerId: player?.id || null,
+  })) {
+    void playerPressAudio.playWinnerTone().catch((error) => {
+      console.warn('[player] winner tone playback failed:', error);
+    });
+  }
+
+  hasSeenRuntimeState = true;
   const pressBtn = document.getElementById('playerPressBtn');
   if (!pressBtn) return;
   pressBtn.classList.toggle('is-enabled', !!isPressEnabled && !pressWinnerPlayerId);
@@ -373,4 +392,5 @@ startPlayerController().catch((error) => {
 window.addEventListener('beforeunload', () => {
   stopPlayersSubscription?.();
   pressRuntime?.destroy?.();
+  playerPressAudio?.destroy?.();
 });
