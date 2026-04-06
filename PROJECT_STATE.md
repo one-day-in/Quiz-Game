@@ -118,10 +118,12 @@ The app is realtime, but not purely realtime. It mixes:
   - renders QR and edit controls only in expanded mode
 - `views/QuestionModalView.js`
   - modal UI
+  - question/answer audio tracks now render through a custom player UI instead of browser-native `audio[controls]`
 - `utils/overlayDismiss.js`
   - shared close-on-overlay and close-on-Escape wiring for dismissable layers
 - `views/LobbyView.js`
   - game list, rename, create, delete
+  - game rename now expects a real updated row back from Supabase instead of treating a zero-row update as success
   - settings overlay for interface language
 - `views/LoginView.js`
   - sign-in screen
@@ -448,6 +450,9 @@ Ordered refactor and improvement steps. Do not treat all items as immediate.
 - Playback is gated on a runtime transition to `winnerPlayerId === local player.id`, which prevents the initial snapshot, duplicate fallback events, or other players' updates from triggering sound.
 - Retuned the generated winner tone to be lower, longer, and louder so it reads more like an alarm on mobile player controllers.
 - Switched the preferred winner sound path to the bundled `public/audio/press-tone.mp3`, keeping Web Audio only as a playback fallback for browsers that reject the media element path.
+- Replaced the question modal's native audio controls with a custom in-app player UI built on top of `HTMLAudioElement`.
+- Tightened lobby game rename so Supabase must return the updated `games` row, which exposes missing owner-update RLS instead of silently pretending the rename persisted.
+- Added `supabase/games.sql` to document the expected `public.games` select/insert/update policies in source control.
 
 ### 2026-04-03
 

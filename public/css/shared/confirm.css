@@ -164,9 +164,9 @@
 
 .cfdialog--round-picker {
     background:
-        radial-gradient(900px 420px at 50% 18%, rgba(245, 158, 11, 0.14), transparent 52%),
-        linear-gradient(180deg, rgba(2, 6, 23, 0.72), rgba(2, 6, 23, 0.84));
-    backdrop-filter: blur(16px) saturate(130%);
+        radial-gradient(900px 420px at 50% 18%, rgba(245, 158, 11, 0.1), transparent 52%),
+        linear-gradient(180deg, rgba(2, 6, 23, 0.98), rgba(2, 6, 23, 0.995));
+    backdrop-filter: none;
 }
 
 .cfdialog--round-picker::before {

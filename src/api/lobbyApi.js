@@ -37,13 +37,21 @@ export async function createGame(name) {
 }
 
 export async function renameGame(gameId, name) {
-    const { error } = await supabase
+    const { data, error } = await supabase
         .from('games')
-        .update({ name: name.trim() })
-        .eq('id', gameId);
+        .update({
+            name: name.trim(),
+            updated_at: new Date().toISOString(),
+        })
+        .eq('id', gameId)
+        .select('id, name, updated_at')
+        .maybeSingle();
 
     if (error) throw new Error(`[Game] renameGame failed: ${error.message}`);
-    return { ok: true };
+    if (!data) {
+        throw new Error('[Game] renameGame failed: no game row was updated. Check games table RLS policies for owner updates.');
+    }
+    return data;
 }
 
 export async function deleteGame(gameId) {

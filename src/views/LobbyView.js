@@ -104,8 +104,10 @@ export class LobbyView {
             restore(next);
 
             try {
-                await renameGame(game.id, next);
-                game.name = next; // keep local cache in sync
+                const renamed = await renameGame(game.id, next);
+                game.name = renamed.name;
+                game.updated_at = renamed.updated_at;
+                this._render();
             } catch (err) {
                 console.error('[LobbyView] rename failed:', err);
                 restore(current);

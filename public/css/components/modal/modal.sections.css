@@ -242,10 +242,123 @@
 }
 
 .qmodal__audioTrack {
+    display: none;
+}
+
+.qmodal__audioPlayer {
     flex: 1 1 0;
     min-width: 0;
-    height: 36px;
-    display: block;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 14px;
+    padding: 8px 2px;
+}
+
+.qmodal__audioPlayBtn {
+    width: 82px;
+    min-width: 82px;
+    min-height: 82px;
+    border: 1px solid rgba(96, 165, 250, 0.36);
+    border-radius: 24px;
+    background:
+        radial-gradient(circle at 30% 25%, rgba(191, 219, 254, 0.42), transparent 30%),
+        linear-gradient(180deg, rgba(37, 99, 235, 0.94), rgba(30, 64, 175, 0.98));
+    color: #eff6ff;
+    font-size: 15px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.18),
+        0 18px 28px rgba(30, 64, 175, 0.26);
+    cursor: pointer;
+    transition:
+        transform var(--t-fast) var(--ease),
+        box-shadow var(--t-fast) var(--ease),
+        filter var(--t-fast) var(--ease);
+}
+
+.qmodal__audioPlayBtn:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.04);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.2),
+        0 22px 30px rgba(30, 64, 175, 0.32);
+}
+
+.qmodal__audioPlayBtn:focus-visible {
+    outline: none;
+    box-shadow: var(--ring), 0 18px 28px rgba(30, 64, 175, 0.26);
+}
+
+.qmodal__audioPlayer.is-playing .qmodal__audioPlayBtn {
+    background:
+        radial-gradient(circle at 30% 25%, rgba(254, 202, 202, 0.44), transparent 30%),
+        linear-gradient(180deg, rgba(220, 38, 38, 0.96), rgba(153, 27, 27, 0.98));
+    border-color: rgba(248, 113, 113, 0.4);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.18),
+        0 20px 30px rgba(127, 29, 29, 0.3);
+}
+
+.qmodal__audioBody {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.qmodal__audioHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.qmodal__audioTitle {
+    margin: 0;
+    min-width: 0;
+    color: var(--text);
+    font-size: var(--fs-3);
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.qmodal__audioTime {
+    flex: 0 0 auto;
+    color: var(--muted);
+    font-size: var(--fs-1);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+}
+
+.qmodal__audioProgress {
+    width: 100%;
+    margin: 0;
+    accent-color: var(--brand);
+    cursor: pointer;
+}
+
+@media (max-width: 640px) {
+    .qmodal__audioPlayer {
+        grid-template-columns: 1fr;
+    }
+
+    .qmodal__audioPlayBtn {
+        width: 100%;
+        min-width: 0;
+        min-height: 64px;
+        border-radius: 18px;
+    }
+
+    .qmodal__audioHeader {
+        flex-direction: column;
+        align-items: flex-start;
+    }
 }
 
 /* Small square delete button next to each track */

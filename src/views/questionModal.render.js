@@ -5,6 +5,120 @@
 // is less than this many px, media is hidden and replaced by a peek button.
 const MEDIA_COLLAPSE_THRESHOLD = 150; // px
 
+function pauseOtherAudioTracks(currentAudioEl) {
+  document.querySelectorAll('.qmodal__audioTrack').forEach((audioEl) => {
+    if (audioEl !== currentAudioEl) {
+      try { audioEl.pause(); } catch {}
+    }
+  });
+}
+
+function formatAudioTime(seconds) {
+  const totalSeconds = Number.isFinite(seconds) ? Math.max(0, Math.floor(seconds)) : 0;
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = totalSeconds % 60;
+  return `${mins}:${String(secs).padStart(2, '0')}`;
+}
+
+function getAudioLabel(audio = {}) {
+  const raw = audio.title || audio.name || audio.filename || 'Audio track';
+  const basename = String(raw).split('/').pop() || raw;
+  return basename.replace(/\.[a-z0-9]+$/i, '').replace(/[_-]+/g, ' ').trim() || 'Audio track';
+}
+
+function createAudioPlayer(audio = {}) {
+  const wrap = document.createElement('div');
+  wrap.className = 'qmodal__audioPlayer';
+
+  const audioEl = document.createElement('audio');
+  audioEl.className = 'qmodal__audioTrack';
+  audioEl.preload = 'metadata';
+  audioEl.src = audio.src || audio.url || '';
+
+  const playBtn = document.createElement('button');
+  playBtn.type = 'button';
+  playBtn.className = 'qmodal__audioPlayBtn';
+  playBtn.setAttribute('aria-label', 'Play audio');
+  playBtn.textContent = 'Play';
+
+  const body = document.createElement('div');
+  body.className = 'qmodal__audioBody';
+
+  const header = document.createElement('div');
+  header.className = 'qmodal__audioHeader';
+
+  const title = document.createElement('p');
+  title.className = 'qmodal__audioTitle';
+  title.textContent = getAudioLabel(audio);
+
+  const time = document.createElement('span');
+  time.className = 'qmodal__audioTime';
+  time.textContent = '0:00 / 0:00';
+
+  const progress = document.createElement('input');
+  progress.className = 'qmodal__audioProgress';
+  progress.type = 'range';
+  progress.min = '0';
+  progress.max = '1';
+  progress.step = '0.01';
+  progress.value = '0';
+  progress.setAttribute('aria-label', 'Audio progress');
+
+  header.append(title, time);
+  body.append(header, progress);
+  wrap.append(playBtn, body, audioEl);
+
+  const syncUI = () => {
+    const isPlaying = !audioEl.paused && !audioEl.ended;
+    wrap.classList.toggle('is-playing', isPlaying);
+    playBtn.textContent = isPlaying ? 'Pause' : 'Play';
+    playBtn.setAttribute('aria-label', isPlaying ? 'Pause audio' : 'Play audio');
+
+    const duration = Number.isFinite(audioEl.duration) ? audioEl.duration : 0;
+    const currentTime = Number.isFinite(audioEl.currentTime) ? audioEl.currentTime : 0;
+    if (duration > 0) {
+      progress.value = String(Math.min(1, currentTime / duration));
+    } else {
+      progress.value = '0';
+    }
+    time.textContent = `${formatAudioTime(currentTime)} / ${formatAudioTime(duration)}`;
+  };
+
+  playBtn.addEventListener('click', async () => {
+    try {
+      if (!audioEl.paused && !audioEl.ended) {
+        audioEl.pause();
+      } else {
+        pauseOtherAudioTracks(audioEl);
+        await audioEl.play();
+      }
+    } catch (error) {
+      console.warn('[QuestionModal] audio playback failed:', error);
+    } finally {
+      syncUI();
+    }
+  });
+
+  progress.addEventListener('input', () => {
+    const duration = Number.isFinite(audioEl.duration) ? audioEl.duration : 0;
+    if (duration <= 0) return;
+    audioEl.currentTime = Number(progress.value) * duration;
+    syncUI();
+  });
+
+  audioEl.addEventListener('loadedmetadata', syncUI);
+  audioEl.addEventListener('timeupdate', syncUI);
+  audioEl.addEventListener('play', syncUI);
+  audioEl.addEventListener('pause', syncUI);
+  audioEl.addEventListener('ended', () => {
+    audioEl.currentTime = 0;
+    syncUI();
+  });
+
+  syncUI();
+  return { wrap, audioEl };
+}
+
 /* ------------------------ Media UI (image / video) ------------------------ */
 
 export function initMediaUI(host) {
@@ -168,12 +282,8 @@ export function renderAudioList(view, refs, type) {
     item.className        = 'qmodal__audioItem';
     item.dataset.filename = audio.filename;
 
-    const audioEl     = document.createElement('audio');
-    audioEl.className = 'qmodal__audioTrack';
-    audioEl.controls  = true;
-    audioEl.preload   = 'metadata';
-    audioEl.src       = audio.src || audio.url || '';
-    item.appendChild(audioEl);
+    const player = createAudioPlayer(audio);
+    item.appendChild(player.wrap);
 
     if (isEdit) {
       const delBtn = document.createElement('button');

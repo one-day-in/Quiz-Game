@@ -70,6 +70,7 @@ The project expects:
 
 Apply the SQL files in [/Users/oneday_in/Desktop/Quiz-Game/supabase](/Users/oneday_in/Desktop/Quiz-Game/supabase):
 
+- [games.sql](/Users/oneday_in/Desktop/WEB-products/Quiz-Game/supabase/games.sql)
 - [game_players.sql](/Users/oneday_in/Desktop/Quiz-Game/supabase/game_players.sql)
 - [game_runtime.sql](/Users/oneday_in/Desktop/Quiz-Game/supabase/game_runtime.sql)
 
