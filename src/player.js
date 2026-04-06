@@ -143,6 +143,9 @@ function renderController(currentPlayer) {
 
   root.innerHTML = `
     <main class="player-controller">
+      <div class="player-controller__toastHost" aria-live="polite" aria-atomic="true">
+        <p id="playerControllerStatus" class="player-controller__status" hidden></p>
+      </div>
       <section class="player-controller__card player-controller__card--controller">
         <div class="player-controller__topBar">
           <p class="player-controller__eyebrow">${t('player_controller')}</p>
@@ -167,7 +170,6 @@ function renderController(currentPlayer) {
           <strong id="playerScoreValue" class="player-controller__scoreValue">${formatPoints(currentPlayer.points)}</strong>
         </div>
         <button id="playerPressBtn" class="player-controller__pressBtn" type="button">PRESS</button>
-        <p id="playerControllerStatus" class="player-controller__status" hidden></p>
       </section>
     </main>
   `;
@@ -202,10 +204,9 @@ function renderController(currentPlayer) {
     try {
       player = await updatePlayerByController(gameId, controllerId, { name: nextName });
       nameInput.value = player.name;
-      statusEl.hidden = true;
+      hideStatus(statusEl);
     } catch (error) {
-      statusEl.textContent = error.message || t('could_not_update_name');
-      statusEl.hidden = false;
+      showStatus(statusEl, error.message || t('could_not_update_name'));
       nameInput.value = player.name;
     } finally {
       setControllerPending(false);
@@ -222,8 +223,7 @@ function renderController(currentPlayer) {
       player = null;
       renderJoin();
     } catch (error) {
-      statusEl.textContent = error.message || t('could_not_leave_game');
-      statusEl.hidden = false;
+      showStatus(statusEl, error.message || t('could_not_leave_game'));
     } finally {
       setControllerPending(false);
     }
@@ -316,8 +316,7 @@ async function claimPress(statusEl) {
     applyRuntimeState(await pressRuntime.claimPress());
     hideStatus(statusEl);
   } catch (error) {
-    statusEl.textContent = error.message || t('could_not_claim_press');
-    statusEl.hidden = false;
+    showStatus(statusEl, error.message || t('could_not_claim_press'));
   }
 }
 
@@ -335,7 +334,17 @@ function setControllerPending(isPending) {
 }
 
 function hideStatus(statusEl) {
-  if (statusEl) statusEl.hidden = true;
+  if (!statusEl) return;
+  statusEl.hidden = true;
+  statusEl.textContent = '';
+  statusEl.dataset.variant = 'error';
+}
+
+function showStatus(statusEl, message, variant = 'error') {
+  if (!statusEl) return;
+  statusEl.textContent = message;
+  statusEl.dataset.variant = variant;
+  statusEl.hidden = false;
 }
 
 function updateScoreDisplay(scoreEl) {

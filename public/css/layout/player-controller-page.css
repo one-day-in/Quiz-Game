@@ -34,6 +34,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
 }
 
 .player-controller__card {
@@ -60,6 +61,18 @@ body {
   height: 100%;
   justify-content: space-between;
   gap: clamp(16px, 2.4dvh, 24px);
+}
+
+.player-controller__toastHost {
+  position: absolute;
+  top: clamp(10px, 2dvh, 18px);
+  left: 50%;
+  width: min(100% - 24px, 540px);
+  transform: translateX(-50%);
+  display: grid;
+  justify-items: center;
+  pointer-events: none;
+  z-index: 3;
 }
 
 .player-controller__eyebrow {
@@ -317,8 +330,33 @@ body {
 .player-controller__error {
   margin: 0;
   font-family: var(--font-ui);
-  color: #fecaca;
   font-weight: 700;
+}
+
+.player-controller__status {
+  width: fit-content;
+  max-width: 100%;
+  padding: 12px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(248, 113, 113, 0.28);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.9));
+  color: #ffe4e6;
+  text-align: center;
+  box-shadow:
+    0 18px 36px rgba(2, 6, 23, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  text-wrap: balance;
+}
+
+.player-controller__status[data-variant="error"] {
+  border-color: rgba(248, 113, 113, 0.34);
+  color: #ffe4e6;
+}
+
+.player-controller__error {
+  color: #fecaca;
 }
 
 @media (max-width: 560px) {
