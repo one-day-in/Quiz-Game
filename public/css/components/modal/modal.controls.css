@@ -157,8 +157,8 @@
   overflow: hidden;
   /* âœ… prevent knob overflow */
 
-  height: 56px;
-  padding: 0 18px;
+  min-height: 64px;
+  padding: 0 20px;
 
   display: inline-flex;
   align-items: center;
@@ -283,8 +283,8 @@
 }
 
 .qmodal__btnToggleAnswer {
-  height: 56px;
-  padding: 0 18px;
+  min-height: 64px;
+  padding: 0 20px;
 
   border-radius: 999px;
   border: 1px solid var(--btn-outline);
@@ -303,6 +303,11 @@
     box-shadow var(--t-fast) var(--ease),
     border-color var(--t-fast) var(--ease),
     background var(--t-fast) var(--ease);
+}
+
+.qmodal__footer .qmodal__btn {
+  min-height: 64px;
+  padding-inline: 24px;
 }
 
 .qmodal__btnToggleAnswer:hover:not(:disabled) {
