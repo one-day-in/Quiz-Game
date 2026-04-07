@@ -224,6 +224,17 @@
    AUDIO LIST (multiple tracks per section)
 ========================================= */
 
+.qmodal__mediaRow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-2);
+    background: var(--surface-2);
+}
+
 .qmodal__audioList {
     display: flex;
     flex-direction: column;
@@ -392,24 +403,8 @@
 .qmodal__audioHeader {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     gap: 12px;
-}
-
-.qmodal__audioVersion {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 4px 9px;
-    border-radius: 999px;
-    background: rgba(251, 191, 36, 0.16);
-    border: 1px solid rgba(251, 191, 36, 0.34);
-    color: #fde68a;
-    font-size: 11px;
-    font-weight: 900;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    white-space: nowrap;
 }
 
 .qmodal__audioTime {

@@ -71,7 +71,7 @@ export function buildModalDom() {
                 </div>
 
                 <!-- Image / Video player + delete -->
-                <div class="qmodal__mediaRow qmodal__audioItem">
+                <div class="qmodal__mediaRow">
                   <div class="qmodal__mediaHostWrap qmodal__questionMediaHostWrap">
                     <div class="qmodal__mediaHost" data-media="question"></div>
                   </div>
@@ -125,7 +125,7 @@ export function buildModalDom() {
                 </div>
 
                 <!-- Image / Video player + delete -->
-                <div class="qmodal__mediaRow qmodal__audioItem">
+                <div class="qmodal__mediaRow">
                   <div class="qmodal__mediaHostWrap qmodal__answerMediaHostWrap">
                     <div class="qmodal__mediaHost" data-media="answer"></div>
                   </div>
