@@ -27,7 +27,7 @@ function renderTopicCellFromModel(el, model, roundId, row) {
 }
 
 function resetTopicCellContent(el) {
-  el.querySelector('input.topic-editor')?.remove();
+  el.querySelector('.topic-editor')?.remove();
   el.querySelector(':scope > span')?.remove();
 }
 
@@ -65,15 +65,16 @@ export function GameGridView({ model, uiState, roundId, onCellClick, onTopicChan
     topicCell.appendChild(editTopicBtn);
 
     const openTopicEditor = () => {
-      if (topicCell.querySelector('input.topic-editor')) return;
+      if (topicCell.querySelector('.topic-editor')) return;
 
       const currentTopic = model.getTopic(roundId, row) || '';
 
-      const input = document.createElement('input');
-      input.type = 'text';
+      const input = document.createElement('textarea');
       input.className = 'topic-editor';
       input.value = currentTopic;
       input.placeholder = t('edit_topic');
+      input.rows = 3;
+      input.setAttribute('aria-label', t('edit_topic'));
 
       // Replace content with input (keep editBtn out of the way)
       const span = topicCell.querySelector('span');
@@ -83,7 +84,7 @@ export function GameGridView({ model, uiState, roundId, onCellClick, onTopicChan
       topicCell.appendChild(input);
 
       input.focus();
-      input.select();
+      input.setSelectionRange(input.value.length, input.value.length);
 
       let committed = false;
 
@@ -112,7 +113,10 @@ export function GameGridView({ model, uiState, roundId, onCellClick, onTopicChan
       };
 
       input.addEventListener('keydown', (ev) => {
-        if (ev.key === 'Enter') { ev.preventDefault(); commit(); }
+        if (ev.key === 'Enter' && (ev.metaKey || ev.ctrlKey)) {
+          ev.preventDefault();
+          commit();
+        }
         if (ev.key === 'Escape') { ev.preventDefault(); committed = true; closeFromModel(); }
       });
 
