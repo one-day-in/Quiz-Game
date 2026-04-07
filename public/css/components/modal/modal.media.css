@@ -75,7 +75,9 @@
 
 /* Row wrapping media + delete button (same look as audioItem) */
 .qmodal__mediaRow {
+    display: flex;
     align-items: flex-start;
+    gap: 10px;
     flex: 0 0 auto; /* size to content, don't fill column */
 }
 
