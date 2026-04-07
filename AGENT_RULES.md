@@ -79,3 +79,16 @@ These rules are the operating baseline for future agent work in this repository.
 - Keep `PROJECT_STATE.md` updated when architecture or data flow materially changes.
 - Add decisions to the decisions log with absolute dates.
 - If a previous assumption in `PROJECT_STATE.md` becomes false, replace it rather than layering conflicting notes on top.
+
+## Response Format
+
+- Do the work first.
+- Be concise.
+- Reply in Ukrainian.
+- Default final replies to only:
+  - changed files
+  - commands run
+  - blockers
+  - next step
+- Do not explain code unless explicitly asked.
+- Keep final replies under 8 lines.
