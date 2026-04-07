@@ -224,17 +224,6 @@
    AUDIO LIST (multiple tracks per section)
 ========================================= */
 
-.qmodal__mediaRow {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-
-    padding: 8px 12px;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border-2);
-    background: var(--surface-2);
-}
-
 .qmodal__audioList {
     display: flex;
     flex-direction: column;
