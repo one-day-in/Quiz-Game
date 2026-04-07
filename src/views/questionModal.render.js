@@ -53,6 +53,10 @@ function createAudioPlayer(audio = {}) {
   const header = document.createElement('div');
   header.className = 'qmodal__audioHeader';
 
+  const version = document.createElement('span');
+  version.className = 'qmodal__audioVersion';
+  version.textContent = 'AUDIO V3';
+
   const time = document.createElement('span');
   time.className = 'qmodal__audioTime';
   time.textContent = '0:00 / 0:00';
@@ -66,7 +70,7 @@ function createAudioPlayer(audio = {}) {
   progress.value = '0';
   progress.setAttribute('aria-label', 'Audio progress');
 
-  header.append(time);
+  header.append(version, time);
   body.append(header, progress);
   wrap.append(playBtn, body, audioEl);
 

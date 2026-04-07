@@ -248,6 +248,12 @@
     background: var(--surface-2);
 }
 
+.qmodal:not(.qmodal--edit) .qmodal__audioItem {
+    width: min(70%, 760px);
+    max-width: 100%;
+    align-self: center;
+}
+
 .qmodal:not(.qmodal--edit) .qmodal__audioList--hero .qmodal__audioItem {
     flex: 0 0 auto;
     width: min(70%, 760px);
@@ -277,10 +283,17 @@
     flex: 1 1 0;
     min-width: 0;
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: 72px minmax(0, 1fr);
     align-items: center;
     gap: 14px;
     padding: 8px 2px;
+}
+
+.qmodal:not(.qmodal--edit) .qmodal__audioPlayer {
+    width: 100%;
+    max-height: clamp(64px, 10vh, 88px);
+    gap: 16px;
+    padding: 0;
 }
 
 .qmodal:not(.qmodal--edit) .qmodal__audioList--hero .qmodal__audioPlayer {
@@ -310,6 +323,11 @@
         transform var(--t-fast) var(--ease),
         box-shadow var(--t-fast) var(--ease),
         filter var(--t-fast) var(--ease);
+}
+
+.qmodal__audioPlayBtn:disabled {
+    cursor: default;
+    opacity: 0.7;
 }
 
 .qmodal:not(.qmodal--edit) .qmodal__audioList--hero .qmodal__audioPlayBtn {
@@ -374,8 +392,24 @@
 .qmodal__audioHeader {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: space-between;
     gap: 12px;
+}
+
+.qmodal__audioVersion {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: rgba(251, 191, 36, 0.16);
+    border: 1px solid rgba(251, 191, 36, 0.34);
+    color: #fde68a;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    white-space: nowrap;
 }
 
 .qmodal__audioTime {
@@ -403,6 +437,10 @@
 }
 
 @media (max-width: 640px) {
+    .qmodal:not(.qmodal--edit) .qmodal__audioItem {
+        width: 100%;
+    }
+
     .qmodal__audioPlayer {
         grid-template-columns: 1fr;
     }
