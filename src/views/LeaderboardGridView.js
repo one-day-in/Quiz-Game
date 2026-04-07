@@ -123,17 +123,7 @@ export function LeaderboardGridView({
       patchFooterCard(node, player, index);
       list.appendChild(node);
     }
-
-    const hiddenCount = sortedPlayers.length - visiblePlayers.length;
-    if (hiddenCount > 0) {
-      if (!moreNode) {
-        moreNode = createMoreCard();
-      }
-      patchMoreCard(moreNode, hiddenCount);
-      list.appendChild(moreNode);
-    } else {
-      removeMoreNode();
-    }
+    removeMoreNode();
   }
 
   function syncRows(sortedPlayers) {
