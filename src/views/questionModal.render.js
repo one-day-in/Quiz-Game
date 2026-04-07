@@ -5,6 +5,18 @@
 // is less than this many px, media is hidden and replaced by a peek button.
 const MEDIA_COLLAPSE_THRESHOLD = 150; // px
 
+const PLAY_ICON = `
+  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    <path d="M8 6.5v11l9-5.5z"></path>
+  </svg>
+`;
+
+const PAUSE_ICON = `
+  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    <path d="M7 6h4v12H7zM13 6h4v12h-4z"></path>
+  </svg>
+`;
+
 function pauseOtherAudioTracks(currentAudioEl) {
   document.querySelectorAll('.qmodal__audioTrack').forEach((audioEl) => {
     if (audioEl !== currentAudioEl) {
@@ -20,12 +32,6 @@ function formatAudioTime(seconds) {
   return `${mins}:${String(secs).padStart(2, '0')}`;
 }
 
-function getAudioLabel(audio = {}) {
-  const raw = audio.title || audio.name || audio.filename || 'Audio track';
-  const basename = String(raw).split('/').pop() || raw;
-  return basename.replace(/\.[a-z0-9]+$/i, '').replace(/[_-]+/g, ' ').trim() || 'Audio track';
-}
-
 function createAudioPlayer(audio = {}) {
   const wrap = document.createElement('div');
   wrap.className = 'qmodal__audioPlayer';
@@ -39,17 +45,13 @@ function createAudioPlayer(audio = {}) {
   playBtn.type = 'button';
   playBtn.className = 'qmodal__audioPlayBtn';
   playBtn.setAttribute('aria-label', 'Play audio');
-  playBtn.textContent = 'Play';
+  playBtn.innerHTML = `<span class="qmodal__audioPlayIcon">${PLAY_ICON}</span>`;
 
   const body = document.createElement('div');
   body.className = 'qmodal__audioBody';
 
   const header = document.createElement('div');
   header.className = 'qmodal__audioHeader';
-
-  const title = document.createElement('p');
-  title.className = 'qmodal__audioTitle';
-  title.textContent = getAudioLabel(audio);
 
   const time = document.createElement('span');
   time.className = 'qmodal__audioTime';
@@ -64,14 +66,14 @@ function createAudioPlayer(audio = {}) {
   progress.value = '0';
   progress.setAttribute('aria-label', 'Audio progress');
 
-  header.append(title, time);
+  header.append(time);
   body.append(header, progress);
   wrap.append(playBtn, body, audioEl);
 
   const syncUI = () => {
     const isPlaying = !audioEl.paused && !audioEl.ended;
     wrap.classList.toggle('is-playing', isPlaying);
-    playBtn.textContent = isPlaying ? 'Pause' : 'Play';
+    playBtn.innerHTML = `<span class="qmodal__audioPlayIcon">${isPlaying ? PAUSE_ICON : PLAY_ICON}</span>`;
     playBtn.setAttribute('aria-label', isPlaying ? 'Pause audio' : 'Play audio');
 
     const duration = Number.isFinite(audioEl.duration) ? audioEl.duration : 0;
