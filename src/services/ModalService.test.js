@@ -49,6 +49,60 @@ describe('ModalService press reset', () => {
     expect(service._resetPressRuntime).toHaveBeenCalledTimes(1);
   });
 
+  it('starts a 30-second countdown for the winner and auto-marks incorrect on timeout', async () => {
+    let runtimeHandler = null;
+    const gameService = {
+      getGameId: () => 'game-1',
+    };
+    const pressRuntime = {
+      subscribe: vi.fn((handler) => {
+        runtimeHandler = handler;
+        return vi.fn();
+      }),
+    };
+    const service = new ModalService(gameService, {}, pressRuntime);
+    service.view = {
+      updateWinnerName: vi.fn(),
+      updatePressTimer: vi.fn(),
+    };
+    service._cellValue = 300;
+    service._resetPressRuntime = vi.fn().mockResolvedValue(undefined);
+
+    service._bindPressRuntime();
+    runtimeHandler?.({ winnerPlayerId: 'player-1', winnerName: 'Maria' });
+    await vi.advanceTimersByTimeAsync(30000);
+
+    expect(service.view.updatePressTimer).toHaveBeenCalledWith(30);
+    expect(adjustPlayerScoreMock).toHaveBeenCalledWith('game-1', 'player-1', -300);
+    expect(service._resetPressRuntime).toHaveBeenCalledTimes(1);
+  });
+
+  it('stops the countdown when the host switches to the answer view', async () => {
+    let runtimeHandler = null;
+    const gameService = {
+      getGameId: () => 'game-1',
+    };
+    const pressRuntime = {
+      subscribe: vi.fn((handler) => {
+        runtimeHandler = handler;
+        return vi.fn();
+      }),
+    };
+    const service = new ModalService(gameService, {}, pressRuntime);
+    service.view = {
+      updateWinnerName: vi.fn(),
+      updatePressTimer: vi.fn(),
+    };
+    service._cellValue = 300;
+
+    service._bindPressRuntime();
+    runtimeHandler?.({ winnerPlayerId: 'player-1', winnerName: 'Maria' });
+    service._stopPressCountdown();
+    await vi.advanceTimersByTimeAsync(30000);
+
+    expect(adjustPlayerScoreMock).not.toHaveBeenCalled();
+  });
+
   it('adds score and closes modal on correct answer', async () => {
     const gameService = {
       getGameId: () => 'game-1',

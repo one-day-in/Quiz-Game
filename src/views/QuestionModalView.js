@@ -24,6 +24,7 @@ export class QuestionModalView {
         onDeleteMedia,
         onAddAudio,
         onDeleteAudio,
+        onViewStateChange,
     }) {
         this._mode          = mode;
         this._headerTitle   = (headerTitle || '').trim();
@@ -37,7 +38,7 @@ export class QuestionModalView {
         this._cb = {
             onClose, onIncorrect, onCorrect,
             onToggleAnswered, onToggleQuizSpinner, onQuestionChange, onAnswerChange,
-            onUploadMedia, onDeleteMedia, onAddAudio, onDeleteAudio,
+            onUploadMedia, onDeleteMedia, onAddAudio, onDeleteAudio, onViewStateChange,
         };
 
         const { root, refs } = buildModalDom();
@@ -132,9 +133,9 @@ export class QuestionModalView {
     updateWinnerName(name) {
         this._winnerName = (name || '').trim();
 
-        const bannerEl = this._refs.pressBanner;
-        if (bannerEl && this._winnerName) {
-            bannerEl.textContent = `🔔 ${this._winnerName}`;
+        const bannerTextEl = this._refs.pressBannerMain;
+        if (bannerTextEl && this._winnerName) {
+            bannerTextEl.textContent = `🔔 ${this._winnerName}`;
         }
         this.syncPressBannerVisibility({ animate: !!this._winnerName });
 
@@ -142,6 +143,22 @@ export class QuestionModalView {
         const hasWinner = !!this._winnerName;
         if (this._refs.btnIncorrect) this._refs.btnIncorrect.disabled = !hasWinner;
         if (this._refs.btnCorrect)   this._refs.btnCorrect.disabled   = !hasWinner;
+    }
+
+    updatePressTimer(secondsRemaining) {
+        const timerEl = this._refs.pressBannerTimer;
+        if (!timerEl) return;
+
+        const totalSeconds = Number.isFinite(secondsRemaining) ? Math.max(0, Math.ceil(secondsRemaining)) : null;
+        if (totalSeconds === null) {
+            timerEl.hidden = true;
+            return;
+        }
+
+        const mins = Math.floor(totalSeconds / 60);
+        const secs = totalSeconds % 60;
+        timerEl.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        timerEl.hidden = false;
     }
 
     syncPressBannerVisibility({ animate = false } = {}) {
@@ -197,6 +214,7 @@ export class QuestionModalView {
             applyModeUI(this, this._refs);
             renderAll(this, this._refs);
             this.syncPressBannerVisibility();
+            this._cb.onViewStateChange?.({ mode: this._mode, isAnswerShown: this._isAnswerShown });
         });
 
         bindOverlayDismiss({
@@ -247,6 +265,7 @@ export class QuestionModalView {
             applyModeUI(this, this._refs);
             renderAll(this, this._refs);
             this.syncPressBannerVisibility();
+            this._cb.onViewStateChange?.({ mode: this._mode, isAnswerShown: this._isAnswerShown });
 
             if (this._isAnswerShown) {
                 requestAnimationFrame(() => {

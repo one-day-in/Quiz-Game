@@ -95,4 +95,19 @@ describe('QuestionModalView winner state', () => {
 
     view.destroy();
   });
+
+  it('renders the press countdown inside the banner', () => {
+    const view = createView();
+
+    view.updateWinnerName('Maria');
+    view.updatePressTimer(30);
+
+    expect(view._refs.pressBannerTimer.hidden).toBe(false);
+    expect(view._refs.pressBannerTimer.textContent).toBe('00:30');
+
+    view.updatePressTimer(null);
+    expect(view._refs.pressBannerTimer.hidden).toBe(true);
+
+    view.destroy();
+  });
 });

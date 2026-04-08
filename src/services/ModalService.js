@@ -5,6 +5,8 @@ import { showConfirm } from '../utils/confirm.js';
 import { adjustPlayerScore } from '../api/gameApi.js';
 import { t } from '../i18n.js';
 
+const PRESS_RESPONSE_SECONDS = 30;
+
 export class ModalService {
   constructor(gameService, mediaService, pressRuntime) {
     this._game = gameService;
@@ -25,6 +27,10 @@ export class ModalService {
     this._pressEnableTimer = null;
     this._pressWinnerId = null;
     this._cellValue = 0;
+    this._pressCountdownTimer = null;
+    this._pressCountdownDeadline = null;
+    this._pressTimerStopped = false;
+    this._isResolvingPressResult = false;
   }
 
   _ensureContainer() {
@@ -216,7 +222,13 @@ export class ModalService {
         } finally {
           this.view?.setUploading(target, false);
         }
-      }
+      },
+
+      onViewStateChange: ({ mode: nextMode, isAnswerShown }) => {
+        if (nextMode !== 'view' || isAnswerShown) {
+          this._stopPressCountdown();
+        }
+      },
     });
 
     this.container.appendChild(this.view.el);
@@ -246,6 +258,7 @@ export class ModalService {
     clearTimeout(this._questionTimer);
     clearTimeout(this._answerTimer);
     clearTimeout(this._pressEnableTimer);
+    this._clearPressCountdown();
     this._questionTimer = null;
     this._answerTimer   = null;
     this._pressEnableTimer = null;
@@ -272,6 +285,8 @@ export class ModalService {
     this.activeCell = null;
     this._pressWinnerId = null;
     this._cellValue = 0;
+    this._pressTimerStopped = false;
+    this._isResolvingPressResult = false;
     void this._pressRuntime?.closePress?.();
     if (this.container?.isConnected) this.container.innerHTML = '';
 
@@ -280,7 +295,9 @@ export class ModalService {
   }
 
   async _handleIncorrect() {
-    if (!this._pressWinnerId) return;
+    if (!this._pressWinnerId || this._isResolvingPressResult) return;
+    this._isResolvingPressResult = true;
+    this._clearPressCountdown();
     try {
       await adjustPlayerScore(this._game.getGameId(), this._pressWinnerId, -this._cellValue);
     } catch (e) {
@@ -288,10 +305,13 @@ export class ModalService {
     }
     // Reset press — modal stays open, another player can press
     await this._resetPressRuntime();
+    this._isResolvingPressResult = false;
   }
 
   async _handleCorrect() {
-    if (!this._pressWinnerId) return;
+    if (!this._pressWinnerId || this._isResolvingPressResult) return;
+    this._isResolvingPressResult = true;
+    this._clearPressCountdown();
     try {
       await adjustPlayerScore(this._game.getGameId(), this._pressWinnerId, this._cellValue);
     } catch (e) {
@@ -305,12 +325,58 @@ export class ModalService {
       clearTimeout(this._pressEnableTimer);
       this._pressEnableTimer = null;
 
+      this._clearPressCountdown();
+      this._pressTimerStopped = false;
       this._pressWinnerId = null;
-      this.view?.updateWinnerName('');
+      this.view?.updateWinnerName?.('');
+      this.view?.updatePressTimer?.(null);
       await this._pressRuntime?.openPress?.();
     } catch (error) {
       console.error('[ModalService] Failed to reset press runtime:', error);
     }
+  }
+
+  _clearPressCountdown() {
+    clearInterval(this._pressCountdownTimer);
+    this._pressCountdownTimer = null;
+    this._pressCountdownDeadline = null;
+    this.view?.updatePressTimer?.(null);
+  }
+
+  _stopPressCountdown() {
+    this._pressTimerStopped = true;
+    this._clearPressCountdown();
+  }
+
+  _syncPressCountdownView() {
+    if (!this._pressCountdownDeadline) {
+      this.view?.updatePressTimer?.(null);
+      return;
+    }
+
+    const secondsRemaining = Math.max(0, (this._pressCountdownDeadline - Date.now()) / 1000);
+    this.view?.updatePressTimer?.(secondsRemaining);
+  }
+
+  _startPressCountdown() {
+    if (!this._pressWinnerId || this._pressTimerStopped || this._isResolvingPressResult) return;
+    if (this._pressCountdownTimer) return;
+
+    this._pressCountdownDeadline = Date.now() + (PRESS_RESPONSE_SECONDS * 1000);
+    this._syncPressCountdownView();
+
+    this._pressCountdownTimer = setInterval(() => {
+      if (!this._pressCountdownDeadline) return;
+
+      const remainingMs = this._pressCountdownDeadline - Date.now();
+      if (remainingMs <= 0) {
+        this._clearPressCountdown();
+        void this._handleIncorrect();
+        return;
+      }
+
+      this._syncPressCountdownView();
+    }, 250);
   }
 
   _bindPressRuntime() {
@@ -318,8 +384,21 @@ export class ModalService {
     if (!this._pressRuntime) return;
 
     const stopSub = this._pressRuntime.subscribe((runtime) => {
+      const prevWinnerId = this._pressWinnerId;
       this._pressWinnerId = runtime?.winnerPlayerId || null;
-      this.view?.updateWinnerName(runtime?.winnerName || '');
+      this.view?.updateWinnerName?.(runtime?.winnerName || '');
+
+      if (!this._pressWinnerId) {
+        this._clearPressCountdown();
+        this._pressTimerStopped = false;
+        return;
+      }
+
+      if (this._pressWinnerId !== prevWinnerId) {
+        this._clearPressCountdown();
+        this._pressTimerStopped = false;
+        this._startPressCountdown();
+      }
     });
 
     this._stopRuntimeSubscription = () => {

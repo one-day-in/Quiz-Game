@@ -34,7 +34,10 @@ export function buildModalDom() {
       <!-- BODY -->
       <section class="qmodal__body">
         <!-- PRESS WINNER BANNER — absolute overlay over body content -->
-        <div class="qmodal__pressBanner" hidden aria-live="polite"></div>
+        <div class="qmodal__pressBanner" hidden aria-live="polite">
+          <div class="qmodal__pressBannerMain"></div>
+          <div class="qmodal__pressBannerTimer" hidden>00:30</div>
+        </div>
         <div class="qmodal__emptyState">✏️ is empty</div>
 
           <!-- QUESTION -->
@@ -185,6 +188,8 @@ export function buildModalDom() {
       overlay:            qs('.qmodal__overlay'),
       title:              qs('.qmodal__headerTitle'),
       pressBanner:        qs('.qmodal__pressBanner'),
+      pressBannerMain:    qs('.qmodal__pressBannerMain'),
+      pressBannerTimer:   qs('.qmodal__pressBannerTimer'),
       headerQuizSpinner:  qs('.qmodal__headerToggle'),
       quizSpinnerCheckbox: qs('.qmodal__quizSpinnerInput'),
       btnToggleMode:      qs('.qmodal__btnToggleMode'),

@@ -1,6 +1,6 @@
 # PROJECT_STATE
 
-Last updated: 2026-04-06
+Last updated: 2026-04-08
 
 ## Real Project Overview
 
@@ -55,6 +55,7 @@ The app is realtime, but not purely realtime. It mixes:
   - updates board cells
   - resets and observes press runtime
   - adjusts score on correct/incorrect actions
+  - now runs a 30-second host-side answer countdown after a player wins `PRESS`
 
 ### Data / Service Layer
 
@@ -119,6 +120,7 @@ The app is realtime, but not purely realtime. It mixes:
   - renders QR and edit controls only in expanded mode
 - `views/QuestionModalView.js`
   - modal UI
+  - shows the active press winner countdown in the host banner while the question is still live
   - question/answer audio tracks now render through a custom player UI instead of browser-native `audio[controls]`
   - audio-only sections can promote that player into a larger hero-style block when there is no competing text/media
 - `utils/overlayDismiss.js`
@@ -445,6 +447,12 @@ Ordered refactor and improvement steps. Do not treat all items as immediate.
   Medium
 
 ## Decisions Log
+
+### 2026-04-08
+
+- Added a 30-second host-side answer timer that starts when a player becomes the confirmed `PRESS` winner in the question modal.
+- The timer is rendered inside the modal winner banner and stops as soon as the host switches to the answer/review state.
+- If the timer expires before `Correct` or `Not Correct`, the host now runs the existing `Not Correct` path automatically so scoring and press reset stay consistent.
 
 ### 2026-04-06
 
