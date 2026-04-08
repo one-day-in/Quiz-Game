@@ -31,6 +31,7 @@ let gameRefreshTimer = null;
 let confirmedScore = 0;
 let isPressEnabled = false;
 let pressWinnerPlayerId = null;
+let isClaimingPress = false;
 let pressRuntime = null;
 let hasSeenRuntimeState = false;
 let lastPlayedWinnerToneKey = null;
@@ -183,6 +184,8 @@ function renderController(currentPlayer) {
   const deleteBtn = document.getElementById('playerDeleteBtn');
 
   pressBtn?.addEventListener('click', () => {
+    if (isClaimingPress) return;
+
     // Always give tactile feedback so the button feels alive
     pressBtn.classList.remove('is-pressed');
     void pressBtn.offsetWidth;
@@ -299,6 +302,9 @@ function applyRuntimeState(runtime) {
   const nextWinnerPlayerId = runtime?.winnerPlayerId || null;
   isPressEnabled = !!runtime?.pressEnabled;
   pressWinnerPlayerId = nextWinnerPlayerId;
+  if (!isPressEnabled || !!pressWinnerPlayerId) {
+    isClaimingPress = false;
+  }
 
   const shouldPlayFromTransition = shouldPlayPlayerPressWinnerTone({
     hasInitializedRuntime: hasSeenRuntimeState,
@@ -325,12 +331,14 @@ function applyRuntimeState(runtime) {
   }
 
   hasSeenRuntimeState = true;
-  const pressBtn = document.getElementById('playerPressBtn');
-  if (!pressBtn) return;
-  pressBtn.classList.toggle('is-enabled', !!isPressEnabled && !pressWinnerPlayerId);
+  syncPressButtonState();
 }
 
 async function claimPress(statusEl) {
+  if (isClaimingPress) return;
+  isClaimingPress = true;
+  syncPressButtonState();
+
   try {
     applyRuntimeState(await pressRuntime.claimPress());
     hideStatus(statusEl);
@@ -346,7 +354,20 @@ async function claimPress(statusEl) {
     }
 
     showStatus(statusEl, t('player_press_failed'));
+  } finally {
+    if (!pressWinnerPlayerId) {
+      isClaimingPress = false;
+    }
+    syncPressButtonState();
   }
+}
+
+function syncPressButtonState() {
+  const pressBtn = document.getElementById('playerPressBtn');
+  if (!pressBtn) return;
+  const isAvailable = !!isPressEnabled && !pressWinnerPlayerId && !isClaimingPress;
+  pressBtn.classList.toggle('is-enabled', isAvailable);
+  pressBtn.disabled = !isAvailable;
 }
 
 function toggleJoinPending(isPending) {
