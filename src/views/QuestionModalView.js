@@ -71,6 +71,10 @@ export class QuestionModalView {
 
     get el() { return this._root; }
 
+    triggerIncorrect() {
+        this._refs.btnIncorrect?.click();
+    }
+
     destroy() {
         // Pause + src-clear video before DOM removal — cleanest abort signal.
         // No video.load() call: it triggers extra async browser steps and

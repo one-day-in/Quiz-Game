@@ -387,7 +387,11 @@ export class ModalService {
       const remainingMs = this._pressCountdownDeadline - Date.now();
       if (remainingMs <= 0) {
         this._clearPressCountdown();
-        void this._handleIncorrect();
+        if (typeof this.view?.triggerIncorrect === 'function') {
+          this.view.triggerIncorrect();
+        } else {
+          void this._handleIncorrect();
+        }
         return;
       }
 
