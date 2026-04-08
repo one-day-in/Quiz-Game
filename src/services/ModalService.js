@@ -316,7 +316,6 @@ export class ModalService {
   async _handleCorrect() {
     if (!this._pressWinnerId || this._isResolvingPressResult) return;
     this._isResolvingPressResult = true;
-    this._clearPressCountdown();
     try {
       await adjustPlayerScore(this._game.getGameId(), this._pressWinnerId, this._cellValue);
     } catch (e) {
