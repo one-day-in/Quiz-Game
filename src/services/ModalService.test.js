@@ -77,7 +77,7 @@ describe('ModalService press reset', () => {
     expect(service._resetPressRuntime).toHaveBeenCalledTimes(1);
   });
 
-  it('stops the countdown when the host switches to the answer view', async () => {
+  it('pauses the countdown in answer view and resumes from the same point when returning', async () => {
     let runtimeHandler = null;
     const gameService = {
       getGameId: () => 'game-1',
@@ -97,10 +97,16 @@ describe('ModalService press reset', () => {
 
     service._bindPressRuntime();
     runtimeHandler?.({ winnerPlayerId: 'player-1', winnerName: 'Maria' });
-    service._stopPressCountdown();
+    await vi.advanceTimersByTimeAsync(12000);
+    service._pausePressCountdown();
     await vi.advanceTimersByTimeAsync(30000);
 
     expect(adjustPlayerScoreMock).not.toHaveBeenCalled();
+
+    service._resumePressCountdown();
+    await vi.advanceTimersByTimeAsync(18000);
+
+    expect(adjustPlayerScoreMock).toHaveBeenCalledWith('game-1', 'player-1', -300);
   });
 
   it('adds score and closes modal on correct answer', async () => {

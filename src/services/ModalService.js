@@ -29,7 +29,8 @@ export class ModalService {
     this._cellValue = 0;
     this._pressCountdownTimer = null;
     this._pressCountdownDeadline = null;
-    this._pressTimerStopped = false;
+    this._pressCountdownRemainingMs = null;
+    this._pressTimerPaused = false;
     this._isResolvingPressResult = false;
   }
 
@@ -226,8 +227,11 @@ export class ModalService {
 
       onViewStateChange: ({ mode: nextMode, isAnswerShown }) => {
         if (nextMode !== 'view' || isAnswerShown) {
-          this._stopPressCountdown();
+          this._pausePressCountdown();
+          return;
         }
+
+        this._resumePressCountdown();
       },
     });
 
@@ -285,7 +289,7 @@ export class ModalService {
     this.activeCell = null;
     this._pressWinnerId = null;
     this._cellValue = 0;
-    this._pressTimerStopped = false;
+    this._pressTimerPaused = false;
     this._isResolvingPressResult = false;
     void this._pressRuntime?.closePress?.();
     if (this.container?.isConnected) this.container.innerHTML = '';
@@ -326,7 +330,6 @@ export class ModalService {
       this._pressEnableTimer = null;
 
       this._clearPressCountdown();
-      this._pressTimerStopped = false;
       this._pressWinnerId = null;
       this.view?.updateWinnerName?.('');
       this.view?.updatePressTimer?.(null);
@@ -340,12 +343,24 @@ export class ModalService {
     clearInterval(this._pressCountdownTimer);
     this._pressCountdownTimer = null;
     this._pressCountdownDeadline = null;
+    this._pressCountdownRemainingMs = null;
     this.view?.updatePressTimer?.(null);
   }
 
-  _stopPressCountdown() {
-    this._pressTimerStopped = true;
-    this._clearPressCountdown();
+  _pausePressCountdown() {
+    if (!this._pressCountdownDeadline) return;
+    this._pressCountdownRemainingMs = Math.max(0, this._pressCountdownDeadline - Date.now());
+    clearInterval(this._pressCountdownTimer);
+    this._pressCountdownTimer = null;
+    this._pressCountdownDeadline = null;
+    this._pressTimerPaused = true;
+  }
+
+  _resumePressCountdown() {
+    if (!this._pressWinnerId || this._isResolvingPressResult) return;
+    if (!this._pressTimerPaused || !this._pressCountdownRemainingMs || this._pressCountdownTimer) return;
+    this._pressTimerPaused = false;
+    this._startPressCountdown(this._pressCountdownRemainingMs);
   }
 
   _syncPressCountdownView() {
@@ -358,11 +373,12 @@ export class ModalService {
     this.view?.updatePressTimer?.(secondsRemaining);
   }
 
-  _startPressCountdown() {
-    if (!this._pressWinnerId || this._pressTimerStopped || this._isResolvingPressResult) return;
+  _startPressCountdown(durationMs = PRESS_RESPONSE_SECONDS * 1000) {
+    if (!this._pressWinnerId || this._isResolvingPressResult) return;
     if (this._pressCountdownTimer) return;
 
-    this._pressCountdownDeadline = Date.now() + (PRESS_RESPONSE_SECONDS * 1000);
+    this._pressCountdownRemainingMs = durationMs;
+    this._pressCountdownDeadline = Date.now() + durationMs;
     this._syncPressCountdownView();
 
     this._pressCountdownTimer = setInterval(() => {
@@ -390,13 +406,13 @@ export class ModalService {
 
       if (!this._pressWinnerId) {
         this._clearPressCountdown();
-        this._pressTimerStopped = false;
+        this._pressTimerPaused = false;
         return;
       }
 
       if (this._pressWinnerId !== prevWinnerId) {
         this._clearPressCountdown();
-        this._pressTimerStopped = false;
+        this._pressTimerPaused = false;
         this._startPressCountdown();
       }
     });
