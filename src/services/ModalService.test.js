@@ -109,6 +109,30 @@ describe('ModalService press reset', () => {
     expect(adjustPlayerScoreMock).toHaveBeenCalledWith('game-1', 'player-1', -300);
   });
 
+  it('ignores stale winner updates while press reset is in flight', () => {
+    const gameService = {
+      getGameId: () => 'game-1',
+    };
+    const service = new ModalService(gameService, {}, {});
+    service.view = {
+      updateWinnerName: vi.fn(),
+      updatePressTimer: vi.fn(),
+    };
+
+    service._setPressWinner('player-1', 'Maria');
+    service._isResettingPressRuntime = true;
+
+    service._handlePressRuntimeUpdate({ winnerPlayerId: 'player-1', winnerName: 'Maria' });
+
+    expect(service.view.updateWinnerName).toHaveBeenCalledTimes(1);
+    expect(service._pressWinnerId).toBe('player-1');
+
+    service._handlePressRuntimeUpdate({ winnerPlayerId: null, winnerName: '' });
+
+    expect(service._pressWinnerId).toBe(null);
+    expect(service._isResettingPressRuntime).toBe(false);
+  });
+
   it('adds score and closes modal on correct answer', async () => {
     const gameService = {
       getGameId: () => 'game-1',

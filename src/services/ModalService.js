@@ -31,6 +31,7 @@ export class ModalService {
     this._pressCountdownDeadline = null;
     this._pressCountdownRemainingMs = null;
     this._pressTimerPaused = false;
+    this._isResettingPressRuntime = false;
     this._isResolvingPressResult = false;
   }
 
@@ -329,14 +330,19 @@ export class ModalService {
       clearTimeout(this._pressEnableTimer);
       this._pressEnableTimer = null;
 
+      this._isResettingPressRuntime = true;
       this._clearPressCountdown();
-      this._pressWinnerId = null;
-      this.view?.updateWinnerName?.('');
-      this.view?.updatePressTimer?.(null);
+      this._pressTimerPaused = false;
+      this._setPressWinner(null, '');
       await this._pressRuntime?.openPress?.();
     } catch (error) {
       console.error('[ModalService] Failed to reset press runtime:', error);
     }
+  }
+
+  _setPressWinner(winnerPlayerId = null, winnerName = '') {
+    this._pressWinnerId = winnerPlayerId || null;
+    this.view?.updateWinnerName?.(winnerName || '');
   }
 
   _clearPressCountdown() {
@@ -399,26 +405,38 @@ export class ModalService {
     }, 250);
   }
 
+  _handlePressRuntimeUpdate(runtime) {
+    const nextWinnerId = runtime?.winnerPlayerId || null;
+    const nextWinnerName = runtime?.winnerName || '';
+    const prevWinnerId = this._pressWinnerId;
+
+    if (this._isResettingPressRuntime && nextWinnerId) {
+      return;
+    }
+
+    if (!nextWinnerId) {
+      this._isResettingPressRuntime = false;
+      this._clearPressCountdown();
+      this._pressTimerPaused = false;
+      this._setPressWinner(null, '');
+      return;
+    }
+
+    this._setPressWinner(nextWinnerId, nextWinnerName);
+
+    if (nextWinnerId !== prevWinnerId) {
+      this._clearPressCountdown();
+      this._pressTimerPaused = false;
+      this._startPressCountdown();
+    }
+  }
+
   _bindPressRuntime() {
     this._stopRuntimeSubscription?.();
     if (!this._pressRuntime) return;
 
     const stopSub = this._pressRuntime.subscribe((runtime) => {
-      const prevWinnerId = this._pressWinnerId;
-      this._pressWinnerId = runtime?.winnerPlayerId || null;
-      this.view?.updateWinnerName?.(runtime?.winnerName || '');
-
-      if (!this._pressWinnerId) {
-        this._clearPressCountdown();
-        this._pressTimerPaused = false;
-        return;
-      }
-
-      if (this._pressWinnerId !== prevWinnerId) {
-        this._clearPressCountdown();
-        this._pressTimerPaused = false;
-        this._startPressCountdown();
-      }
+      this._handlePressRuntimeUpdate(runtime);
     });
 
     this._stopRuntimeSubscription = () => {
