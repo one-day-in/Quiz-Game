@@ -171,12 +171,14 @@ class GameService {
         // snapshot for rollback
         const prev = {
             isAnswered: cell.isAnswered,
+            modifier: cell.modifier ?? null,
             question: cell.question ? { ...cell.question } : null,
             answer: cell.answer ? { ...cell.answer } : null
         };
 
         // optimistic local update
         if (typeof patch?.isAnswered === 'boolean') cell.isAnswered = patch.isAnswered;
+        if (Object.prototype.hasOwnProperty.call(patch || {}, 'modifier')) cell.modifier = patch.modifier || null;
         if (patch?.question) cell.question = { ...(cell.question || {}), ...patch.question };
         if (patch?.answer) cell.answer = { ...(cell.answer || {}), ...patch.answer };
 
@@ -190,6 +192,7 @@ class GameService {
         } catch (err) {
             // rollback
             cell.isAnswered = prev.isAnswered;
+            cell.modifier = prev.modifier;
             cell.question = prev.question;
             cell.answer = prev.answer;
             this.model.meta.updatedAt = new Date().toISOString();

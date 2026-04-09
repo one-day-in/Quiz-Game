@@ -1,17 +1,19 @@
-import { isQuizSpinnerMedia } from '../constants/quizSpinnerMedia.js';
+import { updatePlayer } from '../api/playersApi.js';
 import { QuestionModalView } from '../views/QuestionModalView.js';
 import { Disposer } from '../utils/disposer.js';
 import { showConfirm } from '../utils/confirm.js';
 import { adjustPlayerScore } from '../api/gameApi.js';
+import { CELL_MODIFIERS, isFlipScoreModifier } from '../constants/cellModifiers.js';
 import { t } from '../i18n.js';
 
 const PRESS_RESPONSE_SECONDS = 30;
 
 export class ModalService {
-  constructor(gameService, mediaService, pressRuntime) {
+  constructor(gameService, mediaService, pressRuntime, playersService) {
     this._game = gameService;
     this._media = mediaService;
     this._pressRuntime = pressRuntime;
+    this._players = playersService;
 
     this._disposer = new Disposer();
     this.view = null;
@@ -33,6 +35,8 @@ export class ModalService {
     this._pressTimerPaused = false;
     this._isResettingPressRuntime = false;
     this._isResolvingPressResult = false;
+    this._activeModifier = null;
+    this._modifierResolvedForWinnerId = null;
   }
 
   _ensureContainer() {
@@ -88,6 +92,8 @@ export class ModalService {
       cellId: cellData.cellId
     };
     this._cellValue = Number(cellData.value) || 0;
+    this._activeModifier = cellData.modifier || null;
+    this._modifierResolvedForWinnerId = null;
 
     void this._resetPressRuntime();
 
@@ -113,7 +119,7 @@ export class ModalService {
       headerTitle,
 
       isAnswered: shouldMarkAsAnswered ? true : cellData.isAnswered,
-      isQuizSpinner: isQuizSpinnerMedia(question.media),
+      modifier: this._activeModifier,
       question,
       answer,
 
@@ -125,16 +131,17 @@ export class ModalService {
         void this._updateCell({ isAnswered: checked });
       },
 
-      onToggleQuizSpinner: async (checked) => {
+      onToggleModifier: async (checked) => {
         try {
-          const media = await this._media.toggleQuizSpinnerOnQuestion({
-            enabled: checked,
-            ...this.activeCell
+          const modifier = checked ? CELL_MODIFIERS.FLIP_SCORE : null;
+          await this._updateCell({
+            modifier,
           });
-          this.view.updateMedia('question', media);
+          this._activeModifier = modifier;
+          this.view._modifier = modifier;
         } catch (e) {
-          console.error('[ModalService] toggle quiz spinner failed:', e);
-          alert(`${t('quiz_spinner_error')}: ` + (e?.message || e));
+          console.error('[ModalService] toggle modifier failed:', e);
+          alert(`${t('save_failed')}: ` + (e?.message || e));
           throw e;
         }
       },
@@ -292,6 +299,8 @@ export class ModalService {
     this._cellValue = 0;
     this._pressTimerPaused = false;
     this._isResolvingPressResult = false;
+    this._activeModifier = null;
+    this._modifierResolvedForWinnerId = null;
     void this._pressRuntime?.closePress?.();
     if (this.container?.isConnected) this.container.innerHTML = '';
 
@@ -342,6 +351,20 @@ export class ModalService {
   _setPressWinner(winnerPlayerId = null, winnerName = '') {
     this._pressWinnerId = winnerPlayerId || null;
     this.view?.updateWinnerName?.(winnerName || '');
+  }
+
+  async _applyFlipScoreModifier(playerId) {
+    if (!playerId || this._modifierResolvedForWinnerId === playerId) return false;
+
+    const player = this._players?.getPlayers?.().find((entry) => String(entry?.id) === String(playerId));
+    if (!player) {
+      console.warn('[ModalService] could not find player for flip-score modifier:', playerId);
+      return false;
+    }
+
+    await updatePlayer(this._game.getGameId(), playerId, { points: -(Number(player.points) || 0) });
+    this._modifierResolvedForWinnerId = playerId;
+    return true;
   }
 
   _clearPressCountdown() {
@@ -424,6 +447,18 @@ export class ModalService {
     this._setPressWinner(nextWinnerId, nextWinnerName);
 
     if (nextWinnerId !== prevWinnerId) {
+      if (isFlipScoreModifier(this._activeModifier)) {
+        void this._applyFlipScoreModifier(nextWinnerId)
+          .then((applied) => {
+            if (applied) this.close();
+          })
+          .catch((error) => {
+            console.error('[ModalService] flip-score modifier failed:', error);
+            alert(`${t('could_not_update_score')}: ${error?.message || error}`);
+          });
+        return;
+      }
+
       this._clearPressCountdown();
       this._pressTimerPaused = false;
       this._startPressCountdown();
@@ -450,6 +485,6 @@ export class ModalService {
   }
 }
 
-export function createModalService(gameService, mediaService, pressRuntime) {
-  return new ModalService(gameService, mediaService, pressRuntime);
+export function createModalService(gameService, mediaService, pressRuntime, playersService) {
+  return new ModalService(gameService, mediaService, pressRuntime, playersService);
 }

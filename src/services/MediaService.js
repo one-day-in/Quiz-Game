@@ -1,7 +1,5 @@
 // src/services/MediaService.js
 
-import { QUIZ_SPINNER_MEDIA, isQuizSpinnerMedia } from '../constants/quizSpinnerMedia.js';
-
 export class MediaService {
   constructor({ repo, gameService }) {
     this.repo = repo;        // GameRepository: uploadMedia, deleteMedia
@@ -9,19 +7,9 @@ export class MediaService {
   }
 
   // Supabase Storage returns full HTTPS-URLs, so src === url.
-  // Exception: builtin spinner uses a local asset — resolve via BASE_URL
-  // so it works both on localhost ('/') and GitHub Pages ('/Quiz-Game/').
   toViewMedia(raw) {
     if (!raw) return null;
-    if (isQuizSpinnerMedia(raw)) {
-      const src = `${import.meta.env.BASE_URL}quiz-spinner.gif`;
-      return { ...QUIZ_SPINNER_MEDIA, src };
-    }
     return { ...raw, src: raw.url || '' };
-  }
-
-  isBuiltinMedia(raw) {
-    return isQuizSpinnerMedia(raw);
   }
 
   // Maps raw audioFiles array to view format (adds .src)
@@ -38,7 +26,7 @@ export class MediaService {
       ?.getCell(roundId, rowId, cellId)?.[target]?.media;
     const oldFilename = currentMedia?.filename;
 
-    if (oldFilename && !this.isBuiltinMedia(currentMedia)) {
+    if (oldFilename) {
       try {
         await this.repo.deleteStorageFiles([oldFilename]);
       } catch (e) {
@@ -67,7 +55,7 @@ export class MediaService {
     const currentMedia = this.game.getModel()
       ?.getCell(roundId, rowId, cellId)?.[target]?.media;
 
-    if (!this.isBuiltinMedia(currentMedia)) {
+    if (currentMedia?.filename) {
       await this.repo.deleteMedia(target, roundId, rowId, cellId);
     }
 
@@ -77,35 +65,6 @@ export class MediaService {
 
     await this.game.updateCell(roundId, rowId, cellId, patch);
     return true;
-  }
-
-  async toggleQuizSpinnerOnQuestion({ enabled, roundId, rowId, cellId }) {
-    const currentMedia = this.game.getModel()
-      ?.getCell(roundId, rowId, cellId)?.question?.media;
-
-    if (enabled) {
-      if (currentMedia?.filename && !this.isBuiltinMedia(currentMedia)) {
-        try {
-          await this.repo.deleteStorageFiles([currentMedia.filename]);
-        } catch (e) {
-          console.warn('[MediaService] could not delete old file before enabling quiz spinner:', e);
-        }
-      }
-
-      await this.game.updateCell(roundId, rowId, cellId, {
-        question: { media: QUIZ_SPINNER_MEDIA }
-      });
-      return this.toViewMedia(QUIZ_SPINNER_MEDIA);
-    }
-
-    if (!this.isBuiltinMedia(currentMedia)) {
-      return this.toViewMedia(currentMedia);
-    }
-
-    await this.game.updateCell(roundId, rowId, cellId, {
-      question: { media: null }
-    });
-    return null;
   }
 
   // Audio: upload file → append to cell's audioFiles array

@@ -136,7 +136,7 @@ async function renderGame(user, gameId, gameName) {
         const mediaService = createMediaService({ repo, gameService });
         const pressRuntimeService = createPressRuntimeService({ gameId, role: 'host' });
         const roundNavigationService = createRoundNavigationService(gameService);
-        const modalService = createModalService(gameService, mediaService, pressRuntimeService);
+        const modalService = createModalService(gameService, mediaService, pressRuntimeService, playersService);
 
         await gameService.initialize();
         await playersService.initialize();

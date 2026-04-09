@@ -7,6 +7,7 @@ export const GAME_RUNTIME_COLUMNS = 'game_id, press_enabled, winner_player_id, p
 
 export const DEFAULT_CELL = {
     isAnswered: false,
+    modifier: null,
     question: { text: '', media: null, audioFiles: [] },
     answer:   { text: '', media: null, audioFiles: [] }
 };

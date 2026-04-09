@@ -19,8 +19,8 @@ export function buildModalDom() {
 
         <div class="qmodal__headerActions">
           <label class="qmodal__headerToggle">
-            <input type="checkbox" class="qmodal__quizSpinnerInput">
-            <span>${t('quiz_spinner')}</span>
+            <input type="checkbox" class="qmodal__modifierInput">
+            <span>${t('flip_score_modifier')}</span>
           </label>
 
           <!-- Right: toggle view/edit mode -->
@@ -190,8 +190,8 @@ export function buildModalDom() {
       pressBanner:        qs('.qmodal__pressBanner'),
       pressBannerMain:    qs('.qmodal__pressBannerMain'),
       pressBannerTimer:   qs('.qmodal__pressBannerTimer'),
-      headerQuizSpinner:  qs('.qmodal__headerToggle'),
-      quizSpinnerCheckbox: qs('.qmodal__quizSpinnerInput'),
+      headerModifier:     qs('.qmodal__headerToggle'),
+      modifierCheckbox:   qs('.qmodal__modifierInput'),
       btnToggleMode:      qs('.qmodal__btnToggleMode'),
       btnIncorrect:       qs('.qmodal__btnIncorrect'),
       btnCorrect:         qs('.qmodal__btnCorrect'),

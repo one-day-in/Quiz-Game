@@ -81,6 +81,7 @@ export async function updateCell(gameId, roundId, rowId, cellId, updates) {
     if (!cell) throw new Error('Cell not found');
 
     if (typeof updates.isAnswered === 'boolean') cell.isAnswered = updates.isAnswered;
+    if (Object.prototype.hasOwnProperty.call(updates, 'modifier')) cell.modifier = updates.modifier || null;
     if (updates.question) Object.assign(cell.question, updates.question);
     if (updates.answer) Object.assign(cell.answer, updates.answer);
 

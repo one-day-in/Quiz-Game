@@ -32,6 +32,7 @@ export function createAppController({ root, gameService, playersService, modalSe
       rowId,
       cellId,
       value,
+      modifier: cell.modifier ?? null,
       question: { ...(cell.question || {}) },
       answer: { ...(cell.answer || {}) },
       isAnswered: !!cell.isAnswered

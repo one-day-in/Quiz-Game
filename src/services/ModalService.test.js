@@ -3,12 +3,18 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
   adjustPlayerScoreMock,
+  updatePlayerMock,
 } = vi.hoisted(() => ({
   adjustPlayerScoreMock: vi.fn(),
+  updatePlayerMock: vi.fn(),
 }));
 
 vi.mock('../api/gameApi.js', () => ({
   adjustPlayerScore: adjustPlayerScoreMock,
+}));
+
+vi.mock('../api/playersApi.js', () => ({
+  updatePlayer: updatePlayerMock,
 }));
 
 import { ModalService } from './ModalService.js';
@@ -17,6 +23,7 @@ describe('ModalService press reset', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.clearAllMocks();
+    updatePlayerMock.mockResolvedValue({});
   });
 
   it('enables press immediately after reset', async () => {
@@ -146,5 +153,39 @@ describe('ModalService press reset', () => {
 
     expect(adjustPlayerScoreMock).toHaveBeenCalledWith('game-1', 'player-2', 500);
     expect(service.close).toHaveBeenCalledTimes(1);
+  });
+
+  it('applies flip-score modifier to the winner once and closes the modal', async () => {
+    let runtimeHandler = null;
+    const playersService = {
+      getPlayers: () => [{ id: 'player-9', points: 400 }],
+    };
+    const pressRuntime = {
+      subscribe: vi.fn((handler) => {
+        runtimeHandler = handler;
+        return vi.fn();
+      }),
+    };
+    const service = new ModalService({ getGameId: () => 'game-1' }, {}, pressRuntime, playersService);
+    service.view = {
+      updateWinnerName: vi.fn(),
+      updatePressTimer: vi.fn(),
+    };
+    service._activeModifier = 'flip-score';
+    service.close = vi.fn();
+
+    service._bindPressRuntime();
+    runtimeHandler?.({ winnerPlayerId: 'player-9', winnerName: 'Nina' });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(updatePlayerMock).toHaveBeenCalledWith('game-1', 'player-9', { points: -400 });
+    expect(service.close).toHaveBeenCalledTimes(1);
+
+    runtimeHandler?.({ winnerPlayerId: 'player-9', winnerName: 'Nina' });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(updatePlayerMock).toHaveBeenCalledTimes(1);
   });
 });

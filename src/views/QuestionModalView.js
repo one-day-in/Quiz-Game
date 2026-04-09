@@ -1,7 +1,7 @@
 // src/views/QuestionModalView.js
-import { isQuizSpinnerMedia } from '../constants/quizSpinnerMedia.js';
 import { ViewDisposer } from '../utils/disposer.js';
 import { bindOverlayDismiss } from '../utils/overlayDismiss.js';
+import { CELL_MODIFIERS } from '../constants/cellModifiers.js';
 import { buildModalDom } from './questionModal.template.js';
 import { initMediaUI, applyModeUI, renderAll } from './questionModal.render.js';
 
@@ -10,14 +10,14 @@ export class QuestionModalView {
         mode,
         headerTitle,
         isAnswered,
-        isQuizSpinner,
+        modifier,
         question,
         answer,
         onClose,
         onIncorrect,
         onCorrect,
         onToggleAnswered,
-        onToggleQuizSpinner,
+        onToggleModifier,
         onQuestionChange,
         onAnswerChange,
         onUploadMedia,
@@ -30,14 +30,14 @@ export class QuestionModalView {
         this._headerTitle   = (headerTitle || '').trim();
         this._winnerName    = '';
         this._isAnswered    = !!isAnswered;
-        this._isQuizSpinner = !!isQuizSpinner;
+        this._modifier      = modifier || null;
         this._question      = { ...(question || {}), audioFiles: question?.audioFiles || [] };
         this._answer        = { ...(answer   || {}), audioFiles: answer?.audioFiles   || [] };
         this._isAnswerShown = mode === 'edit';
 
         this._cb = {
             onClose, onIncorrect, onCorrect,
-            onToggleAnswered, onToggleQuizSpinner, onQuestionChange, onAnswerChange,
+            onToggleAnswered, onToggleModifier, onQuestionChange, onAnswerChange,
             onUploadMedia, onDeleteMedia, onAddAudio, onDeleteAudio, onViewStateChange,
         };
 
@@ -95,7 +95,6 @@ export class QuestionModalView {
     updateMedia(mediaType, media) {
         if (mediaType === 'question') {
             this._question.media = media;
-            this._isQuizSpinner = isQuizSpinnerMedia(media);
         } else {
             this._answer.media = media;
         }
@@ -232,15 +231,15 @@ export class QuestionModalView {
         this._disposer.addEventListener(r.answeredCheckbox, 'change', (e) => {
             this._cb.onToggleAnswered?.(e.target.checked);
         });
-        this._disposer.addEventListener(r.quizSpinnerCheckbox, 'change', async (e) => {
+        this._disposer.addEventListener(r.modifierCheckbox, 'change', async (e) => {
             const checked = !!e.target.checked;
-            const prev = this._isQuizSpinner;
-            this._isQuizSpinner = checked;
+            const prev = this._modifier;
+            this._modifier = checked ? CELL_MODIFIERS.FLIP_SCORE : null;
 
             try {
-                await this._cb.onToggleQuizSpinner?.(checked);
+                await this._cb.onToggleModifier?.(checked);
             } catch {
-                this._isQuizSpinner = prev;
+                this._modifier = prev;
                 e.target.checked = prev;
                 renderAll(this, this._refs);
             }

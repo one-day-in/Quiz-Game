@@ -1,4 +1,6 @@
 // src/views/questionModal.render.js
+import { isFlipScoreModifier } from '../constants/cellModifiers.js';
+import { t } from '../i18n.js';
 
 // ─── Media collapse threshold ────────────────────────────────────────────────
 // If the space available for media (after text + audio fill their natural height)
@@ -209,7 +211,7 @@ export function applyModeUI(view, refs) {
   refs.root?.classList.toggle('qmodal--edit', isEdit);
 
   if (refs.title) refs.title.textContent = view._headerTitle || t('question');
-  setHidden(refs.headerQuizSpinner, !isEdit);
+  setHidden(refs.headerModifier, !isEdit);
 
   // Toggle mode button: shows current mode and what clicking will do
   if (refs.btnToggleMode) {
@@ -368,8 +370,8 @@ export function renderAll(view, refs) {
   }
 
   view.syncPressBannerVisibility?.();
-  if (refs.quizSpinnerCheckbox) {
-    refs.quizSpinnerCheckbox.checked = !!view._isQuizSpinner;
+  if (refs.modifierCheckbox) {
+    refs.modifierCheckbox.checked = isFlipScoreModifier(view._modifier);
   }
 
   // Gather content state for both sections
@@ -473,4 +475,3 @@ export function renderAll(view, refs) {
     });
   }
 }
-import { t } from '../i18n.js';

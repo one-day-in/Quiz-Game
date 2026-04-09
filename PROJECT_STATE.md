@@ -1,6 +1,6 @@
 # PROJECT_STATE
 
-Last updated: 2026-04-08
+Last updated: 2026-04-09
 
 ## Real Project Overview
 
@@ -56,6 +56,7 @@ The app is realtime, but not purely realtime. It mixes:
   - resets and observes press runtime
   - adjusts score on correct/incorrect actions
   - now runs a 30-second host-side answer countdown after a player wins `PRESS`
+  - now resolves cell-level score modifiers such as `plus-to-minus` directly from modal/runtime flow
 
 ### Data / Service Layer
 
@@ -77,6 +78,7 @@ The app is realtime, but not purely realtime. It mixes:
   - warms the remote buzzer server with a short HTTP health request before connecting host runtime for an opened game
 - `services/MediaService.js`
   - view/media mapping and upload/delete orchestration
+  - no longer owns builtin special-question media templates
 - `services/RoundNavigationService.js`
   - round picker state helper
   - round changes now flow through a short controlled transition/loading state before the grid swaps
@@ -184,6 +186,7 @@ The app is realtime, but not purely realtime. It mixes:
    - marks unanswered cells as answered immediately
    - opens press runtime through `PressRuntimeService`
    - listens for winner updates through the same runtime service
+   - if the cell has the `plus-to-minus` modifier, the first confirmed player winner immediately gets their total score sign reversed and the modal closes
 11. Player presses are claimed through the buzzer server first, and the server persists the result through `claim_game_press(...)`.
    - `claim_game_press(...)` now returns `jsonb` to avoid PL/pgSQL output-column ambiguity in production
 12. Host clicks:
@@ -223,6 +226,7 @@ The app is realtime, but not purely realtime. It mixes:
 - Press race transport truth: `PressRuntimeService` backed by the buzzer server when available
 - Host local UI truth: `GameService.uiState` and some view-local state
 - Player local controller identity truth: `localStorage`
+- Cell modifiers now live in board JSON per-cell as `cell.modifier`
 
 ### Important Reality Checks
 
@@ -467,6 +471,12 @@ Ordered refactor and improvement steps. Do not treat all items as immediate.
 - Added `supabase/games.sql` to document the expected `public.games` select/insert/update policies in source control.
 - Fixed player-controller status messaging so the local winner no longer sees the "someone was faster" toast on their own successful press.
 - Replaced the earlier flash-style round change overlay with a calmer loader-style transition so round switches feel intentional instead of laggy.
+
+### 2026-04-09
+
+- Removed the old built-in `Quiz Spinner` / starred-question path entirely, including its special media-template handling.
+- Added an explicit per-cell `modifier` field in board state and replaced the host modal toggle with the new `Плюс на мінус` modifier.
+- When a player wins `PRESS` on a `plus-to-minus` cell, the host immediately reverses that player's total score sign and closes the modal instead of running the normal correct/incorrect scoring path.
 
 ### 2026-04-03
 
