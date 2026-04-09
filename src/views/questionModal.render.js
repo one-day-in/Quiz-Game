@@ -185,6 +185,10 @@ function hasText(v) {
   return !!(v && v.trim().length);
 }
 
+function isModifierSelectionMode(view) {
+  return view._mode === 'view' && isFlipScoreModifier(view._modifier);
+}
+
 function fitViewText(refs, type) {
   const textEl = refs[`${type}TextView`];
   if (!textEl || textEl.hidden) return;
@@ -207,6 +211,7 @@ function fitViewText(refs, type) {
 
 export function applyModeUI(view, refs) {
   const isEdit = view._mode === 'edit';
+  const isModifierMode = isModifierSelectionMode(view);
 
   refs.root?.classList.toggle('qmodal--edit', isEdit);
 
@@ -225,8 +230,8 @@ export function applyModeUI(view, refs) {
   }
 
   setHidden(refs.toggleAnswerBtn, isEdit);
-  setHidden(refs.btnIncorrect,   isEdit);
-  setHidden(refs.btnCorrect,     isEdit);
+  setHidden(refs.btnIncorrect,   isEdit || isModifierMode);
+  setHidden(refs.btnCorrect,     isEdit || isModifierMode);
 }
 
 export function applyAnswerVisibility(view, refs) {
@@ -362,6 +367,52 @@ function applyAudioLayoutState(refs, type, { isHero = false, trackCount = 0 } = 
   listEl.classList.toggle('qmodal__audioList--multi', trackCount > 1);
 }
 
+function renderModifierPanel(view, refs) {
+  const panelEl = refs.modifierPanel;
+  const playersEl = refs.modifierPlayers;
+  if (!panelEl || !playersEl) return;
+
+  const isVisible = isModifierSelectionMode(view);
+  setHidden(panelEl, !isVisible);
+  if (!isVisible) {
+    playersEl.innerHTML = '';
+    return;
+  }
+
+  const players = Array.isArray(view._modifierPlayers) ? view._modifierPlayers.slice() : [];
+  playersEl.innerHTML = '';
+
+  if (!players.length) {
+    const empty = document.createElement('div');
+    empty.className = 'qmodal__modifierEmpty';
+    empty.textContent = t('flip_score_no_players');
+    playersEl.appendChild(empty);
+    return;
+  }
+
+  for (const player of players) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'qmodal__modifierPlayerBtn';
+    button.dataset.playerId = player.id;
+    button.disabled = !!view._modifierApplyingPlayerId;
+    if (String(view._modifierApplyingPlayerId) === String(player.id)) {
+      button.classList.add('is-loading');
+    }
+
+    const name = document.createElement('span');
+    name.className = 'qmodal__modifierPlayerName';
+    name.textContent = player.name || t('player_fallback');
+
+    const score = document.createElement('span');
+    score.className = 'qmodal__modifierPlayerScore';
+    score.textContent = String(Number(player.points) || 0);
+
+    button.append(name, score);
+    playersEl.appendChild(button);
+  }
+}
+
 /* ------------------------ Render ------------------------ */
 
 export function renderAll(view, refs) {
@@ -396,6 +447,7 @@ export function renderAll(view, refs) {
   const aHasAudio = sections.answer.audio.length   > 0;
   const qHasAny   = qHasText || qHasMedia || qHasAudio;
   const aHasAny   = aHasText || aHasMedia || aHasAudio;
+  const hasModifierOverlay = isModifierSelectionMode(view);
   const qHeroAudio = view._mode === 'view' && !qHasText && !qHasMedia && qHasAudio;
   const aHeroAudio = view._mode === 'view' && !aHasText && !aHasMedia && aHasAudio;
 
@@ -405,7 +457,7 @@ export function renderAll(view, refs) {
   }
 
   // Empty state (view mode only)
-  const showEmpty = view._mode === 'view' && !(qHasAny || aHasAny);
+  const showEmpty = view._mode === 'view' && !(qHasAny || aHasAny) && !hasModifierOverlay;
   setHidden(refs.emptyState, !showEmpty);
 
   if (showEmpty) {
@@ -439,6 +491,7 @@ export function renderAll(view, refs) {
   renderMedia(view, refs, 'answer');
   renderAudioList(view, refs, 'question');
   renderAudioList(view, refs, 'answer');
+  renderModifierPanel(view, refs);
   applyAudioLayoutState(refs, 'question', {
     isHero: qHeroAudio,
     trackCount: sections.question.audio.length,

@@ -38,6 +38,12 @@ export function buildModalDom() {
           <div class="qmodal__pressBannerMain"></div>
           <div class="qmodal__pressBannerTimer" hidden>00:30</div>
         </div>
+        <div class="qmodal__modifierPanel" hidden aria-live="polite">
+          <div class="qmodal__modifierBadge">+ на -</div>
+          <div class="qmodal__modifierTitle">${t('flip_score_assign_title')}</div>
+          <div class="qmodal__modifierSubtitle">${t('flip_score_assign_subtitle')}</div>
+          <div class="qmodal__modifierPlayers"></div>
+        </div>
         <div class="qmodal__emptyState">✏️ is empty</div>
 
           <!-- QUESTION -->
@@ -190,6 +196,8 @@ export function buildModalDom() {
       pressBanner:        qs('.qmodal__pressBanner'),
       pressBannerMain:    qs('.qmodal__pressBannerMain'),
       pressBannerTimer:   qs('.qmodal__pressBannerTimer'),
+      modifierPanel:      qs('.qmodal__modifierPanel'),
+      modifierPlayers:    qs('.qmodal__modifierPlayers'),
       headerModifier:     qs('.qmodal__headerToggle'),
       modifierCheckbox:   qs('.qmodal__modifierInput'),
       btnToggleMode:      qs('.qmodal__btnToggleMode'),

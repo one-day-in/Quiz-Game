@@ -155,37 +155,16 @@ describe('ModalService press reset', () => {
     expect(service.close).toHaveBeenCalledTimes(1);
   });
 
-  it('applies flip-score modifier to the winner once and closes the modal', async () => {
-    let runtimeHandler = null;
+  it('applies flip-score modifier to the selected player and closes the modal', async () => {
     const playersService = {
       getPlayers: () => [{ id: 'player-9', points: 400 }],
     };
-    const pressRuntime = {
-      subscribe: vi.fn((handler) => {
-        runtimeHandler = handler;
-        return vi.fn();
-      }),
-    };
-    const service = new ModalService({ getGameId: () => 'game-1' }, {}, pressRuntime, playersService);
-    service.view = {
-      updateWinnerName: vi.fn(),
-      updatePressTimer: vi.fn(),
-    };
-    service._activeModifier = 'flip-score';
+    const service = new ModalService({ getGameId: () => 'game-1' }, {}, {}, playersService);
     service.close = vi.fn();
 
-    service._bindPressRuntime();
-    runtimeHandler?.({ winnerPlayerId: 'player-9', winnerName: 'Nina' });
-    await Promise.resolve();
-    await Promise.resolve();
+    await service._applyFlipScoreModifier('player-9');
 
     expect(updatePlayerMock).toHaveBeenCalledWith('game-1', 'player-9', { points: -400 });
-    expect(service.close).toHaveBeenCalledTimes(1);
-
-    runtimeHandler?.({ winnerPlayerId: 'player-9', winnerName: 'Nina' });
-    await Promise.resolve();
-    await Promise.resolve();
-
     expect(updatePlayerMock).toHaveBeenCalledTimes(1);
   });
 });

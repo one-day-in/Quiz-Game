@@ -56,7 +56,7 @@ The app is realtime, but not purely realtime. It mixes:
   - resets and observes press runtime
   - adjusts score on correct/incorrect actions
   - now runs a 30-second host-side answer countdown after a player wins `PRESS`
-  - now resolves cell-level score modifiers such as `plus-to-minus` directly from modal/runtime flow
+  - now resolves cell-level score modifiers such as `plus-to-minus` directly from a host-side selection overlay inside the modal
 
 ### Data / Service Layer
 
@@ -186,7 +186,7 @@ The app is realtime, but not purely realtime. It mixes:
    - marks unanswered cells as answered immediately
    - opens press runtime through `PressRuntimeService`
    - listens for winner updates through the same runtime service
-   - if the cell has the `plus-to-minus` modifier, the first confirmed player winner immediately gets their total score sign reversed and the modal closes
+   - exception: if the cell has the `plus-to-minus` modifier, host view now shows a dedicated overlay with player buttons instead of opening the normal `PRESS` race
 11. Player presses are claimed through the buzzer server first, and the server persists the result through `claim_game_press(...)`.
    - `claim_game_press(...)` now returns `jsonb` to avoid PL/pgSQL output-column ambiguity in production
 12. Host clicks:
@@ -476,7 +476,7 @@ Ordered refactor and improvement steps. Do not treat all items as immediate.
 
 - Removed the old built-in `Quiz Spinner` / starred-question path entirely, including its special media-template handling.
 - Added an explicit per-cell `modifier` field in board state and replaced the host modal toggle with the new `Плюс на мінус` modifier.
-- When a player wins `PRESS` on a `plus-to-minus` cell, the host immediately reverses that player's total score sign and closes the modal instead of running the normal correct/incorrect scoring path.
+- Adjusted the `Плюс на мінус` flow so it no longer depends on the `PRESS` winner; the host now picks a player directly from a dedicated modal overlay, then that player's total score flips sign and the modal closes.
 
 ### 2026-04-03
 
