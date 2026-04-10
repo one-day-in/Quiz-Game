@@ -88,20 +88,6 @@ export class MediaService {
     return true;
   }
 
-  // Finds Storage files not referenced in the game model and deletes them.
-  // Returns { orphans: number, deleted: number }.
-  async cleanupOrphanedFiles(model) {
-    const referenced = model.getAllFilenames();            // Set<string> from JSONB
-    const inStorage  = await this.repo.listStorageFiles(); // string[] from bucket
-
-    const orphans = inStorage.filter(name => !referenced.has(name));
-
-    if (orphans.length) {
-      await this.repo.deleteStorageFiles(orphans);
-    }
-
-    return { orphans: orphans.length, deleted: orphans.length };
-  }
 }
 
 export function createMediaService({ repo, gameService }) {

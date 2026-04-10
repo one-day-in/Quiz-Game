@@ -29,4 +29,32 @@ describe('sortPlayersByScore', () => {
       'Charlie',
     ]);
   });
+
+  it('does not mutate the original players array', () => {
+    const players = [
+      { name: 'Beta', points: 100 },
+      { name: 'Alpha', points: 200 },
+    ];
+
+    sortPlayersByScore(players);
+
+    expect(players.map((player) => player.name)).toEqual(['Beta', 'Alpha']);
+  });
+
+  it('treats invalid scores as zero and handles non-array input', () => {
+    const players = [
+      { name: 'Valid', points: 10 },
+      { name: 'Missing' },
+      { name: 'Invalid', points: Number.NaN },
+      { name: 'Negative', points: -5 },
+    ];
+
+    expect(sortPlayersByScore(null)).toEqual([]);
+    expect(sortPlayersByScore(players).map((player) => player.name)).toEqual([
+      'Valid',
+      'Invalid',
+      'Missing',
+      'Negative',
+    ]);
+  });
 });

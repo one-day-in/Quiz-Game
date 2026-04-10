@@ -167,4 +167,33 @@ describe('ModalService press reset', () => {
     expect(updatePlayerMock).toHaveBeenCalledWith('game-1', 'player-9', { points: -400 });
     expect(updatePlayerMock).toHaveBeenCalledTimes(1);
   });
+
+  it('flips negative and zero scores without adding the cell value', async () => {
+    const playersService = {
+      getPlayers: () => [
+        { id: 'negative-player', points: -250 },
+        { id: 'zero-player', points: 0 },
+      ],
+    };
+    const service = new ModalService({ getGameId: () => 'game-1' }, {}, {}, playersService);
+    service._cellValue = 500;
+
+    await service._applyFlipScoreModifier('negative-player');
+    await service._applyFlipScoreModifier('zero-player');
+
+    expect(updatePlayerMock).toHaveBeenNthCalledWith(1, 'game-1', 'negative-player', { points: 250 });
+    expect(updatePlayerMock).toHaveBeenNthCalledWith(2, 'game-1', 'zero-player', { points: -0 });
+  });
+
+  it('does not update score when the selected modifier player is missing', async () => {
+    const playersService = {
+      getPlayers: () => [{ id: 'player-1', points: 100 }],
+    };
+    const service = new ModalService({ getGameId: () => 'game-1' }, {}, {}, playersService);
+
+    const applied = await service._applyFlipScoreModifier('missing-player');
+
+    expect(applied).toBe(false);
+    expect(updatePlayerMock).not.toHaveBeenCalled();
+  });
 });

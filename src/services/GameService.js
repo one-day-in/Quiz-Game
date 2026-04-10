@@ -201,14 +201,6 @@ class GameService {
         }
     }
 
-    subscribeToRemoteGameChanges(fn) {
-        return this.repo.subscribeToGame(fn);
-    }
-
-    async setPressEnabled(enabled) {
-        return this.repo.setPressEnabled(enabled);
-    }
-
     async addAudioToCell(roundId, rowId, cellId, type, audioRecord) {
         if (!this.model) throw new Error('GameService not initialized');
 

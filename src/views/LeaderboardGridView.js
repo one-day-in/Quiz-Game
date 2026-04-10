@@ -230,27 +230,6 @@ function patchFooterCard(card, player, rank = 0) {
   card._parts.points.textContent = formatPoints(player?.points);
 }
 
-function createMoreCard() {
-  const moreCard = document.createElement('div');
-  moreCard.className = 'leaderboard__card leaderboard__card--more';
-  moreCard.setAttribute('aria-hidden', 'true');
-
-  const count = document.createElement('span');
-  count.className = 'leaderboard__cardMoreCount';
-
-  const label = document.createElement('span');
-  label.className = 'leaderboard__cardMoreLabel';
-  label.textContent = t('show_all_players');
-
-  moreCard.append(count, label);
-  moreCard._parts = { count, label };
-  return moreCard;
-}
-
-function patchMoreCard(moreCard, hiddenCount) {
-  moreCard._parts.count.textContent = `+${hiddenCount}`;
-}
-
 function createRow(player, { variant = 'page', onDeletePlayer = null, onSelectPlayer = null } = {}) {
   const row = document.createElement('div');
   row.className = 'leaderboard__row';

@@ -50,14 +50,6 @@ export class GameRepository {
     return gameApi.updateCell(this._gameId, roundId, rowId, cellId, patch);
   }
 
-  subscribeToGame(onGameChange) {
-    return gameApi.subscribeToGame(this._gameId, onGameChange);
-  }
-
-  setPressEnabled(enabled) {
-    return gameApi.setPressEnabled(this._gameId, enabled);
-  }
-
   resetRound(roundId) {
     return gameApi.resetRound(this._gameId, roundId);
   }
@@ -90,11 +82,6 @@ export class GameRepository {
   }
 
   // ---------- storage maintenance ----------
-  listStorageFiles() {
-    // Scope listing to this game's subfolder only
-    return mediaApi.listStorageFiles(this._gameId);
-  }
-
   deleteStorageFiles(filenames) {
     return mediaApi.deleteStorageFiles(filenames);
   }

@@ -102,20 +102,6 @@ export async function deleteAudioFile(filename) {
     return { ok: true };
 }
 
-// Returns array of full storage paths for a game's files (e.g. "gameId/filename.webp").
-// Pass gameId to scope the listing to that game's subfolder.
-export async function listStorageFiles(gameId) {
-    const folder = gameId ?? '';
-    const { data, error } = await supabase.storage
-        .from(BUCKET)
-        .list(folder, { limit: 10_000, offset: 0 });
-
-    if (error) throw new Error(`[Media] list storage failed: ${error.message}`);
-    const names = (data || []).map(f => f.name);
-    // Return full paths so callers can pass them directly to remove()
-    return gameId ? names.map(n => `${gameId}/${n}`) : names;
-}
-
 // Deletes a batch of files from storage in one request (paths must be full, e.g. "gameId/file.webp")
 export async function deleteStorageFiles(filenames) {
     if (!filenames.length) return;

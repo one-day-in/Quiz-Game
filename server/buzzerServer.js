@@ -5,6 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 const port = Number(process.env.PORT || process.env.BUZZER_PORT || 8787);
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const isProduction = process.env.NODE_ENV === 'production';
 
 if (!supabaseUrl || !serviceRoleKey) {
   console.error('[buzzer] Missing VITE_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
@@ -203,8 +204,22 @@ async function handleRequest(ws, message) {
   throw new Error(`Unsupported message type: ${message?.type || 'unknown'}`);
 }
 
-const server = createServer((_, response) => {
-  response.writeHead(200, { 'content-type': 'application/json' });
+const server = createServer((request, response) => {
+  if (request.url !== '/health' && request.url !== '/') {
+    response.writeHead(404, {
+      'content-type': 'application/json',
+      'x-content-type-options': 'nosniff',
+      'cache-control': 'no-store',
+    });
+    response.end(JSON.stringify({ ok: false, error: 'Not found' }));
+    return;
+  }
+
+  response.writeHead(200, {
+    'content-type': 'application/json',
+    'x-content-type-options': 'nosniff',
+    'cache-control': 'no-store',
+  });
   response.end(JSON.stringify({ ok: true, service: 'quiz-game-buzzer' }));
 });
 
@@ -255,5 +270,7 @@ wss.on('connection', (ws) => {
 });
 
 server.listen(port, () => {
-  console.log(`[buzzer] listening on port ${port}`);
+  if (!isProduction) {
+    console.log(`[buzzer] listening on port ${port}`);
+  }
 });

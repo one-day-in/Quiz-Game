@@ -64,7 +64,6 @@ async function renderLeaderboard(players = []) {
 
         leaderboardEl = LeaderboardGridView({
             players,
-            maxPlayers: 8,
             onAddPlayer: openAddPlayerDrawer,
             onDeletePlayer: async (playerId) => {
                 try {
