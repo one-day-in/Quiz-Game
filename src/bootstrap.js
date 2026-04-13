@@ -25,6 +25,9 @@ const IS_DEV = window.location.hostname === 'localhost' || window.location.hostn
 
 const LAST_GAME_ID_KEY   = 'lastGameId';
 const LAST_GAME_NAME_KEY = 'lastGameName';
+const BUZZER_WARMUP_TIMEOUT_MS = 1200;
+let _buzzerWarmupAttempted = false;
+let _buzzerWarmupSuppressed = false;
 
 initLanguageFromUrl();
 initThemeFromStorage();
@@ -46,24 +49,31 @@ function getLastGame() {
 }
 
 async function warmBuzzerServer() {
+    if (_buzzerWarmupAttempted) return;
+    _buzzerWarmupAttempted = true;
+
     const wakeUrl = getBuzzerWakeUrl();
     if (!wakeUrl) return;
 
     const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), 4500);
+    const timeoutId = window.setTimeout(() => controller.abort(), BUZZER_WARMUP_TIMEOUT_MS);
 
     try {
-        const response = await fetch(wakeUrl, {
+        await fetch(wakeUrl, {
             method: 'GET',
             cache: 'no-store',
+            mode: 'no-cors',
             signal: controller.signal,
         });
-
-        if (!response.ok) {
-            throw new Error(`Wake request failed with ${response.status}`);
-        }
     } catch (error) {
-        console.warn('[Bootstrap] buzzer warm-up failed, continuing with runtime fallback:', error);
+        if (_buzzerWarmupSuppressed) return;
+        _buzzerWarmupSuppressed = true;
+        const name = error?.name || '';
+        if (name === 'AbortError') {
+            console.info('[Bootstrap] buzzer warm-up timed out, continuing with runtime fallback');
+            return;
+        }
+        console.warn('[Bootstrap] buzzer warm-up skipped, continuing with runtime fallback:', error);
     } finally {
         window.clearTimeout(timeoutId);
     }
@@ -142,7 +152,7 @@ async function renderGame(user, gameId, gameName) {
 
         await gameService.initialize();
         await playersService.initialize();
-        await warmBuzzerServer();
+        void warmBuzzerServer();
         await pressRuntimeService.connect();
         gameService.restoreUiState();
 

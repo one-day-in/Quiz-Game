@@ -386,7 +386,12 @@ class HybridPressRuntimeService {
       return await this._active[methodName]();
     } catch (error) {
       if (this._active !== this._primary) throw error;
-      console.warn(`[PressRuntimeService] ${methodName} failed on websocket runtime, switching to fallback:`, error);
+      const isExpectedSocketDrop =
+        methodName === 'closePress' &&
+        String(error?.message || '').includes('Buzzer socket is not connected');
+      if (!isExpectedSocketDrop) {
+        console.warn(`[PressRuntimeService] ${methodName} failed on websocket runtime, switching to fallback:`, error);
+      }
       await this._fallback.connect();
       this._activate(this._fallback);
       return this._fallback[methodName]();
