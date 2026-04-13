@@ -11,7 +11,7 @@
   background: var(--bg), var(--bg-2);
   box-shadow: var(--shadow-sm);
 
-  overflow: hidden;
+  overflow: visible;
 }
 
 .app-header::before {
