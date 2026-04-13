@@ -118,6 +118,8 @@ describe('QuestionModalView winner state', () => {
     });
 
     expect(view._refs.modifierPanel.hidden).toBe(false);
+    expect(view._refs.modifierTitle.textContent).toContain('Модифікатор');
+    expect(view._refs.modifierSubtitle.textContent).toContain('Плюс на мінус');
     expect(view._refs.modifierPanel.textContent).toContain('+ на -');
     view.destroy();
   });

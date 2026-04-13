@@ -1,5 +1,5 @@
 // src/views/questionModal.render.js
-import { isFlipScoreModifier } from '../constants/cellModifiers.js';
+import { getCellModifierBanner, isFlipScoreModifier } from '../constants/cellModifiers.js';
 import { t } from '../i18n.js';
 
 // ─── Media collapse threshold ────────────────────────────────────────────────
@@ -371,8 +371,15 @@ function renderModifierPanel(view, refs) {
   const panelEl = refs.modifierPanel;
   if (!panelEl) return;
 
-  const isVisible = isModifierSelectionMode(view);
+  const banner = getCellModifierBanner(view._modifier, t);
+  const isVisible = !!banner && isModifierSelectionMode(view);
   setHidden(panelEl, !isVisible);
+  if (!isVisible) return;
+
+  if (refs.modifierBadge) refs.modifierBadge.textContent = banner.badge || '';
+  if (refs.modifierTitle) refs.modifierTitle.textContent = banner.title || '';
+  if (refs.modifierSubtitle) refs.modifierSubtitle.textContent = banner.subtitle || '';
+  if (refs.modifierDetail) refs.modifierDetail.textContent = banner.detail || '';
 }
 
 /* ------------------------ Render ------------------------ */

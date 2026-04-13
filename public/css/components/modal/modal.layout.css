@@ -214,6 +214,15 @@
 
 .qmodal__modifierSubtitle {
     text-align: center;
+    color: #fde68a;
+    font-size: clamp(18px, 2vw, 26px);
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.qmodal__modifierDetail {
+    text-align: center;
     color: var(--muted);
     font-size: 16px;
 }
