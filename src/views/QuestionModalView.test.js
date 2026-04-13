@@ -123,4 +123,17 @@ describe('QuestionModalView winner state', () => {
     expect(view._refs.modifierPanel.textContent).toContain('+ на -');
     view.destroy();
   });
+
+  it('closes modifier panel flow on click', () => {
+    const onModifierAcknowledge = vi.fn();
+    const view = createView({
+      modifier: 'flip-score',
+      onModifierAcknowledge,
+    });
+
+    view._refs.modifierPanel.click();
+
+    expect(onModifierAcknowledge).toHaveBeenCalledTimes(1);
+    view.destroy();
+  });
 });

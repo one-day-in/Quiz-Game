@@ -25,6 +25,7 @@ export class QuestionModalView {
         onAddAudio,
         onDeleteAudio,
         onViewStateChange,
+        onModifierAcknowledge,
     }) {
         this._mode          = mode;
         this._headerTitle   = (headerTitle || '').trim();
@@ -38,7 +39,7 @@ export class QuestionModalView {
         this._cb = {
             onClose, onIncorrect, onCorrect,
             onToggleAnswered, onToggleModifier, onQuestionChange, onAnswerChange,
-            onUploadMedia, onDeleteMedia, onAddAudio, onDeleteAudio, onViewStateChange,
+            onUploadMedia, onDeleteMedia, onAddAudio, onDeleteAudio, onViewStateChange, onModifierAcknowledge,
         };
 
         const { root, refs } = buildModalDom();
@@ -242,6 +243,11 @@ export class QuestionModalView {
                 this._modifier = prev;
                 e.target.checked = prev;
                 renderAll(this, this._refs);
+            }
+        });
+        this._disposer.addEventListener(r.modifierPanel, 'click', () => {
+            if (!r.modifierPanel.hidden) {
+                this._cb.onModifierAcknowledge?.();
             }
         });
 

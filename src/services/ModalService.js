@@ -7,6 +7,7 @@ import { CELL_MODIFIERS, isFlipScoreModifier } from '../constants/cellModifiers.
 import { t } from '../i18n.js';
 
 const PRESS_RESPONSE_SECONDS = 30;
+const MODIFIER_BANNER_SECONDS = 10;
 
 export class ModalService {
   constructor(gameService, mediaService, pressRuntime, playersService) {
@@ -36,6 +37,7 @@ export class ModalService {
     this._isResettingPressRuntime = false;
     this._isResolvingPressResult = false;
     this._activeModifier = null;
+    this._modifierCloseTimer = null;
   }
 
   _ensureContainer() {
@@ -241,6 +243,8 @@ export class ModalService {
 
         this._resumePressCountdown();
       },
+
+      onModifierAcknowledge: () => this.close(),
     });
 
     this.container.appendChild(this.view.el);
@@ -275,10 +279,12 @@ export class ModalService {
     clearTimeout(this._questionTimer);
     clearTimeout(this._answerTimer);
     clearTimeout(this._pressEnableTimer);
+    clearTimeout(this._modifierCloseTimer);
     this._clearPressCountdown();
     this._questionTimer = null;
     this._answerTimer   = null;
     this._pressEnableTimer = null;
+    this._modifierCloseTimer = null;
     const cell = this.activeCell;
     if (cell) {
       if (this._pendingQuestionText !== null) {
@@ -383,8 +389,10 @@ export class ModalService {
       const applied = await this._applyFlipScoreModifier(currentPlayerId);
       if (!applied) {
         alert(t('flip_score_no_current_player'));
+        this.close();
+        return false;
       }
-      this.close();
+      this._scheduleModifierClose();
       return applied;
     } catch (e) {
       console.error('[ModalService] auto-apply modifier failed:', e);
@@ -392,6 +400,14 @@ export class ModalService {
       this.close();
       throw e;
     }
+  }
+
+  _scheduleModifierClose(durationMs = MODIFIER_BANNER_SECONDS * 1000) {
+    clearTimeout(this._modifierCloseTimer);
+    this._modifierCloseTimer = setTimeout(() => {
+      this._modifierCloseTimer = null;
+      this.close();
+    }, durationMs);
   }
 
   _clearPressCountdown() {

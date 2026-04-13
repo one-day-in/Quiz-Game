@@ -172,6 +172,8 @@ describe('ModalService press reset', () => {
 
     expect(updatePlayerMock).toHaveBeenCalledWith('game-1', 'player-9', { points: -400 });
     expect(updatePlayerMock).toHaveBeenCalledTimes(1);
+    expect(service.close).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(10000);
     expect(service.close).toHaveBeenCalledTimes(1);
   });
 
@@ -215,6 +217,24 @@ describe('ModalService press reset', () => {
 
     expect(applied).toBe(false);
     expect(globalThis.alert).toHaveBeenCalledTimes(1);
+    expect(service.close).toHaveBeenCalledTimes(1);
+  });
+
+  it('can close the modifier banner early via acknowledge callback', async () => {
+    const playersService = {
+      getPlayers: () => [{ id: 'player-9', points: 400 }],
+    };
+    const service = new ModalService({
+      getGameId: () => 'game-1',
+      getCurrentPlayerId: () => 'player-9',
+    }, {}, {}, playersService);
+    service.close = vi.fn();
+
+    await service._applyFlipScoreModifierToCurrentPlayer();
+    expect(service.close).not.toHaveBeenCalled();
+
+    service.close();
+
     expect(service.close).toHaveBeenCalledTimes(1);
   });
 });
