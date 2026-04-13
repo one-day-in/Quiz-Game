@@ -1,7 +1,18 @@
 // src/views/questionModal.template.js
 import { t } from '../i18n.js';
+import { getCellModifierOptions } from '../constants/cellModifiers.js';
 
 export function buildModalDom() {
+  const modifierOptionsMarkup = getCellModifierOptions(t)
+    .map(({ value, label }) => `
+      <button
+        type="button"
+        class="qmodal__modifierOption"
+        data-modifier="${value}"
+      >${label}</button>
+    `)
+    .join('');
+
   const root = document.createElement('div');
   root.className = 'qmodal';
 
@@ -18,10 +29,9 @@ export function buildModalDom() {
         </div>
 
         <div class="qmodal__headerActions">
-          <label class="qmodal__headerToggle">
-            <input type="checkbox" class="qmodal__modifierInput">
-            <span>${t('flip_score_modifier')}</span>
-          </label>
+          <div class="qmodal__modifierPicker" role="group" aria-label="${t('cell_modifier_banner_title')}">
+            ${modifierOptionsMarkup}
+          </div>
 
           <!-- Right: toggle view/edit mode -->
           <button
@@ -201,8 +211,7 @@ export function buildModalDom() {
       modifierTitle:      qs('.qmodal__modifierTitle'),
       modifierSubtitle:   qs('.qmodal__modifierSubtitle'),
       modifierDetail:     qs('.qmodal__modifierDetail'),
-      headerModifier:     qs('.qmodal__headerToggle'),
-      modifierCheckbox:   qs('.qmodal__modifierInput'),
+      headerModifier:     qs('.qmodal__modifierPicker'),
       btnToggleMode:      qs('.qmodal__btnToggleMode'),
       btnIncorrect:       qs('.qmodal__btnIncorrect'),
       btnCorrect:         qs('.qmodal__btnCorrect'),

@@ -18,6 +18,7 @@ vi.mock('../api/playersApi.js', () => ({
 }));
 
 import { ModalService } from './ModalService.js';
+import { CELL_MODIFIERS } from '../constants/cellModifiers.js';
 
 describe('ModalService press reset', () => {
   beforeEach(() => {
@@ -158,7 +159,7 @@ describe('ModalService press reset', () => {
     expect(service.close).toHaveBeenCalledTimes(1);
   });
 
-  it('applies flip-score modifier to the current active player and closes the modal', async () => {
+  it('applies flip-score modifier to the current active player and keeps the banner visible before closing', async () => {
     const playersService = {
       getPlayers: () => [{ id: 'player-9', points: 400 }],
     };
@@ -166,9 +167,10 @@ describe('ModalService press reset', () => {
       getGameId: () => 'game-1',
       getCurrentPlayerId: () => 'player-9',
     }, {}, {}, playersService);
+    service._activeModifier = CELL_MODIFIERS.FLIP_SCORE;
     service.close = vi.fn();
 
-    await service._applyFlipScoreModifierToCurrentPlayer();
+    await service._applyActiveModifierToCurrentPlayer();
 
     expect(updatePlayerMock).toHaveBeenCalledWith('game-1', 'player-9', { points: -400 });
     expect(updatePlayerMock).toHaveBeenCalledTimes(1);
@@ -211,9 +213,10 @@ describe('ModalService press reset', () => {
       getGameId: () => 'game-1',
       getCurrentPlayerId: () => null,
     }, {}, {}, { getPlayers: () => [] });
+    service._activeModifier = CELL_MODIFIERS.FLIP_SCORE;
     service.close = vi.fn();
 
-    const applied = await service._applyFlipScoreModifierToCurrentPlayer();
+    const applied = await service._applyActiveModifierToCurrentPlayer();
 
     expect(applied).toBe(false);
     expect(globalThis.alert).toHaveBeenCalledTimes(1);
@@ -228,13 +231,58 @@ describe('ModalService press reset', () => {
       getGameId: () => 'game-1',
       getCurrentPlayerId: () => 'player-9',
     }, {}, {}, playersService);
+    service._activeModifier = CELL_MODIFIERS.FLIP_SCORE;
     service.close = vi.fn();
 
-    await service._applyFlipScoreModifierToCurrentPlayer();
+    await service._applyActiveModifierToCurrentPlayer();
     expect(service.close).not.toHaveBeenCalled();
 
     service.close();
 
     expect(service.close).toHaveBeenCalledTimes(1);
+  });
+
+  it('steals 1000 points from the leader when chooser is not leading', async () => {
+    const playersService = {
+      getPlayers: () => [
+        { id: 'chooser', points: 500 },
+        { id: 'leader', points: 1400 },
+        { id: 'other', points: 300 },
+      ],
+    };
+    const service = new ModalService({
+      getGameId: () => 'game-1',
+      getCurrentPlayerId: () => 'chooser',
+    }, {}, {}, playersService);
+    service._activeModifier = CELL_MODIFIERS.STEAL_LEADER_POINTS;
+    service.close = vi.fn();
+
+    const applied = await service._applyActiveModifierToCurrentPlayer();
+
+    expect(applied).toBe(true);
+    expect(updatePlayerMock).toHaveBeenCalledWith('game-1', 'chooser', { points: 1500 });
+    expect(updatePlayerMock).toHaveBeenCalledWith('game-1', 'leader', { points: 400 });
+    expect(service.close).not.toHaveBeenCalled();
+  });
+
+  it('gives 1000 points to the lowest player when chooser already leads', async () => {
+    const playersService = {
+      getPlayers: () => [
+        { id: 'chooser', points: 1800 },
+        { id: 'leader-2', points: 1400 },
+        { id: 'lowest', points: -200 },
+      ],
+    };
+    const service = new ModalService({
+      getGameId: () => 'game-1',
+      getCurrentPlayerId: () => 'chooser',
+    }, {}, {}, playersService);
+    service._activeModifier = CELL_MODIFIERS.STEAL_LEADER_POINTS;
+
+    const applied = await service._applyActiveModifierToCurrentPlayer();
+
+    expect(applied).toBe(true);
+    expect(updatePlayerMock).toHaveBeenCalledWith('game-1', 'chooser', { points: 800 });
+    expect(updatePlayerMock).toHaveBeenCalledWith('game-1', 'lowest', { points: 800 });
   });
 });

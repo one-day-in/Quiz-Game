@@ -3,7 +3,11 @@ import { QuestionModalView } from '../views/QuestionModalView.js';
 import { Disposer } from '../utils/disposer.js';
 import { showConfirm } from '../utils/confirm.js';
 import { adjustPlayerScore } from '../api/gameApi.js';
-import { CELL_MODIFIERS, isFlipScoreModifier } from '../constants/cellModifiers.js';
+import {
+  isAutoCellModifier,
+  isFlipScoreModifier,
+  isStealLeaderPointsModifier,
+} from '../constants/cellModifiers.js';
 import { t } from '../i18n.js';
 
 const PRESS_RESPONSE_SECONDS = 30;
@@ -95,7 +99,7 @@ export class ModalService {
     this._cellValue = Number(cellData.value) || 0;
     this._activeModifier = cellData.modifier || null;
 
-    if (!isFlipScoreModifier(this._activeModifier)) {
+    if (!isAutoCellModifier(this._activeModifier)) {
       void this._resetPressRuntime();
     }
 
@@ -133,13 +137,12 @@ export class ModalService {
         void this._updateCell({ isAnswered: checked });
       },
 
-      onToggleModifier: async (checked) => {
+      onSelectModifier: async (modifier) => {
         try {
-          const modifier = checked ? CELL_MODIFIERS.FLIP_SCORE : null;
           await this._updateCell({
             modifier,
           });
-          this._activeModifier = modifier;
+          this._activeModifier = modifier || null;
           this.view._modifier = modifier;
         } catch (e) {
           console.error('[ModalService] toggle modifier failed:', e);
@@ -249,8 +252,8 @@ export class ModalService {
 
     this.container.appendChild(this.view.el);
 
-    if (isFlipScoreModifier(this._activeModifier)) {
-      void this._applyFlipScoreModifierToCurrentPlayer();
+    if (isAutoCellModifier(this._activeModifier)) {
+      void this._applyActiveModifierToCurrentPlayer();
     } else {
       this._bindPressRuntime();
     }
@@ -377,18 +380,69 @@ export class ModalService {
     return true;
   }
 
-  async _applyFlipScoreModifierToCurrentPlayer() {
+  _getPlayersSnapshot() {
+    return Array.isArray(this._players?.getPlayers?.()) ? this._players.getPlayers() : [];
+  }
+
+  _getCurrentModifierPlayer(playerId) {
+    return this._getPlayersSnapshot().find((entry) => String(entry?.id) === String(playerId)) || null;
+  }
+
+  _resolveStealLeaderPointsTransfer(currentPlayerId) {
+    const currentPlayer = this._getCurrentModifierPlayer(currentPlayerId);
+    if (!currentPlayer) return null;
+
+    const otherPlayers = this._getPlayersSnapshot().filter((entry) => String(entry?.id) !== String(currentPlayerId));
+    if (!otherPlayers.length) return null;
+
+    const currentPoints = Number(currentPlayer.points) || 0;
+    const highestOtherPlayer = otherPlayers.reduce((best, entry) => (
+      !best || (Number(entry.points) || 0) > (Number(best.points) || 0) ? entry : best
+    ), null);
+
+    const chooserIsHighest = currentPoints >= (Number(highestOtherPlayer?.points) || 0);
+    if (chooserIsHighest) {
+      const lowestOtherPlayer = otherPlayers.reduce((best, entry) => (
+        !best || (Number(entry.points) || 0) < (Number(best.points) || 0) ? entry : best
+      ), null);
+      if (!lowestOtherPlayer) return null;
+
+      return [
+        { id: currentPlayer.id, points: currentPoints - 1000 },
+        { id: lowestOtherPlayer.id, points: (Number(lowestOtherPlayer.points) || 0) + 1000 },
+      ];
+    }
+
+    if (!highestOtherPlayer) return null;
+
+    return [
+      { id: currentPlayer.id, points: currentPoints + 1000 },
+      { id: highestOtherPlayer.id, points: (Number(highestOtherPlayer.points) || 0) - 1000 },
+    ];
+  }
+
+  async _applyStealLeaderPointsModifier(playerId) {
+    const transfer = this._resolveStealLeaderPointsTransfer(playerId);
+    if (!transfer) return false;
+
+    await Promise.all(
+      transfer.map(({ id, points }) => updatePlayer(this._game.getGameId(), id, { points }))
+    );
+    return true;
+  }
+
+  async _applyActiveModifierToCurrentPlayer() {
     const currentPlayerId = this._game?.getCurrentPlayerId?.() ?? null;
     if (!currentPlayerId) {
-      alert(t('flip_score_no_current_player'));
+      alert(t('modifier_no_current_player'));
       this.close();
       return false;
     }
 
     try {
-      const applied = await this._applyFlipScoreModifier(currentPlayerId);
+      const applied = await this._applyModifierToPlayer(this._activeModifier, currentPlayerId);
       if (!applied) {
-        alert(t('flip_score_no_current_player'));
+        alert(t('modifier_not_available'));
         this.close();
         return false;
       }
@@ -400,6 +454,16 @@ export class ModalService {
       this.close();
       throw e;
     }
+  }
+
+  async _applyModifierToPlayer(modifier, playerId) {
+    if (isFlipScoreModifier(modifier)) {
+      return this._applyFlipScoreModifier(playerId);
+    }
+    if (isStealLeaderPointsModifier(modifier)) {
+      return this._applyStealLeaderPointsModifier(playerId);
+    }
+    return false;
   }
 
   _scheduleModifierClose(durationMs = MODIFIER_BANNER_SECONDS * 1000) {

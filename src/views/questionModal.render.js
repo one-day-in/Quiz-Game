@@ -1,5 +1,5 @@
 // src/views/questionModal.render.js
-import { getCellModifierBanner, isFlipScoreModifier } from '../constants/cellModifiers.js';
+import { getCellModifierBanner, isAutoCellModifier } from '../constants/cellModifiers.js';
 import { t } from '../i18n.js';
 
 // ─── Media collapse threshold ────────────────────────────────────────────────
@@ -186,7 +186,7 @@ function hasText(v) {
 }
 
 function isModifierSelectionMode(view) {
-  return view._mode === 'view' && isFlipScoreModifier(view._modifier);
+  return view._mode === 'view' && isAutoCellModifier(view._modifier);
 }
 
 function fitViewText(refs, type) {
@@ -382,6 +382,16 @@ function renderModifierPanel(view, refs) {
   if (refs.modifierDetail) refs.modifierDetail.textContent = banner.detail || '';
 }
 
+function renderModifierPicker(view, refs) {
+  const optionButtons = refs.headerModifier?.querySelectorAll('.qmodal__modifierOption') || [];
+  optionButtons.forEach((button) => {
+    const buttonModifier = button.dataset.modifier || null;
+    const isActive = (view._modifier || null) === buttonModifier;
+    button.classList.toggle('is-active', isActive);
+    button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+  });
+}
+
 /* ------------------------ Render ------------------------ */
 
 export function renderAll(view, refs) {
@@ -390,9 +400,7 @@ export function renderAll(view, refs) {
   }
 
   view.syncPressBannerVisibility?.();
-  if (refs.modifierCheckbox) {
-    refs.modifierCheckbox.checked = isFlipScoreModifier(view._modifier);
-  }
+  renderModifierPicker(view, refs);
 
   // Gather content state for both sections
   const sections = {

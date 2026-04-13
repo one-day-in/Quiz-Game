@@ -56,7 +56,7 @@ The app is realtime, but not purely realtime. It mixes:
   - resets and observes press runtime
   - adjusts score on correct/incorrect actions
   - now runs a 30-second host-side answer countdown after a player wins `PRESS`
-  - now resolves `plus-to-minus` automatically against the current chooser instead of opening a manual player picker
+  - now resolves auto-apply cell modifiers against the current chooser through one shared modifier pipeline
 
 ### Data / Service Layer
 
@@ -126,6 +126,7 @@ The app is realtime, but not purely realtime. It mixes:
   - shows the active press winner countdown in the host banner while the question is still live
   - question/answer audio tracks now render through a custom player UI instead of browser-native `audio[controls]`
   - audio-only sections can promote that player into a larger hero-style block when there is no competing text/media
+  - edit mode now uses one reusable modifier picker UI for all supported cell modifiers
 - `utils/overlayDismiss.js`
   - shared close-on-overlay and close-on-Escape wiring for dismissable layers
 - `views/LobbyView.js`
@@ -187,7 +188,7 @@ The app is realtime, but not purely realtime. It mixes:
    - marks unanswered cells as answered immediately
    - opens press runtime through `PressRuntimeService`
    - listens for winner updates through the same runtime service
-   - exception: if the cell has the `plus-to-minus` modifier, host view now applies it immediately to `games.data.meta.currentPlayerId`, then closes the modal without opening the normal `PRESS` race
+   - exception: if the cell has an auto-apply modifier, host view now resolves it immediately against `games.data.meta.currentPlayerId`, then closes the modal after the modifier banner instead of opening the normal `PRESS` race
 11. Player presses are claimed through the buzzer server first, and the server persists the result through `claim_game_press(...)`.
    - `claim_game_press(...)` now returns `jsonb` to avoid PL/pgSQL output-column ambiguity in production
 12. Host clicks:
@@ -230,6 +231,7 @@ The app is realtime, but not purely realtime. It mixes:
 - Host local UI truth: `GameService.uiState` and some view-local state
 - Player local controller identity truth: `localStorage`
 - Cell modifiers now live in board JSON per-cell as `cell.modifier`
+- Supported modifiers now share one config source for picker labels, banner copy, and host-side resolution rules.
 
 ### Important Reality Checks
 
@@ -250,6 +252,10 @@ The app is realtime, but not purely realtime. It mixes:
 - Board updates are optimistic in `GameService`.
 - Player updates are mostly direct RPC calls in `player.js`.
 - Press runtime is handled separately from board state and separately from players.
+- `flip-score` flips the chooser's full score sign.
+- `steal-leader-points` transfers `1000` between the chooser and another player:
+  - chooser steals from the highest-scoring other player
+  - if chooser is already tied for highest, chooser gives `1000` to the lowest-scoring other player
 - The buzzer server is now the primary low-latency transport for press activation and winner fanout.
 - The intended production shape is now:
   - static pages from GitHub Pages
@@ -462,6 +468,8 @@ Ordered refactor and improvement steps. Do not treat all items as immediate.
 - `Correct` now promotes the confirmed press winner into the chooser role, while `Not Correct` and accidental modal close leave the chooser unchanged.
 - The host header now exposes a manual chooser picker so the host can assign or reassign the active player before and during the game.
 - Simplified `Плюс на мінус` again: it no longer opens a host selection overlay and now always targets the current chooser / active player.
+- Reworked cell modifiers around one shared config/picker/banner flow instead of a one-off `flip-score` toggle.
+- Added `Крадіжка 1000`: the chooser steals `1000` from the leading opponent, or gives `1000` to the lowest-scoring opponent when already tied for the lead.
 
 ### 2026-04-08
 

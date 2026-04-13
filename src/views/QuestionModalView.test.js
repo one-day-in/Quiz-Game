@@ -23,14 +23,13 @@ function createView(overrides = {}) {
     headerTitle: 'Topic • 100',
     isAnswered: false,
     modifier: null,
-    modifierPlayers: [],
     question: { text: 'Question', media: null, audioFiles: [] },
     answer: { text: 'Answer', media: null, audioFiles: [] },
     onClose: vi.fn(),
     onIncorrect: vi.fn(),
     onCorrect: vi.fn(),
     onToggleAnswered: vi.fn(),
-    onToggleModifier: vi.fn(),
+    onSelectModifier: vi.fn(),
     onQuestionChange: vi.fn(),
     onAnswerChange: vi.fn(),
     onUploadMedia: vi.fn(),
@@ -126,6 +125,16 @@ describe('QuestionModalView winner state', () => {
     view.destroy();
   });
 
+  it('renders auto-apply modifier panel for steal modifier cells', async () => {
+    const view = createView({
+      modifier: 'steal-leader-points',
+    });
+
+    expect(view._refs.modifierPanel.hidden).toBe(false);
+    expect(view._refs.modifierSubtitle.textContent).toContain('1000');
+    view.destroy();
+  });
+
   it('closes modifier panel flow on click', () => {
     const onModifierAcknowledge = vi.fn();
     const view = createView({
@@ -136,6 +145,16 @@ describe('QuestionModalView winner state', () => {
     view._refs.modifierPanel.click();
 
     expect(onModifierAcknowledge).toHaveBeenCalledTimes(1);
+    view.destroy();
+  });
+
+  it('updates the selected modifier through the picker buttons', async () => {
+    const onSelectModifier = vi.fn().mockResolvedValue(undefined);
+    const view = createView({ onSelectModifier });
+
+    view._refs.headerModifier.querySelector('[data-modifier="steal-leader-points"]').click();
+
+    expect(onSelectModifier).toHaveBeenCalledWith('steal-leader-points');
     view.destroy();
   });
 });

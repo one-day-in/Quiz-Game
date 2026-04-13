@@ -1,7 +1,6 @@
 // src/views/QuestionModalView.js
 import { ViewDisposer } from '../utils/disposer.js';
 import { bindOverlayDismiss } from '../utils/overlayDismiss.js';
-import { CELL_MODIFIERS } from '../constants/cellModifiers.js';
 import { buildModalDom } from './questionModal.template.js';
 import { initMediaUI, applyModeUI, renderAll } from './questionModal.render.js';
 
@@ -17,7 +16,7 @@ export class QuestionModalView {
         onIncorrect,
         onCorrect,
         onToggleAnswered,
-        onToggleModifier,
+        onSelectModifier,
         onQuestionChange,
         onAnswerChange,
         onUploadMedia,
@@ -38,7 +37,7 @@ export class QuestionModalView {
 
         this._cb = {
             onClose, onIncorrect, onCorrect,
-            onToggleAnswered, onToggleModifier, onQuestionChange, onAnswerChange,
+            onToggleAnswered, onSelectModifier, onQuestionChange, onAnswerChange,
             onUploadMedia, onDeleteMedia, onAddAudio, onDeleteAudio, onViewStateChange, onModifierAcknowledge,
         };
 
@@ -236,16 +235,19 @@ export class QuestionModalView {
         this._disposer.addEventListener(r.answeredCheckbox, 'change', (e) => {
             this._cb.onToggleAnswered?.(e.target.checked);
         });
-        this._disposer.addEventListener(r.modifierCheckbox, 'change', async (e) => {
-            const checked = !!e.target.checked;
-            const prev = this._modifier;
-            this._modifier = checked ? CELL_MODIFIERS.FLIP_SCORE : null;
+        this._disposer.addEventListener(r.headerModifier, 'click', async (e) => {
+            const optionBtn = e.target.closest('.qmodal__modifierOption');
+            if (!optionBtn) return;
+
+            const nextModifier = optionBtn.dataset.modifier || null;
+            const prevModifier = this._modifier;
+            this._modifier = nextModifier;
 
             try {
-                await this._cb.onToggleModifier?.(checked);
+                await this._cb.onSelectModifier?.(nextModifier);
+                renderAll(this, this._refs);
             } catch {
-                this._modifier = prev;
-                e.target.checked = prev;
+                this._modifier = prevModifier;
                 renderAll(this, this._refs);
             }
         });
