@@ -155,7 +155,9 @@ export class QuestionModalView {
 
         const totalSeconds = Number.isFinite(secondsRemaining) ? Math.max(0, Math.ceil(secondsRemaining)) : null;
         if (totalSeconds === null) {
-            timerEl.hidden = true;
+            timerEl.hidden = false;
+            timerEl.classList.add('is-idle');
+            timerEl.setAttribute('aria-hidden', 'true');
             return;
         }
 
@@ -163,6 +165,8 @@ export class QuestionModalView {
         const secs = totalSeconds % 60;
         timerEl.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
         timerEl.hidden = false;
+        timerEl.classList.remove('is-idle');
+        timerEl.setAttribute('aria-hidden', 'false');
     }
 
     syncPressBannerVisibility({ animate = false } = {}) {

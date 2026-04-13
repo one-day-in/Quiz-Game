@@ -145,6 +145,7 @@
     align-items: center;
     justify-content: center;
     min-width: 132px;
+    min-height: 60px;
     padding: 10px 18px;
     border-radius: 999px;
     border: 1px solid rgba(255, 244, 214, 0.34);
@@ -155,6 +156,12 @@
     font-weight: 900;
     letter-spacing: 0.12em;
     font-variant-numeric: tabular-nums;
+    transition: opacity 0.16s ease;
+}
+
+.qmodal__pressBannerTimer.is-idle {
+    opacity: 0;
+    visibility: hidden;
 }
 
 .qmodal__pressBanner[hidden] {

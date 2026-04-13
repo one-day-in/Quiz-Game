@@ -104,10 +104,12 @@ describe('QuestionModalView winner state', () => {
     view.updatePressTimer(30);
 
     expect(view._refs.pressBannerTimer.hidden).toBe(false);
+    expect(view._refs.pressBannerTimer.classList.contains('is-idle')).toBe(false);
     expect(view._refs.pressBannerTimer.textContent).toBe('00:30');
 
     view.updatePressTimer(null);
-    expect(view._refs.pressBannerTimer.hidden).toBe(true);
+    expect(view._refs.pressBannerTimer.hidden).toBe(false);
+    expect(view._refs.pressBannerTimer.classList.contains('is-idle')).toBe(true);
 
     view.destroy();
   });
