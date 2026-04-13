@@ -17,6 +17,8 @@
     "ws": "^8.20.0"
   },
   "devDependencies": {
+    "@emnapi/core": "^1.9.2",
+    "@emnapi/runtime": "^1.9.2",
     "jsdom": "^29.0.2",
     "vite": "^8.0.8",
     "vitest": "^4.1.4"
