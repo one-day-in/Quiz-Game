@@ -5,7 +5,12 @@ const listeners = new Set();
 const supportedThemes = Object.freeze(['base', 'skillcore', 'play-listen']);
 
 function canUseStorage() {
-  return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+  if (typeof window === 'undefined') return false;
+  try {
+    return typeof window.localStorage !== 'undefined';
+  } catch {
+    return false;
+  }
 }
 
 export function getSupportedThemes() {
@@ -14,8 +19,12 @@ export function getSupportedThemes() {
 
 export function getTheme() {
   if (!canUseStorage()) return DEFAULT_THEME;
-  const stored = window.localStorage.getItem(THEME_KEY);
-  return supportedThemes.includes(stored) ? stored : DEFAULT_THEME;
+  try {
+    const stored = window.localStorage.getItem(THEME_KEY);
+    return supportedThemes.includes(stored) ? stored : DEFAULT_THEME;
+  } catch {
+    return DEFAULT_THEME;
+  }
 }
 
 function applyThemeToDocument(theme) {
@@ -26,7 +35,11 @@ function applyThemeToDocument(theme) {
 export function setTheme(nextTheme) {
   const normalized = supportedThemes.includes(nextTheme) ? nextTheme : DEFAULT_THEME;
   if (canUseStorage()) {
-    window.localStorage.setItem(THEME_KEY, normalized);
+    try {
+      window.localStorage.setItem(THEME_KEY, normalized);
+    } catch {
+      // Keep app functional when storage is blocked/unavailable.
+    }
   }
   applyThemeToDocument(normalized);
   listeners.forEach((listener) => listener(normalized));
