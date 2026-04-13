@@ -155,6 +155,8 @@
 
     --topic-bg: linear-gradient(180deg, #2563eb, #1e40af);
     --topic-border: rgba(147, 197, 253, 0.8);
+    --topic-cell-bg: linear-gradient(160deg, rgb(101 24 146 / 98%) 0%, rgb(59 75 95 / 0%) 52%, rgba(26, 35, 49, 0.99) 100%);
+    --topic-cell-border: rgba(226, 232, 240, 0.28);
 
     --question-bg: var(--cell-bg);
     --question-border: var(--border-3);
@@ -201,6 +203,8 @@
     --cell-bg-hover: linear-gradient(180deg, #22d3ee, #0b1120);
     --topic-bg: linear-gradient(180deg, #38bdf8, #0369a1);
     --topic-border: rgba(103, 232, 249, 0.85);
+    --topic-cell-bg: linear-gradient(160deg, rgb(14 165 233 / 96%) 0%, rgb(8 145 178 / 38%) 52%, rgba(7, 18, 36, 0.99) 100%);
+    --topic-cell-border: rgba(125, 211, 252, 0.48);
     --cell-empty-bg: #14203a;
 }
 
@@ -235,5 +239,7 @@
     --cell-bg-hover: linear-gradient(180deg, #fb7185, #1b0f2b);
     --topic-bg: linear-gradient(180deg, #fb7185, #be123c);
     --topic-border: rgba(253, 164, 175, 0.86);
+    --topic-cell-bg: linear-gradient(160deg, rgb(249 115 22 / 96%) 0%, rgb(251 113 133 / 35%) 52%, rgba(38, 13, 48, 0.99) 100%);
+    --topic-cell-border: rgba(253, 186, 116, 0.48);
     --cell-empty-bg: #2a1537;
 }
