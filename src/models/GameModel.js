@@ -2,7 +2,7 @@
 class GameModel {
   constructor(gameData) {
     this.rounds = gameData.rounds || [];
-    this.meta = gameData.meta || { updatedAt: new Date().toISOString() };
+    this.meta = gameData.meta || { updatedAt: new Date().toISOString(), currentPlayerId: null };
     this.schemaVersion = gameData.schemaVersion || '1.0';
     this.players = gameData.players || [];
   }
@@ -28,6 +28,15 @@ class GameModel {
       this.rounds[roundIdx].rows[rowIdx].topic = topic;
       this.meta.updatedAt = new Date().toISOString();
     }
+  }
+
+  getCurrentPlayerId() {
+    return this.meta?.currentPlayerId ? String(this.meta.currentPlayerId) : null;
+  }
+
+  setCurrentPlayerId(playerId) {
+    this.meta.currentPlayerId = playerId ? String(playerId) : null;
+    this.meta.updatedAt = new Date().toISOString();
   }
 
   // Returns a Set of every filename currently referenced by any cell

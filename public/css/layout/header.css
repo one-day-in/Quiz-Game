@@ -150,6 +150,178 @@
   gap: 10px;
 }
 
+.hdr-current-player {
+  position: relative;
+}
+
+.hdr-current-player-btn {
+  min-width: 220px;
+  min-height: 52px;
+  padding: 8px 16px 8px 18px;
+
+  display: inline-grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 12px;
+
+  border-radius: 18px;
+  border: 1px solid var(--border-2);
+
+  background:
+    linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.96)),
+    radial-gradient(circle at top, var(--brand-a18), transparent 55%);
+  box-shadow: var(--shadow-btn);
+
+  color: var(--text);
+  cursor: pointer;
+
+  transition:
+    transform var(--t-fast) var(--ease),
+    filter var(--t-fast) var(--ease),
+    box-shadow var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease),
+    background var(--t-fast) var(--ease);
+}
+
+.hdr-current-player-btn:hover {
+  transform: translateY(calc(-1 * (var(--lift-y) / 3)));
+  border-color: var(--border-5);
+  box-shadow: var(--shadow-md), var(--btn-glow-hover);
+  filter: brightness(1.05);
+}
+
+.hdr-current-player-btn:active {
+  transform: translateY(var(--btn-press-y));
+  filter: brightness(0.98);
+}
+
+.hdr-current-player-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-md), var(--ring);
+}
+
+.hdr-current-player-btn.is-unset {
+  opacity: 0.9;
+}
+
+.hdr-current-player-kicker {
+  grid-column: 1 / 2;
+  grid-row: 1 / 2;
+  font-family: var(--font-label);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: left;
+}
+
+.js-current-player-value {
+  grid-column: 1 / 2;
+  grid-row: 2 / 3;
+  min-width: 0;
+  font-family: var(--font-display);
+  font-size: var(--fs-2);
+  font-weight: 400;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
+}
+
+.hdr-current-player-caret {
+  grid-column: 2 / 3;
+  grid-row: 1 / 3;
+  font-size: 18px;
+  color: var(--muted);
+}
+
+.hdr-current-player-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: min(320px, 36vw);
+  padding: 10px;
+  border-radius: 22px;
+  border: 1px solid var(--border-2);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.98));
+  box-shadow: var(--shadow-lg);
+  z-index: 20;
+}
+
+.hdr-current-player-list {
+  display: grid;
+  gap: 8px;
+}
+
+.hdr-current-player-option {
+  width: 100%;
+  min-height: 54px;
+  padding: 12px 14px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  border-radius: 16px;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  cursor: pointer;
+
+  transition:
+    transform var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease),
+    background var(--t-fast) var(--ease),
+    box-shadow var(--t-fast) var(--ease);
+}
+
+.hdr-current-player-option:hover,
+.hdr-current-player-option:focus-visible {
+  outline: none;
+  transform: translateY(-1px);
+  border-color: var(--border-5);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow-sm);
+}
+
+.hdr-current-player-option.is-active {
+  border-color: var(--brand-a35);
+  background: var(--brand-a12);
+  box-shadow: 0 0 16px var(--brand-a18);
+}
+
+.hdr-current-player-optionName,
+.hdr-current-player-optionScore {
+  pointer-events: none;
+}
+
+.hdr-current-player-optionName {
+  min-width: 0;
+  font-weight: 800;
+  text-align: left;
+}
+
+.hdr-current-player-optionScore {
+  flex: 0 0 auto;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  font-family: var(--font-numeric);
+  font-weight: 900;
+}
+
+.hdr-current-player-empty {
+  margin: 0;
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+  text-align: center;
+}
+
 .hdr-leaderboard-btn {
   font-family: var(--font-label);
   height: 44px;
@@ -254,6 +426,15 @@
 
   .round-indicator b {
     font-size: var(--fs-2);
+  }
+
+  .hdr-current-player-btn {
+    min-width: 180px;
+    max-width: 34vw;
+  }
+
+  .hdr-current-player-menu {
+    width: min(280px, 52vw);
   }
 }
 /* ── Lobby + Logout buttons (same style as leaderboard button) ── */

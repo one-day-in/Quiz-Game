@@ -26,7 +26,7 @@ export function makeDefaultRound() {
 export function makeDefaultGame() {
     return {
         schemaVersion: '1.0',
-        meta: { updatedAt: new Date().toISOString() },
+        meta: { updatedAt: new Date().toISOString(), currentPlayerId: null },
         rounds: Array.from({ length: 3 }, makeDefaultRound),
         players: [],
     };
@@ -58,6 +58,7 @@ export function normalizeGame(game = {}) {
         ...rest,
         meta: {
             updatedAt: game?.meta?.updatedAt || new Date().toISOString(),
+            currentPlayerId: game?.meta?.currentPlayerId ? String(game.meta.currentPlayerId) : null,
         },
         rounds: Array.isArray(game?.rounds) ? game.rounds : Array.from({ length: 3 }, makeDefaultRound),
         players: normalizePlayers(game?.players),

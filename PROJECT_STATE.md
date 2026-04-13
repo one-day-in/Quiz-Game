@@ -1,6 +1,6 @@
 # PROJECT_STATE
 
-Last updated: 2026-04-09
+Last updated: 2026-04-13
 
 ## Real Project Overview
 
@@ -66,6 +66,7 @@ The app is realtime, but not purely realtime. It mixes:
   - owns in-memory `GameModel`
   - owns local host UI state such as active round
   - performs optimistic board updates and rollback on failure
+  - now also persists `games.data.meta.currentPlayerId` as the host-visible chooser / active player
 - `services/PlayersService.js`
   - owns host-side live player state
   - performs initial fetch, realtime subscription, and fallback refresh
@@ -112,7 +113,7 @@ The app is realtime, but not purely realtime. It mixes:
   - board grid and topic editing
   - wraps the board in a centered inner container with a `1600px` max width
 - `views/HeaderView.js`
-  - host header with lobby/back and round switcher
+  - host header with lobby/back, round switcher, and chooser picker in the top-right corner
 - `views/LeaderboardGridView.js`
   - shared leaderboard renderer for page, compact preview, and full editable list
   - footer preview now renders compact one-line player cards
@@ -190,8 +191,9 @@ The app is realtime, but not purely realtime. It mixes:
 11. Player presses are claimed through the buzzer server first, and the server persists the result through `claim_game_press(...)`.
    - `claim_game_press(...)` now returns `jsonb` to avoid PL/pgSQL output-column ambiguity in production
 12. Host clicks:
-   - `Correct` -> adds cell value to winner score
+   - `Correct` -> adds cell value to winner score and promotes that winner into `games.data.meta.currentPlayerId`
    - `Not Correct` -> subtracts cell value and reopens press race
+13. The chooser shown in the header can also be reassigned manually by the host at any time through the header picker.
 
 ### Player Flow
 
@@ -221,6 +223,7 @@ The app is realtime, but not purely realtime. It mixes:
 ### Canonical State Stores
 
 - Board content truth: `games.data`
+- Active chooser truth: `games.data.meta.currentPlayerId`
 - Player/score truth: `game_players`
 - Press race truth: `game_runtime`
 - Press race transport truth: `PressRuntimeService` backed by the buzzer server when available
@@ -288,6 +291,7 @@ The app is realtime, but not purely realtime. It mixes:
 - `activeRoundId` in `GameService`
 - `quiz-game:player-controller:<gameId>` for player/controller binding
 - `quiz-game:ui-language` in `i18n.js`
+- chooser selection is persistent board state, not `localStorage`
 
 ## Code Smells and Structural Problems
 
@@ -451,6 +455,12 @@ Ordered refactor and improvement steps. Do not treat all items as immediate.
   Medium
 
 ## Decisions Log
+
+### 2026-04-13
+
+- Added persistent chooser state at `games.data.meta.currentPlayerId` instead of storing the active player in host-only UI state.
+- `Correct` now promotes the confirmed press winner into the chooser role, while `Not Correct` and accidental modal close leave the chooser unchanged.
+- The host header now exposes a manual chooser picker so the host can assign or reassign the active player before and during the game.
 
 ### 2026-04-08
 

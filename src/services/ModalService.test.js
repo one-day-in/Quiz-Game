@@ -143,6 +143,7 @@ describe('ModalService press reset', () => {
   it('adds score and closes modal on correct answer', async () => {
     const gameService = {
       getGameId: () => 'game-1',
+      setCurrentPlayerId: vi.fn().mockResolvedValue(true),
     };
     const service = new ModalService(gameService, {});
     service._pressWinnerId = 'player-2';
@@ -152,6 +153,7 @@ describe('ModalService press reset', () => {
     await service._handleCorrect();
 
     expect(adjustPlayerScoreMock).toHaveBeenCalledWith('game-1', 'player-2', 500);
+    expect(gameService.setCurrentPlayerId).toHaveBeenCalledWith('player-2');
     expect(service.close).toHaveBeenCalledTimes(1);
   });
 

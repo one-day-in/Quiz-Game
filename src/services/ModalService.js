@@ -343,8 +343,9 @@ export class ModalService {
     this._isResolvingPressResult = true;
     try {
       await adjustPlayerScore(this._game.getGameId(), this._pressWinnerId, this._cellValue);
+      await this._game?.setCurrentPlayerId?.(this._pressWinnerId);
     } catch (e) {
-      console.error('[ModalService] adjustPlayerScore (correct) failed:', e);
+      console.error('[ModalService] correct resolution failed:', e);
     }
     this.close();
   }

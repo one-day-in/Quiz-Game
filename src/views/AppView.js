@@ -10,6 +10,8 @@ export function AppView({ model, uiState, players = [], actions, gameId, gameNam
   container.className = 'app-shell';
 
   const disposer = new ViewDisposer(container);
+  let currentModel = model;
+  let currentUiState = uiState;
   let gridEl = null;
   let leaderboardPanel = null;
   let leaderboardPlayers = Array.isArray(players) ? players : [];
@@ -29,10 +31,14 @@ export function AppView({ model, uiState, players = [], actions, gameId, gameNam
   const header = HeaderView({
     uiState,
     gameName,
+    players: leaderboardPlayers,
+    currentPlayerId: model?.getCurrentPlayerId?.() ?? null,
     onBackToLobby,
     onRoundClick,
+    onCurrentPlayerChange: (playerId) => actions.setCurrentPlayer?.(playerId),
   });
   container.appendChild(header.el);
+  disposer.add(() => header.destroy?.());
 
   function renderGrid(m, ui) {
     const newGrid = GameGridView({
@@ -72,24 +78,47 @@ export function AppView({ model, uiState, players = [], actions, gameId, gameNam
 
   // Public update — called on every subsequent state change
   function update(m, ui) {
+    currentModel = m;
+    currentUiState = ui;
     container.classList.toggle('is-round-transitioning', !!ui?.isRoundTransitioning);
-    header.update(ui);
+    header.update({
+      uiState: ui,
+      players: leaderboardPlayers,
+      currentPlayerId: m?.getCurrentPlayerId?.() ?? null,
+    });
     renderGrid(m, ui);
     renderLeaderboard(leaderboardPlayers);
   }
 
   function syncLive(m, ui = uiState) {
+    currentModel = m;
+    currentUiState = ui;
     container.classList.toggle('is-round-transitioning', !!ui?.isRoundTransitioning);
-    header.update(ui);
+    header.update({
+      uiState: ui,
+      players: leaderboardPlayers,
+      currentPlayerId: m?.getCurrentPlayerId?.() ?? null,
+    });
     renderLeaderboard(leaderboardPlayers);
   }
 
   function setRoundTransition(ui = uiState) {
+    currentUiState = ui;
     container.classList.toggle('is-round-transitioning', !!ui?.isRoundTransitioning);
-    header.update(ui);
+    header.update({
+      uiState: ui,
+      players: leaderboardPlayers,
+      currentPlayerId: currentModel?.getCurrentPlayerId?.() ?? null,
+    });
   }
 
   function updatePlayers(nextPlayers = []) {
+    leaderboardPlayers = Array.isArray(nextPlayers) ? nextPlayers : [];
+    header.update({
+      uiState: currentUiState,
+      players: leaderboardPlayers,
+      currentPlayerId: currentModel?.getCurrentPlayerId?.() ?? null,
+    });
     renderLeaderboard(nextPlayers);
   }
 

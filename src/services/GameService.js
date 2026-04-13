@@ -63,6 +63,7 @@ class GameService {
 
     getModel() { return this.model; }
     getGameId() { return this.repo.getGameId(); }
+    getCurrentPlayerId() { return this.model?.getCurrentPlayerId?.() ?? null; }
     isInitialized() { return this.model !== null; }
 
     _showRoundTransition(label, sub = '') {
@@ -130,6 +131,27 @@ class GameService {
         if (!this.model) return false;
         await this.repo.saveGame(this.model.toJSON());
         return true;
+    }
+
+    async setCurrentPlayerId(playerId) {
+        if (!this.model) throw new Error('GameService not initialized');
+
+        const prevPlayerId = this.model.getCurrentPlayerId?.() ?? null;
+        const nextPlayerId = playerId ? String(playerId) : null;
+
+        if (prevPlayerId === nextPlayerId) return true;
+
+        this.model.setCurrentPlayerId?.(nextPlayerId);
+        this._emit();
+
+        try {
+            await this.repo.saveGame(this.model.toJSON());
+            return true;
+        } catch (err) {
+            this.model.setCurrentPlayerId?.(prevPlayerId);
+            this._emit();
+            throw err;
+        }
     }
 
     getCell(roundId, rowId, cellId) {
