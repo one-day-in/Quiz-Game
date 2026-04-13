@@ -369,48 +369,10 @@ function applyAudioLayoutState(refs, type, { isHero = false, trackCount = 0 } = 
 
 function renderModifierPanel(view, refs) {
   const panelEl = refs.modifierPanel;
-  const playersEl = refs.modifierPlayers;
-  if (!panelEl || !playersEl) return;
+  if (!panelEl) return;
 
   const isVisible = isModifierSelectionMode(view);
   setHidden(panelEl, !isVisible);
-  if (!isVisible) {
-    playersEl.innerHTML = '';
-    return;
-  }
-
-  const players = Array.isArray(view._modifierPlayers) ? view._modifierPlayers.slice() : [];
-  playersEl.innerHTML = '';
-
-  if (!players.length) {
-    const empty = document.createElement('div');
-    empty.className = 'qmodal__modifierEmpty';
-    empty.textContent = t('flip_score_no_players');
-    playersEl.appendChild(empty);
-    return;
-  }
-
-  for (const player of players) {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'qmodal__modifierPlayerBtn';
-    button.dataset.playerId = player.id;
-    button.disabled = !!view._modifierApplyingPlayerId;
-    if (String(view._modifierApplyingPlayerId) === String(player.id)) {
-      button.classList.add('is-loading');
-    }
-
-    const name = document.createElement('span');
-    name.className = 'qmodal__modifierPlayerName';
-    name.textContent = player.name || t('player_fallback');
-
-    const score = document.createElement('span');
-    score.className = 'qmodal__modifierPlayerScore';
-    score.textContent = String(Number(player.points) || 0);
-
-    button.append(name, score);
-    playersEl.appendChild(button);
-  }
 }
 
 /* ------------------------ Render ------------------------ */

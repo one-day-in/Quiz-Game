@@ -24,6 +24,7 @@ describe('ModalService press reset', () => {
     vi.useFakeTimers();
     vi.clearAllMocks();
     updatePlayerMock.mockResolvedValue({});
+    vi.stubGlobal('alert', vi.fn());
   });
 
   it('enables press immediately after reset', async () => {
@@ -157,17 +158,21 @@ describe('ModalService press reset', () => {
     expect(service.close).toHaveBeenCalledTimes(1);
   });
 
-  it('applies flip-score modifier to the selected player and closes the modal', async () => {
+  it('applies flip-score modifier to the current active player and closes the modal', async () => {
     const playersService = {
       getPlayers: () => [{ id: 'player-9', points: 400 }],
     };
-    const service = new ModalService({ getGameId: () => 'game-1' }, {}, {}, playersService);
+    const service = new ModalService({
+      getGameId: () => 'game-1',
+      getCurrentPlayerId: () => 'player-9',
+    }, {}, {}, playersService);
     service.close = vi.fn();
 
-    await service._applyFlipScoreModifier('player-9');
+    await service._applyFlipScoreModifierToCurrentPlayer();
 
     expect(updatePlayerMock).toHaveBeenCalledWith('game-1', 'player-9', { points: -400 });
     expect(updatePlayerMock).toHaveBeenCalledTimes(1);
+    expect(service.close).toHaveBeenCalledTimes(1);
   });
 
   it('flips negative and zero scores without adding the cell value', async () => {
@@ -197,5 +202,19 @@ describe('ModalService press reset', () => {
 
     expect(applied).toBe(false);
     expect(updatePlayerMock).not.toHaveBeenCalled();
+  });
+
+  it('shows an alert when plus-to-minus opens without an active player', async () => {
+    const service = new ModalService({
+      getGameId: () => 'game-1',
+      getCurrentPlayerId: () => null,
+    }, {}, {}, { getPlayers: () => [] });
+    service.close = vi.fn();
+
+    const applied = await service._applyFlipScoreModifierToCurrentPlayer();
+
+    expect(applied).toBe(false);
+    expect(globalThis.alert).toHaveBeenCalledTimes(1);
+    expect(service.close).toHaveBeenCalledTimes(1);
   });
 });

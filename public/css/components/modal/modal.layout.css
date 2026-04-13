@@ -218,67 +218,6 @@
     font-size: 16px;
 }
 
-.qmodal__modifierPlayers {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 12px;
-}
-
-.qmodal__modifierPlayerBtn {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    min-height: 72px;
-    padding: 16px 18px;
-    border: 1px solid rgba(148, 163, 184, 0.28);
-    border-radius: 18px;
-    background: linear-gradient(180deg, rgba(30, 41, 59, 0.94), rgba(15, 23, 42, 0.98));
-    color: #f8fafc;
-    font-size: 18px;
-    font-weight: 800;
-    cursor: pointer;
-    transition: transform 0.16s ease, border-color 0.16s ease, filter 0.16s ease;
-}
-
-.qmodal__modifierPlayerBtn:hover:not(:disabled) {
-    transform: translateY(-1px);
-    border-color: rgba(251, 191, 36, 0.64);
-    filter: brightness(1.05);
-}
-
-.qmodal__modifierPlayerBtn:disabled {
-    cursor: wait;
-    opacity: 0.72;
-}
-
-.qmodal__modifierPlayerBtn.is-loading {
-    border-color: rgba(251, 191, 36, 0.64);
-}
-
-.qmodal__modifierPlayerName {
-    min-width: 0;
-    text-align: left;
-}
-
-.qmodal__modifierPlayerScore {
-    flex: 0 0 auto;
-    padding: 6px 10px;
-    border-radius: 999px;
-    background: rgba(251, 191, 36, 0.14);
-    color: #fde68a;
-    font-variant-numeric: tabular-nums;
-}
-
-.qmodal__modifierEmpty {
-    padding: 18px;
-    border-radius: 18px;
-    background: rgba(30, 41, 59, 0.72);
-    text-align: center;
-    color: var(--muted);
-    font-weight: 700;
-}
-
 /* Body */
 .qmodal__body {
     position: relative;

@@ -112,22 +112,13 @@ describe('QuestionModalView winner state', () => {
     view.destroy();
   });
 
-  it('renders modifier player buttons for flip-score cells', async () => {
-    const onApplyModifier = vi.fn().mockResolvedValue(undefined);
+  it('renders auto-apply modifier panel for flip-score cells', async () => {
     const view = createView({
       modifier: 'flip-score',
-      modifierPlayers: [{ id: 'player-1', name: 'Maria', points: 200 }],
-      onApplyModifier,
     });
 
-    const playerBtn = view._refs.modifierPlayers.querySelector('.qmodal__modifierPlayerBtn');
     expect(view._refs.modifierPanel.hidden).toBe(false);
-    expect(playerBtn?.textContent).toContain('Maria');
-
-    playerBtn?.click();
-    await Promise.resolve();
-
-    expect(onApplyModifier).toHaveBeenCalledWith('player-1');
+    expect(view._refs.modifierPanel.textContent).toContain('+ на -');
     view.destroy();
   });
 });

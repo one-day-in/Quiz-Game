@@ -120,7 +120,6 @@ export class ModalService {
 
       isAnswered: shouldMarkAsAnswered ? true : cellData.isAnswered,
       modifier: this._activeModifier,
-      modifierPlayers: this._players?.getPlayers?.() || [],
       question,
       answer,
 
@@ -143,17 +142,6 @@ export class ModalService {
         } catch (e) {
           console.error('[ModalService] toggle modifier failed:', e);
           alert(`${t('save_failed')}: ` + (e?.message || e));
-          throw e;
-        }
-      },
-
-      onApplyModifier: async (playerId) => {
-        try {
-          await this._applyFlipScoreModifier(playerId);
-          this.close();
-        } catch (e) {
-          console.error('[ModalService] apply modifier failed:', e);
-          alert(`${t('could_not_update_score')}: ` + (e?.message || e));
           throw e;
         }
       },
@@ -258,7 +246,7 @@ export class ModalService {
     this.container.appendChild(this.view.el);
 
     if (isFlipScoreModifier(this._activeModifier)) {
-      this.view.updateModifierPlayers(this._players?.getPlayers?.() || []);
+      void this._applyFlipScoreModifierToCurrentPlayer();
     } else {
       this._bindPressRuntime();
     }
@@ -381,6 +369,29 @@ export class ModalService {
 
     await updatePlayer(this._game.getGameId(), playerId, { points: -(Number(player.points) || 0) });
     return true;
+  }
+
+  async _applyFlipScoreModifierToCurrentPlayer() {
+    const currentPlayerId = this._game?.getCurrentPlayerId?.() ?? null;
+    if (!currentPlayerId) {
+      alert(t('flip_score_no_current_player'));
+      this.close();
+      return false;
+    }
+
+    try {
+      const applied = await this._applyFlipScoreModifier(currentPlayerId);
+      if (!applied) {
+        alert(t('flip_score_no_current_player'));
+      }
+      this.close();
+      return applied;
+    } catch (e) {
+      console.error('[ModalService] auto-apply modifier failed:', e);
+      alert(`${t('could_not_update_score')}: ` + (e?.message || e));
+      this.close();
+      throw e;
+    }
   }
 
   _clearPressCountdown() {

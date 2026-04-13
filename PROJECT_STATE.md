@@ -56,7 +56,7 @@ The app is realtime, but not purely realtime. It mixes:
   - resets and observes press runtime
   - adjusts score on correct/incorrect actions
   - now runs a 30-second host-side answer countdown after a player wins `PRESS`
-  - now resolves cell-level score modifiers such as `plus-to-minus` directly from a host-side selection overlay inside the modal
+  - now resolves `plus-to-minus` automatically against the current chooser instead of opening a manual player picker
 
 ### Data / Service Layer
 
@@ -187,7 +187,7 @@ The app is realtime, but not purely realtime. It mixes:
    - marks unanswered cells as answered immediately
    - opens press runtime through `PressRuntimeService`
    - listens for winner updates through the same runtime service
-   - exception: if the cell has the `plus-to-minus` modifier, host view now shows a dedicated overlay with player buttons instead of opening the normal `PRESS` race
+   - exception: if the cell has the `plus-to-minus` modifier, host view now applies it immediately to `games.data.meta.currentPlayerId`, then closes the modal without opening the normal `PRESS` race
 11. Player presses are claimed through the buzzer server first, and the server persists the result through `claim_game_press(...)`.
    - `claim_game_press(...)` now returns `jsonb` to avoid PL/pgSQL output-column ambiguity in production
 12. Host clicks:
@@ -461,6 +461,7 @@ Ordered refactor and improvement steps. Do not treat all items as immediate.
 - Added persistent chooser state at `games.data.meta.currentPlayerId` instead of storing the active player in host-only UI state.
 - `Correct` now promotes the confirmed press winner into the chooser role, while `Not Correct` and accidental modal close leave the chooser unchanged.
 - The host header now exposes a manual chooser picker so the host can assign or reassign the active player before and during the game.
+- Simplified `Плюс на мінус` again: it no longer opens a host selection overlay and now always targets the current chooser / active player.
 
 ### 2026-04-08
 

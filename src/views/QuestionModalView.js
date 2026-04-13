@@ -11,7 +11,6 @@ export class QuestionModalView {
         headerTitle,
         isAnswered,
         modifier,
-        modifierPlayers,
         question,
         answer,
         onClose,
@@ -19,7 +18,6 @@ export class QuestionModalView {
         onCorrect,
         onToggleAnswered,
         onToggleModifier,
-        onApplyModifier,
         onQuestionChange,
         onAnswerChange,
         onUploadMedia,
@@ -33,15 +31,13 @@ export class QuestionModalView {
         this._winnerName    = '';
         this._isAnswered    = !!isAnswered;
         this._modifier      = modifier || null;
-        this._modifierPlayers = Array.isArray(modifierPlayers) ? modifierPlayers.slice() : [];
-        this._modifierApplyingPlayerId = null;
         this._question      = { ...(question || {}), audioFiles: question?.audioFiles || [] };
         this._answer        = { ...(answer   || {}), audioFiles: answer?.audioFiles   || [] };
         this._isAnswerShown = mode === 'edit';
 
         this._cb = {
             onClose, onIncorrect, onCorrect,
-            onToggleAnswered, onToggleModifier, onApplyModifier, onQuestionChange, onAnswerChange,
+            onToggleAnswered, onToggleModifier, onQuestionChange, onAnswerChange,
             onUploadMedia, onDeleteMedia, onAddAudio, onDeleteAudio, onViewStateChange,
         };
 
@@ -135,16 +131,6 @@ export class QuestionModalView {
     updateAnsweredState(isAnswered) {
         this._isAnswered = !!isAnswered;
         if (this._refs.answeredCheckbox) this._refs.answeredCheckbox.checked = this._isAnswered;
-    }
-
-    updateModifierPlayers(players) {
-        this._modifierPlayers = Array.isArray(players) ? players.slice() : [];
-        renderAll(this, this._refs);
-    }
-
-    setModifierApplying(playerId = null) {
-        this._modifierApplyingPlayerId = playerId || null;
-        renderAll(this, this._refs);
     }
 
     updateWinnerName(name) {
@@ -256,19 +242,6 @@ export class QuestionModalView {
                 this._modifier = prev;
                 e.target.checked = prev;
                 renderAll(this, this._refs);
-            }
-        });
-
-        this._disposer.addEventListener(r.modifierPlayers, 'click', async (e) => {
-            const button = e.target.closest('.qmodal__modifierPlayerBtn');
-            if (!button || button.disabled) return;
-
-            const playerId = button.dataset.playerId;
-            this.setModifierApplying(playerId);
-            try {
-                await this._cb.onApplyModifier?.(playerId);
-            } catch {
-                this.setModifierApplying(null);
             }
         });
 
