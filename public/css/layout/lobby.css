@@ -47,7 +47,8 @@
         border-color var(--t-fast) var(--ease);
 }
 
-.lobby__langSwitch {
+.lobby__langSwitch,
+.lobby__themeSwitch {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -59,7 +60,8 @@
     border: 1px solid var(--border-2);
 }
 
-.lobby__langBtn {
+.lobby__langBtn,
+.lobby__themeBtn {
     font-family: var(--font-label);
     border: 0;
     background: transparent;
@@ -74,12 +76,14 @@
     transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
 }
 
-.lobby__langBtn:hover {
+.lobby__langBtn:hover,
+.lobby__themeBtn:hover {
     color: var(--text);
     background: rgba(255, 255, 255, 0.06);
 }
 
-.lobby__langBtn.is-active {
+.lobby__langBtn.is-active,
+.lobby__themeBtn.is-active {
     color: var(--btn-brand-text);
     background: var(--btn-brand-bg);
 }

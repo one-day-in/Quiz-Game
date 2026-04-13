@@ -18,6 +18,7 @@ import { getBuzzerWakeUrl } from './utils/localBuzzerUrl.js';
 import { renderLogin } from './views/LoginView.js';
 import { LobbyView } from './views/LobbyView.js';
 import { initLanguageFromUrl, t } from './i18n.js';
+import { initThemeFromStorage } from './theme.js';
 
 const root = document.getElementById('app');
 const IS_DEV = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
@@ -26,6 +27,7 @@ const LAST_GAME_ID_KEY   = 'lastGameId';
 const LAST_GAME_NAME_KEY = 'lastGameName';
 
 initLanguageFromUrl();
+initThemeFromStorage();
 
 function saveLastGame(gameId, gameName) {
     localStorage.setItem(LAST_GAME_ID_KEY, gameId);

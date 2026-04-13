@@ -8,6 +8,7 @@ import {
   updatePlayerByController,
 } from './api/gameApi.js';
 import { initLanguageFromUrl, t } from './i18n.js';
+import { initThemeFromStorage } from './theme.js';
 import { createPressRuntimeService } from './services/PressRuntimeService.js';
 import { normalizeBuzzerUrl } from './utils/localBuzzerUrl.js';
 import {
@@ -18,6 +19,7 @@ import {
 
 const root = document.getElementById('player-controller-app');
 initLanguageFromUrl();
+initThemeFromStorage();
 const params = new URLSearchParams(window.location.search);
 const gameId = params.get('gameId');
 const buzzerUrl = normalizeBuzzerUrl(params.get('buzzer') || '');

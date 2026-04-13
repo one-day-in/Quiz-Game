@@ -169,3 +169,71 @@
     --edit-hint: rgba(250, 204, 21, 0.85);
     --edit-hint-strong: rgba(250, 204, 21, 1);
 }
+
+:root[data-theme="skillcore"] {
+    --bg: radial-gradient(1100px 560px at 50% -220px, #0ea5e9, #061024 70%);
+    --bg-2: #030712;
+
+    --surface: #0f172a;
+    --surface-2: #111b32;
+    --surface-3: #0a1328;
+
+    --text: #f0f9ff;
+    --text-soft: rgba(240, 249, 255, 0.86);
+    --muted: rgba(186, 230, 253, 0.84);
+    --muted-2: rgba(125, 211, 252, 0.72);
+
+    --brand: #22d3ee;
+    --brand-glow: rgba(34, 211, 238, 0.55);
+    --brand-a12: rgba(34, 211, 238, 0.12);
+    --brand-a18: rgba(34, 211, 238, 0.18);
+    --brand-a35: rgba(34, 211, 238, 0.35);
+    --brand-a55: rgba(34, 211, 238, 0.55);
+
+    --btn-brand-bg: linear-gradient(180deg, #22d3ee, #0284c7);
+    --btn-brand-text: #042f3a;
+    --btn-bg: linear-gradient(180deg, #16223f, #0b1429);
+    --btn-bg-hover: linear-gradient(180deg, #1a2a4c, #0c1830);
+    --btn-outline-hover: rgba(34, 211, 238, 0.58);
+    --btn-glow-hover: 0 0 24px rgba(34, 211, 238, 0.42);
+
+    --cell-bg: linear-gradient(180deg, #0ea5e9, #0f172a);
+    --cell-bg-hover: linear-gradient(180deg, #22d3ee, #0b1120);
+    --topic-bg: linear-gradient(180deg, #38bdf8, #0369a1);
+    --topic-border: rgba(103, 232, 249, 0.85);
+    --cell-empty-bg: #14203a;
+}
+
+:root[data-theme="play-listen"] {
+    --bg: radial-gradient(1200px 640px at 50% -220px, #f97316, #291334 70%);
+    --bg-2: #120818;
+
+    --surface: #1f1229;
+    --surface-2: #2b1636;
+    --surface-3: #180d22;
+
+    --text: #fff7ed;
+    --text-soft: rgba(255, 247, 237, 0.88);
+    --muted: rgba(254, 215, 170, 0.84);
+    --muted-2: rgba(252, 165, 165, 0.76);
+
+    --brand: #fb7185;
+    --brand-glow: rgba(251, 113, 133, 0.58);
+    --brand-a12: rgba(251, 113, 133, 0.12);
+    --brand-a18: rgba(251, 113, 133, 0.18);
+    --brand-a35: rgba(251, 113, 133, 0.35);
+    --brand-a55: rgba(251, 113, 133, 0.55);
+
+    --btn-brand-bg: linear-gradient(180deg, #fb7185, #ea580c);
+    --btn-brand-text: #fff7ed;
+    --btn-bg: linear-gradient(180deg, #331844, #1b0f2b);
+    --btn-bg-hover: linear-gradient(180deg, #3e1c50, #231236);
+    --btn-outline-hover: rgba(251, 113, 133, 0.62);
+    --btn-glow-hover: 0 0 24px rgba(251, 113, 133, 0.44);
+
+    --cell-bg: linear-gradient(180deg, #f97316, #291334);
+    --cell-bg-hover: linear-gradient(180deg, #fb7185, #1b0f2b);
+    --topic-bg: linear-gradient(180deg, #fb7185, #be123c);
+    --topic-border: rgba(253, 164, 175, 0.86);
+    --cell-empty-bg: #2a1537;
+}

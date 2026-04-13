@@ -132,7 +132,7 @@ The app is realtime, but not purely realtime. It mixes:
 - `views/LobbyView.js`
   - game list, rename, create, delete
   - game rename now expects a real updated row back from Supabase instead of treating a zero-row update as success
-  - settings overlay for interface language
+  - settings overlay for interface language and color scheme
 - `views/LoginView.js`
   - sign-in screen
 
@@ -232,6 +232,7 @@ The app is realtime, but not purely realtime. It mixes:
 - Player local controller identity truth: `localStorage`
 - Cell modifiers now live in board JSON per-cell as `cell.modifier`
 - Supported modifiers now share one config source for picker labels, banner copy, and host-side resolution rules.
+- Global color scheme truth now lives in `localStorage` under `quiz-game:ui-theme` and is applied through document-level `data-theme`.
 
 ### Important Reality Checks
 
@@ -470,6 +471,8 @@ Ordered refactor and improvement steps. Do not treat all items as immediate.
 - Simplified `Плюс на мінус` again: it no longer opens a host selection overlay and now always targets the current chooser / active player.
 - Reworked cell modifiers around one shared config/picker/banner flow instead of a one-off `flip-score` toggle.
 - Added `Крадіжка 1000`: the chooser steals `1000` from the leading opponent, or gives `1000` to the lowest-scoring opponent when already tied for the lead.
+- Added color-scheme switching in lobby settings with three reusable themes: `base`, `skillcore`, and `play-listen`.
+- Theme choice is now persisted and reused across host, standalone leaderboard, and player controller surfaces via `data-theme`.
 
 ### 2026-04-08
 

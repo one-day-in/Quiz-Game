@@ -4,9 +4,11 @@ import { bindOverlayDismiss } from './utils/overlayDismiss.js';
 import QRCode from 'qrcode';
 import { initLanguageFromUrl, t, withLanguageParam } from './i18n.js';
 import { getActiveBuzzerUrl } from './utils/localBuzzerUrl.js';
+import { initThemeFromStorage } from './theme.js';
 
 const root = document.getElementById('leaderboard-app');
 initLanguageFromUrl();
+initThemeFromStorage();
 
 // gameId from URL: /leaderboard.html?gameId=xxx
 const gameId = new URLSearchParams(location.search).get('gameId');

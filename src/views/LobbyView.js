@@ -5,6 +5,13 @@ import { escapeHtml } from '../utils/utils.js';
 import { showConfirm, showPrompt } from '../utils/confirm.js';
 import { isGameDeleteAdminUser } from '../utils/adminAccess.js';
 import { formatLocaleDate, getLanguage, getSupportedLanguages, setLanguage, subscribeLanguage, t } from '../i18n.js';
+import { getTheme, setTheme, subscribeTheme } from '../theme.js';
+
+const THEME_OPTIONS = Object.freeze([
+    { id: 'base', labelKey: 'theme_base' },
+    { id: 'skillcore', labelKey: 'theme_skillcore' },
+    { id: 'play-listen', labelKey: 'theme_play_listen' },
+]);
 
 export class LobbyView {
     constructor({ currentUser, onOpen, onCreate, onLogout }) {
@@ -18,6 +25,7 @@ export class LobbyView {
         this._settingsOpen = false;
         this._handleSettingsKeydown = null;
         this._stopLanguageSubscription = subscribeLanguage(() => this._render());
+        this._stopThemeSubscription = subscribeTheme(() => this._render());
 
         this._render();
         this._loadGames();
@@ -31,6 +39,7 @@ export class LobbyView {
             this._handleSettingsKeydown = null;
         }
         this._stopLanguageSubscription?.();
+        this._stopThemeSubscription?.();
         this._root.remove();
     }
 
@@ -298,6 +307,19 @@ export class LobbyView {
                         `).join('')}
                     </div>
                 </section>
+
+                <section class="lobby__settingsSection">
+                    <p class="lobby__settingsLabel">${t('color_scheme')}</p>
+                    <div class="lobby__themeSwitch" role="group" aria-label="${t('color_scheme')}">
+                        ${THEME_OPTIONS.map(({ id, labelKey }) => `
+                            <button
+                                class="lobby__themeBtn${id === getTheme() ? ' is-active' : ''}"
+                                type="button"
+                                data-theme="${id}"
+                            >${escapeHtml(t(labelKey))}</button>
+                        `).join('')}
+                    </div>
+                </section>
             </aside>
         `;
     }
@@ -333,6 +355,12 @@ export class LobbyView {
         this._root.querySelectorAll('.lobby__langBtn').forEach((btn) => {
             btn.addEventListener('click', () => {
                 setLanguage(btn.dataset.language);
+            });
+        });
+
+        this._root.querySelectorAll('.lobby__themeBtn').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                setTheme(btn.dataset.theme);
             });
         });
     }
