@@ -402,6 +402,13 @@
     background: var(--brand-a18);
 }
 
+.lobby__rowPlay {
+    min-width: 48px;
+    padding: 4px 14px;
+    border: 1px solid var(--border-3);
+    background: rgba(59, 130, 246, 0.08);
+}
+
 .lobby__rowRename:hover {
     background: var(--surface-3);
 }
