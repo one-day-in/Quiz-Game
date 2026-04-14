@@ -40,12 +40,27 @@
 .game-grid,
 .app-footer {
   transition: opacity 180ms ease, filter 180ms ease;
+  will-change: opacity, filter;
 }
 
 .app-shell.is-round-transitioning .game-grid,
 .app-shell.is-round-transitioning .app-footer {
   opacity: 0.32;
   filter: saturate(0.82) blur(2px);
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .game-grid,
+  .app-footer {
+    transition: opacity 140ms ease;
+    will-change: opacity;
+  }
+
+  .app-shell.is-round-transitioning .game-grid,
+  .app-shell.is-round-transitioning .app-footer {
+    opacity: 0.5;
+    filter: none;
+  }
 }
 
 /* Views */
