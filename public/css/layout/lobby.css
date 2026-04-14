@@ -378,6 +378,7 @@
     flex: 0 0 auto;
 }
 
+.lobby__rowPlay,
 .lobby__rowRename,
 .lobby__rowDelete {
     background: none;
@@ -391,9 +392,14 @@
     line-height: 1;
 }
 
+.lobby__row:hover .lobby__rowPlay,
 .lobby__row:hover .lobby__rowRename,
 .lobby__row:hover .lobby__rowDelete {
     opacity: 1;
+}
+
+.lobby__rowPlay:hover {
+    background: var(--brand-a18);
 }
 
 .lobby__rowRename:hover {

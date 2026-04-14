@@ -150,3 +150,24 @@ export async function resetCell(gameId, roundId, rowId, cellId) {
     await saveGame(gameId, game);
     return game;
 }
+
+export async function resetAllCellsAnsweredState(gameId) {
+    const game = await getGame(gameId);
+    const rounds = Array.isArray(game.rounds) ? game.rounds : [];
+
+    for (const round of rounds) {
+        const rows = Array.isArray(round?.rows) ? round.rows : [];
+        for (const row of rows) {
+            const cells = Array.isArray(row?.cells) ? row.cells : [];
+            for (const cell of cells) {
+                if (cell && typeof cell === 'object') {
+                    cell.isAnswered = false;
+                }
+            }
+        }
+    }
+
+    game.meta.updatedAt = new Date().toISOString();
+    await saveGame(gameId, game);
+    return game;
+}

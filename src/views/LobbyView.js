@@ -1,5 +1,5 @@
 // src/views/LobbyView.js
-import { listGames, renameGame } from '../api/gameApi.js';
+import { listGames, renameGame, resetAllCellsAnsweredState } from '../api/gameApi.js';
 import { GameRepository } from '../services/GameRepository.js';
 import { escapeHtml } from '../utils/utils.js';
 import { showConfirm, showPrompt } from '../utils/confirm.js';
@@ -14,8 +14,8 @@ const THEME_OPTIONS = Object.freeze([
 ]);
 
 export class LobbyView {
-    constructor({ currentUser, onOpen, onCreate, onLogout }) {
-        this._cb = { onOpen, onCreate, onLogout };
+    constructor({ currentUser, onOpen, onPlay, onCreate, onLogout }) {
+        this._cb = { onOpen, onPlay, onCreate, onLogout };
         this._currentUser = currentUser || null;
         this._root = document.createElement('div');
         this._root.className = 'lobby';
@@ -134,7 +134,7 @@ export class LobbyView {
     }
 
     _render() {
-        const { onOpen, onCreate, onLogout } = this._cb;
+        const { onOpen, onPlay, onCreate, onLogout } = this._cb;
         const gameGroups = this._groupGamesByCreator();
         const canDeleteGames = isGameDeleteAdminUser(this._currentUser);
 
@@ -200,6 +200,12 @@ export class LobbyView {
                                             <div class="lobby__rowDate">${t('updated_at')}: ${formatLocaleDate(game.updated_at)}</div>
                                         </div>
                                         <div class="lobby__rowActions">
+                                            <button
+                                                class="lobby__rowPlay"
+                                                data-id="${escapeHtml(game.id)}"
+                                                type="button"
+                                                title="${t('play_game')}"
+                                            >▶</button>
                                             <button
                                                 class="lobby__rowRename"
                                                 data-id="${escapeHtml(game.id)}"
@@ -268,6 +274,23 @@ export class LobbyView {
                 const nameEl = row?.querySelector('.lobby__rowName');
                 const game = this._games.find(g => g.id === btn.dataset.id);
                 if (game && nameEl) this._openRenameEditor(nameEl, game);
+            });
+        });
+
+        // Play game from start (keep content, reset only answered state)
+        this._root.querySelectorAll('.lobby__rowPlay').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const game = this._games.find(g => g.id === btn.dataset.id);
+                if (!game) return;
+
+                try {
+                    await resetAllCellsAnsweredState(game.id);
+                    onPlay?.(game.id, game.name || t('new_game'));
+                } catch (err) {
+                    console.error('[LobbyView] play reset failed:', err);
+                    alert(`${t('error_prefix')}: ${err.message}`);
+                }
             });
         });
 

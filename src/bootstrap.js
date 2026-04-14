@@ -122,6 +122,7 @@ function renderLobby(user) {
     const lobby = new LobbyView({
         currentUser: user,
         onOpen: (gameId, gameName) => renderGame(user, gameId, gameName),
+        onPlay: (gameId, gameName) => renderGame(user, gameId, gameName),
         onCreate: async (name) => {
             try {
                 const game = await createGame(name);
