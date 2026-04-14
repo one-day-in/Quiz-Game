@@ -88,17 +88,24 @@ export function normalizePlayerRows(rows = [], options = {}) {
 }
 
 export async function fetchGameRecord(gameId) {
+    if (!gameId) throw new Error('[Game] getGame failed: missing gameId');
+
     const { data, error } = await supabase
         .from('games')
         .select('data')
         .eq('id', gameId)
-        .single();
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
     if (error) throw new Error(`[Game] getGame failed: ${error.message}`);
+    if (!data?.data) throw new Error('[Game] getGame failed: game not found');
     return normalizeGame(data.data);
 }
 
 export async function fetchPlayerRows(gameId, { includeControllerId = false } = {}) {
+    if (!gameId) throw new Error('[Game] getPlayers failed: missing gameId');
+
     const columns = includeControllerId ? PRIVATE_PLAYER_COLUMNS : PUBLIC_PLAYER_COLUMNS;
     const { data, error } = await supabase
         .from('game_players')

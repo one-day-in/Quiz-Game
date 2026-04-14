@@ -8,6 +8,9 @@ import {
 } from './gameApi.shared.js';
 
 export async function getGame(gameId) {
+    if (!gameId) {
+        throw new Error('[Game] getGame failed: missing gameId');
+    }
     const [game, players] = await Promise.all([
         fetchGameRecord(gameId),
         fetchPlayerRows(gameId),
