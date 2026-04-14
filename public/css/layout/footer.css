@@ -201,7 +201,8 @@
 }
 
 .leaderboard-panel__qrDock:hover .leaderboard-panel__qrPopover,
-.leaderboard-panel__qrDock:focus-within .leaderboard-panel__qrPopover {
+.leaderboard-panel__qrDock:focus-within .leaderboard-panel__qrPopover,
+.leaderboard-panel__qrDock.is-open .leaderboard-panel__qrPopover {
   opacity: 1;
   transform: translateY(0) scale(1);
   pointer-events: auto;
@@ -943,7 +944,8 @@
   }
 
   .leaderboard-panel__qrPopover {
-    right: -4px;
+    right: 0;
+    left: auto;
   }
 }
 
@@ -962,6 +964,23 @@
 
   .leaderboard-panel__copy {
     font-size: 14px;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) and (min-width: 700px) {
+  .leaderboard-panel__qrTrigger {
+    width: 62px;
+    height: 62px;
+  }
+
+  .leaderboard-panel__qrPopover {
+    width: min(420px, calc(100vw - 28px));
+    max-width: calc(100vw - 28px);
+    max-height: min(72dvh, calc(100dvh - 120px));
+  }
+
+  .leaderboard-panel__qrImg {
+    max-width: min(320px, calc(100vw - 84px), calc(100dvh - 260px));
   }
 }
 

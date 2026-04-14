@@ -12,6 +12,7 @@ export class LeaderboardPanelView {
     this._onAdjustPlayerScore = onAdjustPlayerScore;
     this._onDeletePlayer = onDeletePlayer;
     this._isExpanded = false;
+    this._isQrOpen = false;
     this._selectedPlayerId = null;
 
     this._build();
@@ -49,6 +50,7 @@ export class LeaderboardPanelView {
     this._toggleBtn.setAttribute('aria-expanded', String(isExpanded));
     this._toggleBtn.setAttribute('aria-label', isExpanded ? t('close') : t('show_all_players'));
     this._toggleBtn.setAttribute('title', isExpanded ? t('close') : t('show_all_players'));
+    if (!isExpanded) this._setQrOpen(false);
   }
 
   destroy() {
@@ -90,6 +92,7 @@ export class LeaderboardPanelView {
               class="leaderboard-panel__qrTrigger"
               type="button"
               aria-label="${t('join_from_phone')}"
+              aria-expanded="false"
               title="${t('join_from_phone')}"
             >
               <svg class="leaderboard-panel__qrTriggerIcon" viewBox="0 0 24 24" focusable="false" aria-hidden="true">
@@ -98,7 +101,7 @@ export class LeaderboardPanelView {
               </svg>
             </button>
 
-            <div class="leaderboard-panel__qrPopover" role="dialog" aria-label="${t('join_from_phone')}">
+            <div class="leaderboard-panel__qrPopover" role="dialog" aria-label="${t('join_from_phone')}" aria-hidden="true">
               <p class="leaderboard-panel__eyebrow">${t('join_from_phone')}</p>
               <div class="leaderboard-panel__qrWrap">
                 <div class="leaderboard-panel__qrGlow"></div>
@@ -137,6 +140,9 @@ export class LeaderboardPanelView {
     this._backdrop = root.querySelector('.leaderboard-panel__backdrop');
     this._toggleBtn = root.querySelector('.leaderboard-panel__toggle');
     this._toggleChevron = root.querySelector('.leaderboard-panel__titleChevron');
+    this._qrDock = root.querySelector('.leaderboard-panel__qrDock');
+    this._qrTrigger = root.querySelector('.leaderboard-panel__qrTrigger');
+    this._qrPopover = root.querySelector('.leaderboard-panel__qrPopover');
     this._previewMount = root.querySelector('.leaderboard-panel__previewMount');
     this._boardMount = root.querySelector('.leaderboard-panel__boardMount');
     this._selectionText = root.querySelector('.leaderboard-panel__selectionText');
@@ -187,12 +193,20 @@ export class LeaderboardPanelView {
 
   _wire() {
     this._disposer.addEventListener(this._toggleBtn, 'click', () => this.toggleExpanded());
+    this._disposer.addEventListener(this._qrTrigger, 'click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (!this._isExpanded) return;
+      this._setQrOpen(!this._isQrOpen);
+    });
 
     this._disposer.addEventListener(document, 'pointerdown', (event) => {
-      if (!this._isExpanded || !this._selectedPlayerId) return;
-
       const target = event.target;
       if (!(target instanceof Element)) return;
+      if (this._isExpanded && this._isQrOpen && !target.closest('.leaderboard-panel__qrDock')) {
+        this._setQrOpen(false);
+      }
+      if (!this._isExpanded || !this._selectedPlayerId) return;
       if (target.closest('.leaderboard__rowWrap, .leaderboard__row')) return;
       if (target.closest('.leaderboard-panel__scoreBar, .leaderboard-panel__qrDock, .leaderboard-panel__toggle')) return;
 
@@ -202,9 +216,19 @@ export class LeaderboardPanelView {
     bindOverlayDismiss({
       disposer: this._disposer,
       overlay: this._backdrop,
-      onDismiss: () => this.setExpanded(false),
+      onDismiss: () => {
+        this._setQrOpen(false);
+        this.setExpanded(false);
+      },
       shouldDismissOnEscape: () => this._isExpanded,
     });
+  }
+
+  _setQrOpen(nextOpen) {
+    this._isQrOpen = !!nextOpen;
+    this._qrDock?.classList.toggle('is-open', this._isQrOpen);
+    this._qrTrigger?.setAttribute('aria-expanded', String(this._isQrOpen));
+    this._qrPopover?.setAttribute('aria-hidden', String(!this._isQrOpen));
   }
 
   _buildScoreBar() {
