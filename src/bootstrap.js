@@ -48,6 +48,11 @@ function getLastGame() {
     return { id, name: localStorage.getItem(LAST_GAME_NAME_KEY) || t('new_game') };
 }
 
+function isGameNotFoundError(error) {
+    const message = String(error?.message || '').toLowerCase();
+    return message.includes('getgame failed: game not found');
+}
+
 async function warmBuzzerServer() {
     if (_buzzerWarmupAttempted) return;
     _buzzerWarmupAttempted = true;
@@ -198,6 +203,11 @@ async function renderGame(user, gameId, gameName) {
         app.render();
     } catch (error) {
         console.error('[Bootstrap] Game load failed:', error);
+        if (isGameNotFoundError(error)) {
+            clearLastGame();
+            renderLobby(user);
+            return;
+        }
         renderError(error, () => renderGame(user, gameId, gameName));
     }
 }
