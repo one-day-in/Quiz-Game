@@ -285,4 +285,22 @@ describe('ModalService press reset', () => {
     expect(updatePlayerMock).toHaveBeenCalledWith('game-1', 'chooser', { points: 800 });
     expect(updatePlayerMock).toHaveBeenCalledWith('game-1', 'lowest', { points: 800 });
   });
+
+  it('does not auto-apply cell modifier when players are not added yet', () => {
+    const service = new ModalService({ getGameId: () => 'game-1' }, {}, {}, { getPlayers: () => [] });
+
+    expect(service._shouldAutoApplyModifier(CELL_MODIFIERS.FLIP_SCORE)).toBe(false);
+    expect(service._shouldAutoApplyModifier(CELL_MODIFIERS.STEAL_LEADER_POINTS)).toBe(false);
+  });
+
+  it('auto-applies modifier when at least one player exists', () => {
+    const service = new ModalService(
+      { getGameId: () => 'game-1' },
+      {},
+      {},
+      { getPlayers: () => [{ id: 'player-1', points: 100 }] }
+    );
+
+    expect(service._shouldAutoApplyModifier(CELL_MODIFIERS.FLIP_SCORE)).toBe(true);
+  });
 });

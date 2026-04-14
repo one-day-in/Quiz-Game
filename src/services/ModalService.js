@@ -98,8 +98,9 @@ export class ModalService {
     };
     this._cellValue = Number(cellData.value) || 0;
     this._activeModifier = cellData.modifier || null;
+    const shouldAutoApplyModifier = this._shouldAutoApplyModifier(this._activeModifier);
 
-    if (!isAutoCellModifier(this._activeModifier)) {
+    if (!shouldAutoApplyModifier) {
       void this._resetPressRuntime();
     }
 
@@ -125,7 +126,7 @@ export class ModalService {
       headerTitle,
 
       isAnswered: shouldMarkAsAnswered ? true : cellData.isAnswered,
-      modifier: this._activeModifier,
+      modifier: shouldAutoApplyModifier ? this._activeModifier : null,
       question,
       answer,
 
@@ -252,7 +253,7 @@ export class ModalService {
 
     this.container.appendChild(this.view.el);
 
-    if (isAutoCellModifier(this._activeModifier)) {
+    if (shouldAutoApplyModifier) {
       void this._applyActiveModifierToCurrentPlayer();
     } else {
       this._bindPressRuntime();
@@ -382,6 +383,10 @@ export class ModalService {
 
   _getPlayersSnapshot() {
     return Array.isArray(this._players?.getPlayers?.()) ? this._players.getPlayers() : [];
+  }
+
+  _shouldAutoApplyModifier(modifier) {
+    return isAutoCellModifier(modifier) && this._getPlayersSnapshot().length > 0;
   }
 
   _getCurrentModifierPlayer(playerId) {
