@@ -41,6 +41,7 @@ function createAudioPlayer(audio = {}) {
   const audioEl = document.createElement('audio');
   audioEl.className = 'qmodal__audioTrack';
   audioEl.preload = 'metadata';
+  audioEl.playsInline = true;
   audioEl.src = audio.src || audio.url || '';
 
   const playBtn = document.createElement('button');
@@ -136,6 +137,9 @@ export function initMediaUI(host) {
   video.className   = 'qmodal__media qmodal__media--video';
   video.controls    = true;
   video.preload     = 'metadata';
+  video.playsInline = true;
+  video.setAttribute('playsinline', '');
+  video.setAttribute('webkit-playsinline', '');
 
   host.append(img, video);
 

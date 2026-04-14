@@ -381,6 +381,10 @@ export class QuestionModalView {
         if (mime.startsWith('video/')) {
             mediaEl = document.createElement('video');
             mediaEl.controls = true;
+            mediaEl.preload = 'metadata';
+            mediaEl.playsInline = true;
+            mediaEl.setAttribute('playsinline', '');
+            mediaEl.setAttribute('webkit-playsinline', '');
             mediaEl.src      = media.src;
         } else {
             mediaEl = document.createElement('img');
