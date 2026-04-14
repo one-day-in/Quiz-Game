@@ -257,3 +257,12 @@
     opacity: 1;
     box-shadow: var(--ring);
 }
+
+@media (hover: none) and (pointer: coarse) {
+    .game-grid .cell.cell-question:hover {
+        transform: none;
+        box-shadow: var(--shadow-cell);
+        border-color: var(--question-border);
+        background: var(--question-bg);
+    }
+}
