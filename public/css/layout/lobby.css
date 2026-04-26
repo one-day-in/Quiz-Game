@@ -308,6 +308,7 @@
 }
 
 .lobby__group {
+    padding-inline: 50px;
     border-radius: var(--radius-lg);
     border: 1px solid var(--border-2);
     background: linear-gradient(180deg, var(--surface-2), var(--surface-3));
@@ -483,6 +484,10 @@
 @media (max-width: 760px) {
     .lobby {
         padding: 20px 16px;
+    }
+
+    .lobby__group {
+        padding-inline: 16px;
     }
 
     .lobby__row {
