@@ -1,6 +1,6 @@
 # PROJECT_STATE
 
-Last updated: 2026-04-13
+Last updated: 2026-04-26
 
 ## Real Project Overview
 
@@ -55,6 +55,7 @@ The app is realtime, but not purely realtime. It mixes:
   - updates board cells
   - resets and observes press runtime
   - adjusts score on correct/incorrect actions
+  - now acquires an atomic runtime-resolution lock before applying score changes, so parallel host windows cannot double-apply correct/incorrect results
   - now runs a 30-second host-side answer countdown after a player wins `PRESS`
   - now resolves auto-apply cell modifiers against the current chooser through one shared modifier pipeline
 
@@ -98,6 +99,7 @@ The app is realtime, but not purely realtime. It mixes:
   - player CRUD, score mutation, player subscriptions
 - `api/runtimeApi.js`
   - fallback press-race reads/writes and runtime subscriptions
+  - now includes `resolve_game_press(...)` RPC integration for atomic host-side press resolution
 - `api/authApi.js`
   - Google sign-in and auth session helpers
 - `api/profileApi.js`
@@ -131,6 +133,7 @@ The app is realtime, but not purely realtime. It mixes:
   - shared close-on-overlay and close-on-Escape wiring for dismissable layers
 - `views/LobbyView.js`
   - game list, rename, create, delete
+  - lobby game groups list now has its own scroll container for long game lists
   - game rename now expects a real updated row back from Supabase instead of treating a zero-row update as success
   - settings overlay for interface language and color scheme
 - `views/LoginView.js`
@@ -144,6 +147,7 @@ The app is realtime, but not purely realtime. It mixes:
   - player name, points, controller binding
 - `game_runtime` table
   - press-enabled flag and winner player id
+  - includes `resolve_game_press(...)` RPC for one-time host resolution of the current winner
 - `profiles` table
   - user profile cache
 - Supabase storage bucket `media`
@@ -192,8 +196,9 @@ The app is realtime, but not purely realtime. It mixes:
 11. Player presses are claimed through the buzzer server first, and the server persists the result through `claim_game_press(...)`.
    - `claim_game_press(...)` now returns `jsonb` to avoid PL/pgSQL output-column ambiguity in production
 12. Host clicks:
-   - `Correct` -> adds cell value to winner score and promotes that winner into `games.data.meta.currentPlayerId`
-   - `Not Correct` -> subtracts cell value and reopens press race
+   - `Correct` -> atomically resolves the current press winner, then adds cell value to winner score and promotes that winner into `games.data.meta.currentPlayerId`
+   - `Not Correct` -> atomically resolves the current press winner, then subtracts cell value and reopens press race
+   - if another host window has already resolved that winner, duplicate score changes are skipped safely
 13. The chooser shown in the header can also be reassigned manually by the host at any time through the header picker.
 
 ### Player Flow

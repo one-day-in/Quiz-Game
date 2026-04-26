@@ -18,6 +18,7 @@ Board/player persistence stays in Supabase, while low-latency buzzer transport i
 - mobile player controller with batched score updates
 - leaderboard sorted by score descending
 - question modal winner flow driven by first `PRESS`
+- scrollable lobby game list for large game collections
 
 ## Local Development
 
@@ -64,7 +65,7 @@ The project expects:
 
 - a `games` table for board data
 - a `game_players` table and RPC functions for player join/rename/score/leave
-- a `game_runtime` table and `claim_game_press(...)` for press winner state
+- a `game_runtime` table plus `claim_game_press(...)` and `resolve_game_press(...)` for press winner state
 - a `media` storage bucket
 - a `service_role` key for the dedicated buzzer server
 
@@ -117,8 +118,8 @@ npm run buzzer:start
 5. `PRESS` becomes active after 2 seconds.
 6. The first player to press becomes the modal winner.
 7. Audio-only question/answer sections now show a larger custom modal player instead of browser-native controls.
-8. `✕ Not Correct` subtracts the cell value and re-opens the press race.
-9. `✓ Correct` adds the cell value and closes the modal.
+8. `✕ Not Correct` atomically resolves the winner, subtracts the cell value, and re-opens the press race.
+9. `✓ Correct` atomically resolves the winner, adds the cell value, and closes the modal.
 
 ## Project Structure
 
