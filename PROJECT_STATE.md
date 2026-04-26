@@ -4,11 +4,12 @@ Last updated: 2026-04-26
 
 ## Real Project Overview
 
-Quiz-Game is a browser-based realtime quiz board built with vanilla JavaScript and Vite. It has three user-facing surfaces:
+Quiz-Game is a browser-based realtime quiz board built with vanilla JavaScript and Vite. It has four user-facing surfaces:
 
 - Host board at `index.html`
 - Standalone leaderboard at `leaderboard.html`
 - Mobile player controller at `player.html`
+- Host controller mirror at `host-controller.html`
 
 The host signs in with Google, creates or opens a game, edits board content, opens question modals, and controls answer adjudication. Players join the game through a QR flow, claim a controller slot, can rename themselves, can leave the game, and can race to press during an open question. Scores and player identity live in Supabase tables, while board content lives as JSON in the `games` table.
 
@@ -34,6 +35,7 @@ The app is realtime, but not purely realtime. It mixes:
 - `index.html` -> `src/index.js` -> `src/bootstrap.js`
 - `leaderboard.html` -> `src/leaderboard.js`
 - `player.html` -> `src/player.js`
+- `host-controller.html` -> `src/hostController.js` -> `src/bootstrap.js` in controller mode
 
 ### Main Host Stack
 
@@ -57,7 +59,14 @@ The app is realtime, but not purely realtime. It mixes:
   - adjusts score on correct/incorrect actions
   - now acquires an atomic runtime-resolution lock before applying score changes, so parallel host windows cannot double-apply correct/incorrect results
   - now runs a 30-second host-side answer countdown after a player wins `PRESS`
+  - now retries `openPress()` on transient runtime failures, reducing stuck `PRESS` states that previously required reopening the modal
+  - now supports `directed-bet` modifier flow: host picks a non-active target player and custom stake (`100..500`), then starts a 40-second dedicated answer window
   - now resolves auto-apply cell modifiers against the current chooser through one shared modifier pipeline
+  - now supports controller-mode presentation (`question + answer` visible together, no inline edit controls)
+  - can now process remote host-controller commands (`open/close`, `correct/incorrect`, directed-bet start, media control)
+- `services/HostControlChannelService.js`
+  - Supabase realtime broadcast channel for host-controller command relay between screens
+  - prevents command echo with per-instance sender IDs
 
 ### Data / Service Layer
 
@@ -126,6 +135,7 @@ The app is realtime, but not purely realtime. It mixes:
 - `views/QuestionModalView.js`
   - modal UI
   - shows the active press winner countdown in the host banner while the question is still live
+  - now also supports a separate directed-bet panel (target player + stake selection) and an inline dedicated timer that does not hide question content
   - question/answer audio tracks now render through a custom player UI instead of browser-native `audio[controls]`
   - audio-only sections can promote that player into a larger hero-style block when there is no competing text/media
   - edit mode now uses one reusable modifier picker UI for all supported cell modifiers
@@ -192,13 +202,15 @@ The app is realtime, but not purely realtime. It mixes:
    - marks unanswered cells as answered immediately
    - opens press runtime through `PressRuntimeService`
    - listens for winner updates through the same runtime service
-   - exception: if the cell has an auto-apply modifier, host view now resolves it immediately against `games.data.meta.currentPlayerId`, then closes the modal after the modifier banner instead of opening the normal `PRESS` race
+   - exception A: if the cell has an auto-apply modifier, host view now resolves it immediately against `games.data.meta.currentPlayerId`, then closes the modal after the modifier banner instead of opening the normal `PRESS` race
+   - exception B: if the cell has `directed-bet`, host first selects a non-active target player and a custom stake (`100..500`), then starts a 40-second dedicated answer timer while question content stays visible
 11. Player presses are claimed through the buzzer server first, and the server persists the result through `claim_game_press(...)`.
    - `claim_game_press(...)` now returns `jsonb` to avoid PL/pgSQL output-column ambiguity in production
 12. Host clicks:
-   - `Correct` -> atomically resolves the current press winner, then adds cell value to winner score and promotes that winner into `games.data.meta.currentPlayerId`
-   - `Not Correct` -> atomically resolves the current press winner, then subtracts cell value and reopens press race
-   - if another host window has already resolved that winner, duplicate score changes are skipped safely
+  - `Correct` -> atomically resolves the current press winner, then adds cell value to winner score and promotes that winner into `games.data.meta.currentPlayerId`
+  - `Not Correct` -> atomically resolves the current press winner, then subtracts cell value and reopens press race
+  - if another host window has already resolved that winner, duplicate score changes are skipped safely
+   - for `directed-bet`, score resolution uses the selected custom stake first; if that attempt fails by timeout/incorrect, follow-up attempts use normal base cell value with standard `PRESS`
 13. The chooser shown in the header can also be reassigned manually by the host at any time through the header picker.
 
 ### Player Flow
@@ -237,6 +249,10 @@ The app is realtime, but not purely realtime. It mixes:
 - Player local controller identity truth: `localStorage`
 - Cell modifiers now live in board JSON per-cell as `cell.modifier`
 - Supported modifiers now share one config source for picker labels, banner copy, and host-side resolution rules.
+- Supported modifiers currently include:
+  - `flip-score` (auto apply)
+  - `steal-leader-points` (auto apply)
+  - `directed-bet` (interactive host-driven selection)
 - Global color scheme truth now lives in `localStorage` under `quiz-game:ui-theme` and is applied through document-level `data-theme`.
 
 ### Important Reality Checks

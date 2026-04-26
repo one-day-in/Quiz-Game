@@ -33,7 +33,7 @@ function resetTopicCellContent(el) {
 
 // ---------- view ----------
 
-export function GameGridView({ model, uiState, roundId, onCellClick, onTopicChange }) {
+export function GameGridView({ model, uiState, roundId, onCellClick, onTopicChange, isReadOnly = false }) {
   const root = document.createElement('main');
   root.className = 'game-grid';
 
@@ -62,10 +62,12 @@ export function GameGridView({ model, uiState, roundId, onCellClick, onTopicChan
     editTopicBtn.className = 'cell-topic__editBtn';
     editTopicBtn.setAttribute('aria-label', t('edit_topic'));
     editTopicBtn.textContent = '✏';
-    topicCell.appendChild(editTopicBtn);
+    if (!isReadOnly) {
+      topicCell.appendChild(editTopicBtn);
+    }
 
     const openTopicEditor = () => {
-      if (topicCell.querySelector('.topic-editor')) return;
+      if (isReadOnly || topicCell.querySelector('.topic-editor')) return;
 
       const currentTopic = model.getTopic(roundId, row) || '';
 
@@ -123,10 +125,12 @@ export function GameGridView({ model, uiState, roundId, onCellClick, onTopicChan
       input.addEventListener('blur', commit);
     };
 
-    editTopicBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      openTopicEditor();
-    });
+    if (!isReadOnly) {
+      editTopicBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openTopicEditor();
+      });
+    }
 
     grid.appendChild(topicCell);
 

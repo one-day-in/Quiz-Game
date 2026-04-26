@@ -7,6 +7,7 @@ import { initMediaUI, applyModeUI, renderAll } from './questionModal.render.js';
 export class QuestionModalView {
     constructor({
         mode,
+        displayMode = 'host',
         headerTitle,
         isAnswered,
         modifier,
@@ -26,8 +27,10 @@ export class QuestionModalView {
         onViewStateChange,
         onModifierAcknowledge,
         onDirectedBetStart,
+        onControllerMediaControl,
     }) {
         this._mode          = mode;
+        this._displayMode   = displayMode;
         this._headerTitle   = (headerTitle || '').trim();
         this._winnerName    = '';
         this._isAnswered    = !!isAnswered;
@@ -48,7 +51,7 @@ export class QuestionModalView {
         this._cb = {
             onClose, onIncorrect, onCorrect,
             onToggleAnswered, onSelectModifier, onQuestionChange, onAnswerChange,
-            onUploadMedia, onDeleteMedia, onAddAudio, onDeleteAudio, onViewStateChange, onModifierAcknowledge, onDirectedBetStart,
+            onUploadMedia, onDeleteMedia, onAddAudio, onDeleteAudio, onViewStateChange, onModifierAcknowledge, onDirectedBetStart, onControllerMediaControl,
         };
 
         const { root, refs } = buildModalDom();
@@ -158,6 +161,36 @@ export class QuestionModalView {
     setPressBannerSuppressed(suppressed) {
         this._isPressBannerSuppressed = !!suppressed;
         this.syncPressBannerVisibility();
+    }
+
+    controlMedia(target, action) {
+        const type = target === 'answer' ? 'answer' : 'question';
+        const mediaHost = this._refs[`${type}MediaHost`];
+        const video = mediaHost?.querySelector('video:not([hidden])');
+        const firstAudio = this._refs[`${type}AudioList`]?.querySelector('.qmodal__audioTrack');
+
+        const shouldPlay = action === 'play';
+        if (video) {
+            if (shouldPlay) {
+                void video.play().catch(() => {});
+            } else {
+                try {
+                    video.pause();
+                    video.currentTime = 0;
+                } catch {}
+            }
+            return;
+        }
+
+        if (!firstAudio) return;
+        if (shouldPlay) {
+            void firstAudio.play().catch(() => {});
+        } else {
+            try {
+                firstAudio.pause();
+                firstAudio.currentTime = 0;
+            } catch {}
+        }
     }
 
     setResolutionButtonsEnabled(enabled = null) {
@@ -277,6 +310,7 @@ export class QuestionModalView {
 
         // ── Toggle mode button (view ↔ edit) ──────────────────────────────────
         this._disposer.addEventListener(r.btnToggleMode, 'click', () => {
+            if (this._displayMode === 'controller') return;
             this._mode = this._mode === 'edit' ? 'view' : 'edit';
             if (this._mode === 'edit') this._isAnswerShown = true;
             applyModeUI(this, this._refs);
@@ -336,6 +370,13 @@ export class QuestionModalView {
                 playerId: selectedPlayerId,
                 betValue: Number(this._directedBetState.selectedBet) || 300,
             });
+        });
+        this._disposer.addEventListener(this._root, 'click', (e) => {
+            const button = e.target.closest('.qmodal__controllerMediaBtn');
+            if (!button) return;
+            const target = button.dataset.target || 'question';
+            const action = button.dataset.action || 'play';
+            this._cb.onControllerMediaControl?.({ target, action });
         });
 
         // ── Media peek buttons (view mode: opens a lightbox overlay) ────────

@@ -110,6 +110,10 @@ export function buildModalDom() {
                   </div>
                   <button type="button" class="qmodal__btn qmodal__btn--danger qmodal__audioDeleteBtn qmodal__mediaDeleteBtn qmodal__questionDeleteBtn" title="${t('delete_media')}" hidden aria-hidden="true">🗑️</button>
                 </div>
+                <div class="qmodal__controllerMediaControls qmodal__questionControllerMediaControls" hidden>
+                  <button type="button" class="qmodal__btn qmodal__btn--secondary qmodal__controllerMediaBtn" data-target="question" data-action="play">${t('play_media')}</button>
+                  <button type="button" class="qmodal__btn qmodal__btn--danger qmodal__controllerMediaBtn" data-target="question" data-action="stop">${t('stop_media')}</button>
+                </div>
 
                 <!-- Audio list (visible in both edit and view modes) -->
                 <div class="qmodal__audioList qmodal__questionAudioList" hidden></div>
@@ -163,6 +167,10 @@ export function buildModalDom() {
                     <div class="qmodal__mediaHost" data-media="answer"></div>
                   </div>
                   <button type="button" class="qmodal__btn qmodal__btn--danger qmodal__audioDeleteBtn qmodal__mediaDeleteBtn qmodal__answerDeleteBtn" title="${t('delete_media')}" hidden aria-hidden="true">🗑️</button>
+                </div>
+                <div class="qmodal__controllerMediaControls qmodal__answerControllerMediaControls" hidden>
+                  <button type="button" class="qmodal__btn qmodal__btn--secondary qmodal__controllerMediaBtn" data-target="answer" data-action="play">${t('play_media')}</button>
+                  <button type="button" class="qmodal__btn qmodal__btn--danger qmodal__controllerMediaBtn" data-target="answer" data-action="stop">${t('stop_media')}</button>
                 </div>
 
                 <!-- Audio list (visible in both edit and view modes) -->
@@ -238,6 +246,7 @@ export function buildModalDom() {
       btnCorrect:         qs('.qmodal__btnCorrect'),
       answeredCheckbox:   qs('.qmodal__toggleInput'),
       toggleAnswerBtn:    qs('.qmodal__btnToggleAnswer'),
+      footerLeft:         qs('.qmodal__footerLeft'),
       emptyState:         qs('.qmodal__emptyState'),
 
       questionSection:        qs('.qmodal__questionSection'),
@@ -254,6 +263,7 @@ export function buildModalDom() {
       questionAudioFile:      qs('.qmodal__questionAudioFile'),
       questionAudioList:      qs('.qmodal__questionAudioList'),
       questionMediaPeekBtn:  qs('.qmodal__questionMediaPeekBtn'),
+      questionControllerMediaControls: qs('.qmodal__questionControllerMediaControls'),
 
       answerSection:          qs('.qmodal__answerSection'),
       answerTextView:         qs('.qmodal__answerText'),
@@ -269,6 +279,7 @@ export function buildModalDom() {
       answerAudioFile:        qs('.qmodal__answerAudioFile'),
       answerAudioList:        qs('.qmodal__answerAudioList'),
       answerMediaPeekBtn:     qs('.qmodal__answerMediaPeekBtn'),
+      answerControllerMediaControls: qs('.qmodal__answerControllerMediaControls'),
     }
   };
 }

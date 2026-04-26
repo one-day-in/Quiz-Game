@@ -18,6 +18,7 @@ export default defineConfig({
         main: resolve(__dirname, 'index.html'),
         leaderboard: resolve(__dirname, 'leaderboard.html'),
         player: resolve(__dirname, 'player.html'),
+        hostController: resolve(__dirname, 'host-controller.html'),
       },
     },
   },

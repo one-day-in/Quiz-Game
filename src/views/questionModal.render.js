@@ -214,17 +214,20 @@ function fitViewText(refs, type) {
 /* ------------------------ Mode UI ------------------------ */
 
 export function applyModeUI(view, refs) {
+  const isController = view._displayMode === 'controller';
   const isEdit = view._mode === 'edit';
   const isModifierMode = isModifierSelectionMode(view);
 
   refs.root?.classList.toggle('qmodal--edit', isEdit);
+  refs.root?.classList.toggle('qmodal--controller', isController);
 
   if (refs.title) refs.title.textContent = view._headerTitle || t('question');
-  setHidden(refs.headerModifier, !isEdit);
+  setHidden(refs.headerModifier, !isEdit || isController);
 
   // Toggle mode button: shows current mode and what clicking will do
   if (refs.btnToggleMode) {
     refs.btnToggleMode.textContent = isEdit ? `👁 ${t('view')}` : `✏ ${t('edit')}`;
+    setHidden(refs.btnToggleMode, isController);
   }
 
   for (const t of ['question', 'answer']) {
@@ -233,12 +236,19 @@ export function applyModeUI(view, refs) {
     setHidden(refs[`${t}MediaActions`], !isEdit);
   }
 
-  setHidden(refs.toggleAnswerBtn, isEdit);
+  setHidden(refs.toggleAnswerBtn, isEdit || isController);
+  setHidden(refs.footerLeft, isController);
   setHidden(refs.btnIncorrect,   isEdit || isModifierMode);
   setHidden(refs.btnCorrect,     isEdit || isModifierMode);
 }
 
 export function applyAnswerVisibility(view, refs) {
+  if (view._displayMode === 'controller') {
+    setHidden(refs.questionSection, false);
+    setHidden(refs.answerSection, false);
+    return;
+  }
+
   if (view._mode !== 'view') {
     // Edit mode: both sections always visible
     setHidden(refs.questionSection, false);
@@ -261,9 +271,12 @@ export function applyAnswerVisibility(view, refs) {
 export function renderMedia(view, refs, type) {
   const media    = view[`_${type}`]?.media;
   const hasMedia = !!media?.src;
+  const hasAudio = (view[`_${type}`]?.audioFiles || []).length > 0;
+  const isController = view._displayMode === 'controller';
 
   view._mediaUI[type]?.set(media);
-  setHidden(refs[`${type}MediaHostWrap`], !hasMedia);
+  setHidden(refs[`${type}MediaHostWrap`], isController || !hasMedia);
+  setHidden(refs[`${type}ControllerMediaControls`], !isController || (!hasMedia && !hasAudio));
 
   if (view._mode === 'edit') {
     const uploadBtn = refs[`${type}UploadBtn`];
@@ -275,6 +288,12 @@ export function renderMedia(view, refs, type) {
 /* -------- Audio list (multiple tracks) -------- */
 
 export function renderAudioList(view, refs, type) {
+  if (view._displayMode === 'controller') {
+    const listEl = refs[`${type}AudioList`];
+    if (listEl) listEl.hidden = true;
+    return;
+  }
+
   const audioFiles = view[`_${type}`]?.audioFiles || [];
   const listEl     = refs[`${type}AudioList`];
   if (!listEl) return;

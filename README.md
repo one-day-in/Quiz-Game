@@ -5,6 +5,7 @@ Browser-based quiz board with three surfaces:
 - `index.html`: host game board and question modal
 - `leaderboard.html`: public leaderboard and player join QR
 - `player.html`: mobile player controller
+- `host-controller.html`: host controller mirror (tablet/desktop) with remote commands
 
 The app is built with Vite and uses Supabase for auth, storage, realtime, and game data.
 Board/player persistence stays in Supabase, while low-latency buzzer transport is now handled by a dedicated WebSocket coordinator in `server/buzzerServer.js`.
@@ -19,6 +20,18 @@ Board/player persistence stays in Supabase, while low-latency buzzer transport i
 - leaderboard sorted by score descending
 - question modal winner flow driven by first `PRESS`
 - scrollable lobby game list for large game collections
+- directed-bet cell modifier:
+  - host selects which non-active player must answer
+  - selected player gets a custom stake from `100..500`
+  - selected player gets a dedicated 40-second timer while question stays visible
+  - on timeout/incorrect, flow returns to normal `PRESS` with the base cell value
+- press opening in modal now retries automatically on transient runtime failures
+- host controller QR in the footer panel:
+  - separate QR for player controller
+  - separate QR for host controller
+  - host controller can open cells on the main host screen
+  - controller modal shows question + answer together
+  - media in controller modal is controlled via `Play/Stop` commands sent to the main screen
 
 ## Local Development
 
@@ -120,6 +133,8 @@ npm run buzzer:start
 7. Audio-only question/answer sections now show a larger custom modal player instead of browser-native controls.
 8. `✕ Not Correct` atomically resolves the winner, subtracts the cell value, and re-opens the press race.
 9. `✓ Correct` atomically resolves the winner, adds the cell value, and closes the modal.
+10. For the directed-bet modifier, host first chooses a non-active player and stake (`100..500`), then starts a 40-second answer window for that player.
+11. If directed-bet times out or is incorrect, normal `PRESS` opens for other players using the base cell value.
 
 ## Project Structure
 

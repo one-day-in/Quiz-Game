@@ -18,11 +18,15 @@ const PRESS_OPEN_RETRY_ATTEMPTS = 3;
 const PRESS_OPEN_RETRY_DELAY_MS = 220;
 
 export class ModalService {
-  constructor(gameService, mediaService, pressRuntime, playersService) {
+  constructor(gameService, mediaService, pressRuntime, playersService, options = {}) {
     this._game = gameService;
     this._media = mediaService;
     this._pressRuntime = pressRuntime;
     this._players = playersService;
+    this._presentationMode = options.presentationMode || 'host';
+    this._onModalClose = options.onModalClose || null;
+    this._onControllerMediaControl = options.onControllerMediaControl || null;
+    this._onControllerCommand = options.onControllerCommand || null;
 
     this._disposer = new Disposer();
     this.view = null;
@@ -75,6 +79,10 @@ export class ModalService {
     this._open('view', cellData);
   }
 
+  isControllerMode() {
+    return this._presentationMode === 'controller';
+  }
+
   _getHeaderTitle({ roundId, rowId, value, topic }) {
     const topicText =
       this._game?.getModel?.()?.getTopic?.(roundId, rowId) ??
@@ -105,14 +113,14 @@ export class ModalService {
     this._cellValue = Number(cellData.value) || 0;
     this._currentResolutionValue = this._cellValue;
     this._activeModifier = cellData.modifier || null;
-    const shouldAutoApplyModifier = this._shouldAutoApplyModifier(this._activeModifier);
+    const shouldAutoApplyModifier = !this.isControllerMode() && this._shouldAutoApplyModifier(this._activeModifier);
     const shouldUseDirectedBetModifier = this._shouldUseDirectedBetModifier(this._activeModifier);
 
-    if (!shouldAutoApplyModifier && !shouldUseDirectedBetModifier) {
+    if (!this.isControllerMode() && !shouldAutoApplyModifier && !shouldUseDirectedBetModifier) {
       void this._resetPressRuntime();
     }
 
-    const shouldMarkAsAnswered = mode === 'view' && !cellData.isAnswered;
+    const shouldMarkAsAnswered = !this.isControllerMode() && mode === 'view' && !cellData.isAnswered;
     if (shouldMarkAsAnswered) {
       void this._updateCell({ isAnswered: true }, { silent: true });
     }
@@ -131,6 +139,7 @@ export class ModalService {
 
     this.view = new QuestionModalView({
       mode,
+      displayMode: this.isControllerMode() ? 'controller' : 'host',
       headerTitle,
 
       isAnswered: shouldMarkAsAnswered ? true : cellData.isAnswered,
@@ -138,9 +147,26 @@ export class ModalService {
       question,
       answer,
 
-      onClose:     () => this.close(),
-      onIncorrect: () => void this._handleIncorrect(),
-      onCorrect:   () => void this._handleCorrect(),
+      onClose:     () => {
+        if (this.isControllerMode()) {
+          this._onControllerCommand?.('close_modal');
+        }
+        this.close();
+      },
+      onIncorrect: () => {
+        if (this.isControllerMode()) {
+          this._onControllerCommand?.('modal_incorrect');
+          return;
+        }
+        void this._handleIncorrect();
+      },
+      onCorrect:   () => {
+        if (this.isControllerMode()) {
+          this._onControllerCommand?.('modal_correct');
+          return;
+        }
+        void this._handleCorrect();
+      },
 
       onToggleAnswered: (checked) => {
         void this._updateCell({ isAnswered: checked });
@@ -248,6 +274,7 @@ export class ModalService {
       },
 
       onViewStateChange: ({ mode: nextMode, isAnswerShown }) => {
+        if (this.isControllerMode()) return;
         if (nextMode !== 'view' || isAnswerShown) {
           this._pausePressCountdown();
           return;
@@ -258,7 +285,19 @@ export class ModalService {
 
       onModifierAcknowledge: () => this.close(),
       onDirectedBetStart: ({ playerId, betValue }) => {
+        if (this.isControllerMode()) {
+          this.view?.hideDirectedBetPanel?.();
+          this._onControllerCommand?.('modal_directed_bet_start', { playerId, betValue });
+          return;
+        }
         void this._startDirectedBetRound(playerId, betValue);
+      },
+      onControllerMediaControl: ({ target, action }) => {
+        if (this.isControllerMode()) {
+          this._onControllerMediaControl?.({ target, action });
+          return;
+        }
+        this.controlMedia(target, action);
       },
     });
 
@@ -331,6 +370,7 @@ export class ModalService {
     this._directedBetTimerLabel = '';
     void this._pressRuntime?.closePress?.();
     if (this.container?.isConnected) this.container.innerHTML = '';
+    this._onModalClose?.();
 
     // Targeted patch — only the closed cell's is-answered state updates
     this._game.touch(lastCell);
@@ -731,8 +771,35 @@ export class ModalService {
     this._disposer.destroy();
     this.container = null;
   }
+
+  controlMedia(target = 'question', action = 'play') {
+    this.view?.controlMedia?.(target, action);
+  }
+
+  runRemoteCommand(type, payload = {}) {
+    if (!type) return;
+    if (type === 'close_modal') {
+      this.close();
+      return;
+    }
+    if (type === 'modal_incorrect') {
+      void this._handleIncorrect();
+      return;
+    }
+    if (type === 'modal_correct') {
+      void this._handleCorrect();
+      return;
+    }
+    if (type === 'modal_directed_bet_start') {
+      void this._startDirectedBetRound(payload?.playerId, payload?.betValue);
+      return;
+    }
+    if (type === 'modal_media_control') {
+      this.controlMedia(payload?.target, payload?.action);
+    }
+  }
 }
 
-export function createModalService(gameService, mediaService, pressRuntime, playersService) {
-  return new ModalService(gameService, mediaService, pressRuntime, playersService);
+export function createModalService(gameService, mediaService, pressRuntime, playersService, options = {}) {
+  return new ModalService(gameService, mediaService, pressRuntime, playersService, options);
 }

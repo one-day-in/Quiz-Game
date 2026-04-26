@@ -5,7 +5,7 @@ import { LeaderboardPanelView } from './LeaderboardPanelView.js';
 import { ViewDisposer } from '../utils/disposer.js';
 import { fitAllCells } from '../utils/fitText.js';
 
-export function AppView({ model, uiState, players = [], actions, gameId, gameName, onCellClick, onBackToLobby, onRoundClick }) {
+export function AppView({ model, uiState, players = [], actions, gameId, gameName, onCellClick, onBackToLobby, onRoundClick, isReadOnly = false }) {
   const container = document.createElement('div');
   container.className = 'app-shell';
 
@@ -33,9 +33,9 @@ export function AppView({ model, uiState, players = [], actions, gameId, gameNam
     gameName,
     players: leaderboardPlayers,
     currentPlayerId: model?.getCurrentPlayerId?.() ?? null,
-    onBackToLobby,
+    onBackToLobby: isReadOnly ? null : onBackToLobby,
     onRoundClick,
-    onCurrentPlayerChange: (playerId) => actions.setCurrentPlayer?.(playerId),
+    onCurrentPlayerChange: isReadOnly ? null : (playerId) => actions.setCurrentPlayer?.(playerId),
   });
   container.appendChild(header.el);
   disposer.add(() => header.destroy?.());
@@ -46,7 +46,8 @@ export function AppView({ model, uiState, players = [], actions, gameId, gameNam
       uiState: ui,
       roundId: ui.activeRoundId ?? 0,
       onCellClick,
-      onTopicChange: (roundId, rowId, topic) => actions.updateTopic(roundId, rowId, topic)
+      onTopicChange: isReadOnly ? null : (roundId, rowId, topic) => actions.updateTopic(roundId, rowId, topic),
+      isReadOnly,
     });
 
     if (gridEl) {
@@ -67,7 +68,8 @@ export function AppView({ model, uiState, players = [], actions, gameId, gameNam
         gameId,
         players: leaderboardPlayers,
         onAdjustPlayerScore: (playerId, delta) => actions.adjustPlayerScore?.(playerId, delta),
-        onDeletePlayer: (playerId) => actions.removePlayer?.(playerId),
+        onDeletePlayer: isReadOnly ? null : (playerId) => actions.removePlayer?.(playerId),
+        readOnly: isReadOnly,
       });
       container.appendChild(leaderboardPanel.el);
       fit();

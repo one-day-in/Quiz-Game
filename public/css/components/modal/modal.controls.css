@@ -124,6 +124,17 @@
   border-color: var(--btn-outline-hover);
 }
 
+.qmodal__controllerMediaControls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.qmodal__controllerMediaControls .qmodal__btn {
+  min-width: 168px;
+}
+
 /* utility */
 .is-hidden {
   display: none !important;

@@ -6,11 +6,12 @@ import { t, withLanguageParam } from '../i18n.js';
 import { getActiveBuzzerUrl } from '../utils/localBuzzerUrl.js';
 
 export class LeaderboardPanelView {
-  constructor({ gameId, players = [], onAdjustPlayerScore = null, onDeletePlayer = null } = {}) {
+  constructor({ gameId, players = [], onAdjustPlayerScore = null, onDeletePlayer = null, readOnly = false } = {}) {
     this._gameId = gameId;
     this._players = Array.isArray(players) ? players : [];
     this._onAdjustPlayerScore = onAdjustPlayerScore;
     this._onDeletePlayer = onDeletePlayer;
+    this._readOnly = !!readOnly;
     this._isExpanded = false;
     this._isQrOpen = false;
     this._selectedPlayerId = null;
@@ -108,6 +109,12 @@ export class LeaderboardPanelView {
                 <img class="leaderboard-panel__qrImg" alt="${t('player_controller_qr_alt')}">
               </div>
               <p class="leaderboard-panel__copy">${t('scan_player_qr')}</p>
+              <p class="leaderboard-panel__eyebrow">${t('host_controller')}</p>
+              <div class="leaderboard-panel__qrWrap">
+                <div class="leaderboard-panel__qrGlow"></div>
+                <img class="leaderboard-panel__qrImg leaderboard-panel__hostQrImg" alt="${t('host_controller_qr_alt')}">
+              </div>
+              <p class="leaderboard-panel__copy">${t('scan_host_qr')}</p>
             </div>
           </div>
         </div>
@@ -148,6 +155,7 @@ export class LeaderboardPanelView {
     this._selectionText = root.querySelector('.leaderboard-panel__selectionText');
     this._scoreBar = root.querySelector('.leaderboard-panel__scoreBar');
     this._qrImg = root.querySelector('.leaderboard-panel__qrImg');
+    this._hostQrImg = root.querySelector('.leaderboard-panel__hostQrImg');
 
     this._previewView = LeaderboardGridView({
       players: this._players,
@@ -173,11 +181,14 @@ export class LeaderboardPanelView {
     if (!this._gameId || !this._qrImg) return;
 
     const playerUrl = new URL(withLanguageParam(`${import.meta.env.BASE_URL}player.html?gameId=${this._gameId}`));
+    const hostControllerUrl = new URL(withLanguageParam(`${import.meta.env.BASE_URL}host-controller.html?gameId=${this._gameId}`));
     const buzzerUrl = getActiveBuzzerUrl();
     if (buzzerUrl) {
       playerUrl.searchParams.set('buzzer', buzzerUrl);
+      hostControllerUrl.searchParams.set('buzzer', buzzerUrl);
     } else {
       playerUrl.searchParams.delete('buzzer');
+      hostControllerUrl.searchParams.delete('buzzer');
     }
 
     try {
@@ -186,6 +197,13 @@ export class LeaderboardPanelView {
         margin: 2,
         color: { dark: '#f8fafc', light: '#111827' },
       });
+      if (this._hostQrImg) {
+        this._hostQrImg.src = await QRCode.toDataURL(hostControllerUrl.toString(), {
+          width: 512,
+          margin: 2,
+          color: { dark: '#f8fafc', light: '#111827' },
+        });
+      }
     } catch (error) {
       console.error('[LeaderboardPanelView] QR generation failed:', error);
     }
@@ -241,6 +259,7 @@ export class LeaderboardPanelView {
       button.dataset.delta = String(delta);
       button.disabled = true;
       this._disposer.addEventListener(button, 'click', () => {
+        if (this._readOnly) return;
         if (!this._selectedPlayerId) return;
         this._onAdjustPlayerScore?.(this._selectedPlayerId, delta);
       });
@@ -280,7 +299,7 @@ export class LeaderboardPanelView {
 
     if (this._scoreBar) {
       for (const button of this._scoreBar.querySelectorAll('.leaderboard-panel__scoreBtn')) {
-        button.disabled = !selectedPlayer;
+        button.disabled = this._readOnly || !selectedPlayer;
       }
     }
   }

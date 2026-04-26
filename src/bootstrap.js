@@ -13,6 +13,7 @@ import { createModalService } from './services/ModalService.js';
 import { createMediaService } from './services/MediaService.js';
 import { createPlayersService } from './services/PlayersService.js';
 import { createPressRuntimeService } from './services/PressRuntimeService.js';
+import { createHostControlChannelService } from './services/HostControlChannelService.js';
 import { getBuzzerWakeUrl } from './utils/localBuzzerUrl.js';
 
 import { renderLogin } from './views/LoginView.js';
@@ -115,18 +116,27 @@ function renderError(error, onRetry) {
     document.getElementById('retryBtn')?.addEventListener('click', onRetry);
 }
 
-function renderLobby(user) {
+function renderLobby(user, { hostMode = 'host' } = {}) {
+    if (hostMode === 'controller') {
+        root.innerHTML = `
+            <div class="page-error">
+                <h2 class="page-error__title">${escapeHtml(t('no_game_selected'))}</h2>
+                <pre class="page-error__detail">${escapeHtml(t('open_host_controller_from_game'))}</pre>
+            </div>
+        `;
+        return;
+    }
     clearLastGame();
     clearRoot();
 
     const lobby = new LobbyView({
         currentUser: user,
-        onOpen: (gameId, gameName) => renderGame(user, gameId, gameName),
-        onPlay: (gameId, gameName) => renderGame(user, gameId, gameName),
+        onOpen: (gameId, gameName) => renderGame(user, gameId, gameName, { hostMode }),
+        onPlay: (gameId, gameName) => renderGame(user, gameId, gameName, { hostMode }),
         onCreate: async (name) => {
             try {
                 const game = await createGame(name);
-                renderGame(user, game.id, game.name);
+                renderGame(user, game.id, game.name, { hostMode });
             } catch (err) {
                 console.error('[Bootstrap] createGame failed:', err);
                 alert(`${t('error_prefix')}: ${err.message}`);
@@ -142,7 +152,7 @@ function renderLobby(user) {
     _currentCleanup = () => lobby.destroy();
 }
 
-async function renderGame(user, gameId, gameName) {
+async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
     saveLastGame(gameId, gameName);
     clearRoot();
     renderLoading(t('loading_game'));
@@ -153,8 +163,20 @@ async function renderGame(user, gameId, gameName) {
         const playersService = createPlayersService(gameId);
         const mediaService = createMediaService({ repo, gameService });
         const pressRuntimeService = createPressRuntimeService({ gameId, role: 'host' });
+        const hostControlChannel = createHostControlChannelService({
+            gameId,
+            role: hostMode === 'controller' ? 'controller' : 'host',
+        });
         const roundNavigationService = createRoundNavigationService(gameService);
-        const modalService = createModalService(gameService, mediaService, pressRuntimeService, playersService);
+        const modalService = createModalService(gameService, mediaService, pressRuntimeService, playersService, {
+            presentationMode: hostMode === 'controller' ? 'controller' : 'host',
+            onControllerMediaControl: ({ target, action }) => {
+                void hostControlChannel.send('modal_media_control', { target, action });
+            },
+            onControllerCommand: (type, payload = {}) => {
+                void hostControlChannel.send(type, payload);
+            },
+        });
 
         await Promise.all([
             gameService.initialize(),
@@ -186,10 +208,32 @@ async function renderGame(user, gameId, gameName) {
             roundNavigationService,
             gameId,
             gameName,
-            onBackToLobby: () => renderLobby(user),
+            onBackToLobby: hostMode === 'controller' ? null : () => renderLobby(user, { hostMode }),
+            isReadOnly: hostMode === 'controller',
+            onCellOpen: (payload) => {
+                if (hostMode !== 'controller') return;
+                void hostControlChannel.send('open_cell', payload);
+            },
+        });
+
+        await hostControlChannel.connect();
+        const stopHostControlSubscription = hostControlChannel.subscribe((message) => {
+            const type = message?.type;
+            const payload = message?.payload || {};
+            if (!type) return;
+
+            if (type === 'open_cell') {
+                app.openCell(payload, { skipBroadcast: true });
+                return;
+            }
+
+            if (hostMode !== 'host') return;
+            modalService.runRemoteCommand(type, payload);
         });
 
         _currentCleanup = () => {
+            stopHostControlSubscription?.();
+            hostControlChannel?.destroy?.();
             playersService?.destroy?.();
             pressRuntimeService?.destroy?.();
             modalService?.destroy();
@@ -217,7 +261,7 @@ async function renderGame(user, gameId, gameName) {
             renderLobby(user);
             return;
         }
-        renderError(error, () => renderGame(user, gameId, gameName));
+        renderError(error, () => renderGame(user, gameId, gameName, { hostMode }));
     }
 }
 
@@ -228,7 +272,7 @@ let _starting = false;
 // destroying the current game/lobby state and re-initialising the whole app.
 let _sessionActive = false;
 
-async function startApp() {
+async function startApp({ hostMode = 'host', forcedGameId = '' } = {}) {
     if (_starting) return;
     _starting = true;
 
@@ -252,11 +296,16 @@ async function startApp() {
             console.error('[Bootstrap] profile sync failed:', error);
         }
 
+        if (forcedGameId) {
+            renderGame(user, forcedGameId, t('new_game'), { hostMode });
+            return;
+        }
+
         const lastGame = getLastGame();
         if (lastGame) {
-            renderGame(user, lastGame.id, lastGame.name);
+            renderGame(user, lastGame.id, lastGame.name, { hostMode });
         } else {
-            renderLobby(user);
+            renderLobby(user, { hostMode });
         }
     } catch (error) {
         console.error('[Bootstrap] Failed:', error);
@@ -269,12 +318,14 @@ async function startApp() {
     }
 }
 
-export async function start() {
+export async function start(options = {}) {
+    const hostMode = options?.hostMode === 'controller' ? 'controller' : 'host';
+    const forcedGameId = String(options?.forcedGameId || '').trim();
     onAuthStateChange((event, _session) => {
         if (event === 'SIGNED_OUT') {
             // Session gone → always go to login
             _sessionActive = false;
-            if (!_starting) startApp();
+            if (!_starting) startApp({ hostMode, forcedGameId });
             return;
         }
 
@@ -283,9 +334,9 @@ export async function start() {
             // Supabase fires SIGNED_IN on every token refresh (visibilitychange, etc.)
             // — ignoring those events keeps the open modal / game state intact when
             // the user switches tabs and comes back.
-            if (!_starting) startApp();
+            if (!_starting) startApp({ hostMode, forcedGameId });
         }
     });
 
-    await startApp();
+    await startApp({ hostMode, forcedGameId });
 }

@@ -3,15 +3,38 @@ import { AppView } from './views/AppView.js';
 import { Disposer } from './utils/disposer.js';
 import { showRoundPicker } from './utils/confirm.js';
 
-export function createAppController({ root, gameService, playersService, modalService, roundNavigationService, gameId, gameName, onBackToLobby }) {
+export function createAppController({
+  root,
+  gameService,
+  playersService,
+  modalService,
+  roundNavigationService,
+  gameId,
+  gameName,
+  onBackToLobby,
+  onCellOpen = null,
+  isReadOnly = false,
+}) {
   let appViewRef = null; // { el, update } — kept alive across state changes
   const disposer = new Disposer();
 
   const actions = {
-    updateTopic: (roundId, rowId, topic) => gameService.updateTopic(roundId, rowId, topic),
-    adjustPlayerScore: (playerId, delta) => playersService.adjustPlayerScore(playerId, delta),
-    removePlayer: (playerId) => playersService.removePlayer(playerId),
-    setCurrentPlayer: (playerId) => gameService.setCurrentPlayerId(playerId),
+    updateTopic: (roundId, rowId, topic) => {
+      if (isReadOnly) return;
+      return gameService.updateTopic(roundId, rowId, topic);
+    },
+    adjustPlayerScore: (playerId, delta) => {
+      if (isReadOnly) return;
+      return playersService.adjustPlayerScore(playerId, delta);
+    },
+    removePlayer: (playerId) => {
+      if (isReadOnly) return;
+      return playersService.removePlayer(playerId);
+    },
+    setCurrentPlayer: (playerId) => {
+      if (isReadOnly) return;
+      return gameService.setCurrentPlayerId(playerId);
+    },
   };
 
   async function handleRoundClick() {
@@ -23,12 +46,12 @@ export function createAppController({ root, gameService, playersService, modalSe
     if (picked !== null) roundNavigationService.setActiveRound(picked);
   }
 
-  function handleCellClick({ roundId, rowId, cellId, value }) {
+  function buildCellPayload({ roundId, rowId, cellId, value }) {
     const { model } = gameService.getState();
     const cell = model?.getCell(roundId, rowId, cellId);
-    if (!cell) return;
+    if (!cell) return null;
 
-    const payload = {
+    return {
       roundId,
       rowId,
       cellId,
@@ -38,8 +61,19 @@ export function createAppController({ root, gameService, playersService, modalSe
       answer: { ...(cell.answer || {}) },
       isAnswered: !!cell.isAnswered
     };
+  }
 
+  function openCell(payload, { skipBroadcast = false } = {}) {
+    if (!payload) return;
     modalService.showQuestionView(payload);
+    if (!skipBroadcast) {
+      onCellOpen?.(payload);
+    }
+  }
+
+  function handleCellClick({ roundId, rowId, cellId, value }) {
+    const payload = buildCellPayload({ roundId, rowId, cellId, value });
+    openCell(payload);
   }
 
   function render(state) {
@@ -65,6 +99,7 @@ export function createAppController({ root, gameService, playersService, modalSe
         onCellClick: handleCellClick,
         onBackToLobby,
         onRoundClick: handleRoundClick,
+        isReadOnly,
       });
       root.appendChild(appViewRef.el);
       return;
@@ -103,6 +138,7 @@ export function createAppController({ root, gameService, playersService, modalSe
 
   return {
     render,
+    openCell: (payload, options) => openCell(payload, options),
     destroy: () => disposer.destroy()
   };
 }
