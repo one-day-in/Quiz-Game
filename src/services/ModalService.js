@@ -666,7 +666,9 @@ export class ModalService {
   }
 
   _startDirectedBetSelection() {
-    const players = this._getPlayersSnapshot();
+    const activePlayerId = this._game?.getCurrentPlayerId?.() ?? null;
+    const players = this._getPlayersSnapshot()
+      .filter((entry) => String(entry?.id || '') !== String(activePlayerId || ''));
     if (!players.length) {
       alert(t('modifier_not_available'));
       this.close();
@@ -674,7 +676,6 @@ export class ModalService {
     }
 
     const defaultBet = this._normalizeDirectedBetValue(this._cellValue || 300);
-    const defaultPlayerId = this._game?.getCurrentPlayerId?.() ?? null;
     this._isDirectedBetTimerMode = false;
     this._directedBetTimerLabel = '';
     this.view?.setPressBannerSuppressed?.(true);
@@ -683,7 +684,6 @@ export class ModalService {
       players,
       betOptions: [100, 200, 300, 400, 500],
       defaultBet,
-      defaultPlayerId,
     });
     this.view?.setResolutionButtonsEnabled?.(false);
   }
