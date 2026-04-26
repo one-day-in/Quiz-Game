@@ -267,25 +267,26 @@
 
 /* ── Game Cards Grid ── */
 .lobby__groups {
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
     padding-right: 4px;
-    padding-bottom: max(28px, env(safe-area-inset-bottom, 0px));
     scroll-padding-bottom: max(120px, env(safe-area-inset-bottom, 0px));
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.26) transparent;
 }
 
-.lobby__groups::after {
-    content: '';
-    display: block;
+.lobby__groupsTrack {
+    min-height: calc(100% + max(120px, env(safe-area-inset-bottom, 0px)));
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.lobby__groupsSpacer {
     flex: 0 0 auto;
-    height: clamp(72px, 12vh, 140px);
+    height: max(120px, env(safe-area-inset-bottom, 0px));
     pointer-events: none;
 }
 
@@ -397,6 +398,7 @@
 }
 
 .lobby__rowMain {
+    flex: 1 1 auto;
     min-width: 0;
 }
 
@@ -405,7 +407,9 @@
     font-weight: 800;
     color: var(--text);
     line-height: 1.15;
-    word-break: break-word;
+    white-space: normal;
+    word-break: normal;
+    overflow-wrap: anywhere;
 }
 
 .lobby__rowDate {

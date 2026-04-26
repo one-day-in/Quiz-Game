@@ -172,6 +172,7 @@ export class LobbyView {
                 ` : ''}
 
                 <div class="lobby__groups">
+                    <div class="lobby__groupsTrack">
                     ${gameGroups.map(({ ownerId, ownerLabel, avatarLabel, avatarUrl, games }) => `
                         <section class="lobby__group" data-owner-id="${escapeHtml(ownerId)}">
                             <div class="lobby__groupHead">
@@ -227,6 +228,8 @@ export class LobbyView {
                             </div>
                         </section>
                     `).join('')}
+                        <div class="lobby__groupsSpacer" aria-hidden="true"></div>
+                    </div>
                 </div>
             </div>
 
