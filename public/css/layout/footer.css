@@ -136,11 +136,18 @@
 .leaderboard-panel__qrDock {
   position: absolute;
   top: 50%;
-  right: 14px;
   transform: translateY(-50%);
   z-index: 4;
   opacity: 0;
   pointer-events: none;
+}
+
+.leaderboard-panel__qrDock--left {
+  left: 14px;
+}
+
+.leaderboard-panel__qrDock--right {
+  right: 14px;
 }
 
 .leaderboard-panel.is-expanded .leaderboard-panel__qrDock {
@@ -194,9 +201,9 @@
   position: absolute;
   right: 0;
   top: calc(100% + 10px);
-  width: min(clamp(240px, 42vw, 620px), calc(100vw - 24px));
+  width: min(clamp(220px, 30vw, 360px), calc(100vw - 24px));
   max-width: calc(100vw - 24px);
-  max-height: min(80dvh, calc(100dvh - 110px));
+  max-height: min(calc(var(--leaderboard-panel-expanded-h) - 120px), calc(100dvh - 120px));
   padding: clamp(14px, 2.2vw, 22px);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-2);
@@ -207,6 +214,16 @@
   transform: translateY(-8px) scale(0.98);
   pointer-events: none;
   transition: opacity 160ms var(--ease), transform 160ms var(--ease);
+}
+
+.leaderboard-panel__qrDock--left .leaderboard-panel__qrPopover {
+  left: 0;
+  right: auto;
+}
+
+.leaderboard-panel__qrDock--right .leaderboard-panel__qrPopover {
+  right: 0;
+  left: auto;
 }
 
 .leaderboard-panel__qrDock:hover .leaderboard-panel__qrPopover,
@@ -459,7 +476,7 @@
   position: relative;
   z-index: 1;
   width: 100%;
-  max-width: min(clamp(200px, 34vw, 520px), calc(100vw - 56px), calc(100dvh - 220px));
+  max-width: min(300px, calc(100vw - 56px), calc(var(--leaderboard-panel-expanded-h) - 240px), calc(100dvh - 260px));
   aspect-ratio: 1 / 1;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-2);
@@ -949,26 +966,39 @@
   }
 
   .leaderboard-panel__qrDock {
+    right: auto;
+  }
+
+  .leaderboard-panel__qrDock--left {
+    left: 12px;
+  }
+
+  .leaderboard-panel__qrDock--right {
     right: 12px;
   }
 
-  .leaderboard-panel__qrPopover {
+  .leaderboard-panel__qrDock--right .leaderboard-panel__qrPopover {
     right: 0;
     left: auto;
+  }
+
+  .leaderboard-panel__qrDock--left .leaderboard-panel__qrPopover {
+    left: 0;
+    right: auto;
   }
 }
 
 @media (max-width: 640px), (max-height: 760px) {
   .leaderboard-panel__qrPopover {
-    width: min(clamp(220px, 78vw, 420px), calc(100vw - 16px));
+    width: min(clamp(220px, 76vw, 320px), calc(100vw - 16px));
     max-width: calc(100vw - 16px);
-    max-height: min(76dvh, calc(100dvh - 88px));
+    max-height: min(calc(var(--leaderboard-panel-expanded-h) - 96px), calc(100dvh - 96px));
     padding: 16px;
   }
 
   .leaderboard-panel__qrImg {
     width: 100%;
-    max-width: min(clamp(180px, 72vw, 340px), calc(100vw - 48px), calc(100dvh - 220px));
+    max-width: min(240px, calc(100vw - 48px), calc(var(--leaderboard-panel-expanded-h) - 200px), calc(100dvh - 220px));
   }
 
   .leaderboard-panel__copy {
@@ -983,13 +1013,13 @@
   }
 
   .leaderboard-panel__qrPopover {
-    width: min(420px, calc(100vw - 28px));
+    width: min(320px, calc(100vw - 28px));
     max-width: calc(100vw - 28px);
-    max-height: min(72dvh, calc(100dvh - 120px));
+    max-height: min(calc(var(--leaderboard-panel-expanded-h) - 120px), calc(100dvh - 120px));
   }
 
   .leaderboard-panel__qrImg {
-    max-width: min(320px, calc(100vw - 84px), calc(100dvh - 260px));
+    max-width: min(250px, calc(100vw - 84px), calc(var(--leaderboard-panel-expanded-h) - 220px), calc(100dvh - 260px));
   }
 }
 

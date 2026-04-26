@@ -13,7 +13,7 @@ export class LeaderboardPanelView {
     this._onDeletePlayer = onDeletePlayer;
     this._readOnly = !!readOnly;
     this._isExpanded = false;
-    this._isQrOpen = false;
+    this._openQrDock = null;
     this._selectedPlayerId = null;
 
     this._build();
@@ -51,7 +51,7 @@ export class LeaderboardPanelView {
     this._toggleBtn.setAttribute('aria-expanded', String(isExpanded));
     this._toggleBtn.setAttribute('aria-label', isExpanded ? t('close') : t('show_all_players'));
     this._toggleBtn.setAttribute('title', isExpanded ? t('close') : t('show_all_players'));
-    if (!isExpanded) this._setQrOpen(false);
+    if (!isExpanded) this._setQrOpen(null);
   }
 
   destroy() {
@@ -88,7 +88,31 @@ export class LeaderboardPanelView {
             </span>
           </button>
 
-          <div class="leaderboard-panel__qrDock">
+          <div class="leaderboard-panel__qrDock leaderboard-panel__qrDock--left" data-qr-dock="host">
+            <button
+              class="leaderboard-panel__qrTrigger"
+              type="button"
+              aria-label="${t('host_controller')}"
+              aria-expanded="false"
+              title="${t('host_controller')}"
+            >
+              <svg class="leaderboard-panel__qrTriggerIcon" viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                <path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4z" />
+                <path d="M16 14h2v2h-2zM18 16h2v2h-2zM14 18h2v2h-2zM16 20h4M20 14v2" />
+              </svg>
+            </button>
+
+            <div class="leaderboard-panel__qrPopover" role="dialog" aria-label="${t('host_controller')}" aria-hidden="true">
+              <p class="leaderboard-panel__eyebrow">${t('host_controller')}</p>
+              <div class="leaderboard-panel__qrWrap">
+                <div class="leaderboard-panel__qrGlow"></div>
+                <img class="leaderboard-panel__qrImg leaderboard-panel__hostQrImg" alt="${t('host_controller_qr_alt')}">
+              </div>
+              <p class="leaderboard-panel__copy">${t('scan_host_qr')}</p>
+            </div>
+          </div>
+
+          <div class="leaderboard-panel__qrDock leaderboard-panel__qrDock--right" data-qr-dock="player">
             <button
               class="leaderboard-panel__qrTrigger"
               type="button"
@@ -106,15 +130,9 @@ export class LeaderboardPanelView {
               <p class="leaderboard-panel__eyebrow">${t('join_from_phone')}</p>
               <div class="leaderboard-panel__qrWrap">
                 <div class="leaderboard-panel__qrGlow"></div>
-                <img class="leaderboard-panel__qrImg" alt="${t('player_controller_qr_alt')}">
+                <img class="leaderboard-panel__qrImg leaderboard-panel__playerQrImg" alt="${t('player_controller_qr_alt')}">
               </div>
               <p class="leaderboard-panel__copy">${t('scan_player_qr')}</p>
-              <p class="leaderboard-panel__eyebrow">${t('host_controller')}</p>
-              <div class="leaderboard-panel__qrWrap">
-                <div class="leaderboard-panel__qrGlow"></div>
-                <img class="leaderboard-panel__qrImg leaderboard-panel__hostQrImg" alt="${t('host_controller_qr_alt')}">
-              </div>
-              <p class="leaderboard-panel__copy">${t('scan_host_qr')}</p>
             </div>
           </div>
         </div>
@@ -147,14 +165,12 @@ export class LeaderboardPanelView {
     this._backdrop = root.querySelector('.leaderboard-panel__backdrop');
     this._toggleBtn = root.querySelector('.leaderboard-panel__toggle');
     this._toggleChevron = root.querySelector('.leaderboard-panel__titleChevron');
-    this._qrDock = root.querySelector('.leaderboard-panel__qrDock');
-    this._qrTrigger = root.querySelector('.leaderboard-panel__qrTrigger');
-    this._qrPopover = root.querySelector('.leaderboard-panel__qrPopover');
+    this._qrDocks = Array.from(root.querySelectorAll('.leaderboard-panel__qrDock'));
     this._previewMount = root.querySelector('.leaderboard-panel__previewMount');
     this._boardMount = root.querySelector('.leaderboard-panel__boardMount');
     this._selectionText = root.querySelector('.leaderboard-panel__selectionText');
     this._scoreBar = root.querySelector('.leaderboard-panel__scoreBar');
-    this._qrImg = root.querySelector('.leaderboard-panel__qrImg');
+    this._playerQrImg = root.querySelector('.leaderboard-panel__playerQrImg');
     this._hostQrImg = root.querySelector('.leaderboard-panel__hostQrImg');
 
     this._previewView = LeaderboardGridView({
@@ -178,7 +194,7 @@ export class LeaderboardPanelView {
   }
 
   async _generateQr() {
-    if (!this._gameId || !this._qrImg) return;
+    if (!this._gameId || !this._playerQrImg) return;
 
     const playerUrl = new URL(withLanguageParam(`${import.meta.env.BASE_URL}player.html?gameId=${this._gameId}`));
     const hostControllerUrl = new URL(withLanguageParam(`${import.meta.env.BASE_URL}host-controller.html?gameId=${this._gameId}`));
@@ -192,7 +208,7 @@ export class LeaderboardPanelView {
     }
 
     try {
-      this._qrImg.src = await QRCode.toDataURL(playerUrl.toString(), {
+      this._playerQrImg.src = await QRCode.toDataURL(playerUrl.toString(), {
         width: 512,
         margin: 2,
         color: { dark: '#f8fafc', light: '#111827' },
@@ -211,18 +227,22 @@ export class LeaderboardPanelView {
 
   _wire() {
     this._disposer.addEventListener(this._toggleBtn, 'click', () => this.toggleExpanded());
-    this._disposer.addEventListener(this._qrTrigger, 'click', (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      if (!this._isExpanded) return;
-      this._setQrOpen(!this._isQrOpen);
-    });
+    for (const dock of this._qrDocks) {
+      const trigger = dock.querySelector('.leaderboard-panel__qrTrigger');
+      const kind = dock.dataset.qrDock || '';
+      this._disposer.addEventListener(trigger, 'click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!this._isExpanded || !kind) return;
+        this._setQrOpen(this._openQrDock === kind ? null : kind);
+      });
+    }
 
     this._disposer.addEventListener(document, 'pointerdown', (event) => {
       const target = event.target;
       if (!(target instanceof Element)) return;
-      if (this._isExpanded && this._isQrOpen && !target.closest('.leaderboard-panel__qrDock')) {
-        this._setQrOpen(false);
+      if (this._isExpanded && this._openQrDock && !target.closest('.leaderboard-panel__qrDock')) {
+        this._setQrOpen(null);
       }
       if (!this._isExpanded || !this._selectedPlayerId) return;
       if (target.closest('.leaderboard__rowWrap, .leaderboard__row')) return;
@@ -235,18 +255,22 @@ export class LeaderboardPanelView {
       disposer: this._disposer,
       overlay: this._backdrop,
       onDismiss: () => {
-        this._setQrOpen(false);
+        this._setQrOpen(null);
         this.setExpanded(false);
       },
       shouldDismissOnEscape: () => this._isExpanded,
     });
   }
 
-  _setQrOpen(nextOpen) {
-    this._isQrOpen = !!nextOpen;
-    this._qrDock?.classList.toggle('is-open', this._isQrOpen);
-    this._qrTrigger?.setAttribute('aria-expanded', String(this._isQrOpen));
-    this._qrPopover?.setAttribute('aria-hidden', String(!this._isQrOpen));
+  _setQrOpen(kind) {
+    this._openQrDock = kind || null;
+    for (const dock of this._qrDocks) {
+      const dockKind = dock.dataset.qrDock || '';
+      const isOpen = !!this._openQrDock && this._openQrDock === dockKind;
+      dock.classList.toggle('is-open', isOpen);
+      dock.querySelector('.leaderboard-panel__qrTrigger')?.setAttribute('aria-expanded', String(isOpen));
+      dock.querySelector('.leaderboard-panel__qrPopover')?.setAttribute('aria-hidden', String(!isOpen));
+    }
   }
 
   _buildScoreBar() {
