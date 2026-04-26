@@ -341,6 +341,7 @@ export class ModalService {
     if (!this._pressWinnerId || this._isResolvingPressResult) return;
     this._isResolvingPressResult = true;
     this._clearPressCountdown();
+    const resolutionValue = this._getEffectiveResolutionValue();
     const winnerId = this._pressWinnerId;
     const shouldUseRuntimeLock = !this._isDirectedBetTimerMode;
     if (shouldUseRuntimeLock) {
@@ -351,7 +352,7 @@ export class ModalService {
       }
     }
     try {
-      await adjustPlayerScore(this._game.getGameId(), winnerId, -this._currentResolutionValue);
+      await adjustPlayerScore(this._game.getGameId(), winnerId, -resolutionValue);
     } catch (e) {
       console.error('[ModalService] adjustPlayerScore (incorrect) failed:', e);
     }
@@ -367,6 +368,7 @@ export class ModalService {
   async _handleCorrect() {
     if (!this._pressWinnerId || this._isResolvingPressResult) return;
     this._isResolvingPressResult = true;
+    const resolutionValue = this._getEffectiveResolutionValue();
     const winnerId = this._pressWinnerId;
     const shouldUseRuntimeLock = !this._isDirectedBetTimerMode;
     if (shouldUseRuntimeLock) {
@@ -378,7 +380,7 @@ export class ModalService {
       }
     }
     try {
-      await adjustPlayerScore(this._game.getGameId(), winnerId, this._currentResolutionValue);
+      await adjustPlayerScore(this._game.getGameId(), winnerId, resolutionValue);
       await this._game?.setCurrentPlayerId?.(winnerId);
     } catch (e) {
       console.error('[ModalService] correct resolution failed:', e);
@@ -655,6 +657,12 @@ export class ModalService {
   _normalizeDirectedBetValue(rawValue) {
     const rounded = Math.round((Number(rawValue) || 0) / 100) * 100;
     return Math.max(100, Math.min(500, rounded));
+  }
+
+  _getEffectiveResolutionValue() {
+    const directValue = Number(this._currentResolutionValue);
+    if (Number.isFinite(directValue) && directValue !== 0) return directValue;
+    return Number(this._cellValue) || 0;
   }
 
   _startDirectedBetSelection() {
