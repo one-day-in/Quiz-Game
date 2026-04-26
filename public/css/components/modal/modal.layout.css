@@ -266,6 +266,12 @@
     gap: 10px;
 }
 
+.qmodal__directedBetStake {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
+    width: 100%;
+}
+
 .qmodal__directedBetPlayerBtn,
 .qmodal__directedBetStakeBtn {
     min-height: 44px;
@@ -278,6 +284,10 @@
     font-weight: 800;
     cursor: pointer;
     transition: border-color var(--t-fast) var(--ease), filter var(--t-fast) var(--ease);
+}
+
+.qmodal__directedBetStakeBtn {
+    width: 100%;
 }
 
 .qmodal__directedBetPlayerBtn:hover,

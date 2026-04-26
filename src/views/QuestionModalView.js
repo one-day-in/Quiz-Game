@@ -165,11 +165,16 @@ export class QuestionModalView {
         this._updateResolutionButtons();
     }
 
-    showDirectedBetPanel({ players = [], betOptions = [100, 200, 300, 400, 500], defaultBet = 300 } = {}) {
+    showDirectedBetPanel({ players = [], betOptions = [100, 200, 300, 400, 500], defaultBet = 300, defaultPlayerId = null } = {}) {
+        const normalizedPlayers = Array.isArray(players) ? players : [];
+        const normalizedDefaultPlayerId = defaultPlayerId ? String(defaultPlayerId) : null;
+        const hasDefaultPlayer = normalizedDefaultPlayerId
+            && normalizedPlayers.some((player) => String(player?.id || '') === normalizedDefaultPlayerId);
+
         this._directedBetState = {
             visible: true,
-            players: Array.isArray(players) ? players : [],
-            selectedPlayerId: null,
+            players: normalizedPlayers,
+            selectedPlayerId: hasDefaultPlayer ? normalizedDefaultPlayerId : null,
             betOptions: Array.isArray(betOptions) && betOptions.length ? betOptions : [100, 200, 300, 400, 500],
             selectedBet: Number(defaultBet) || 300,
         };
