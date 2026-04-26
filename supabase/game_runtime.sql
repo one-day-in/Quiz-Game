@@ -117,3 +117,82 @@ end;
 $$;
 
 grant execute on function public.claim_game_press(uuid, text) to anon, authenticated;
+
+create or replace function public.resolve_game_press(
+    p_game_id uuid,
+    p_expected_winner_player_id uuid,
+    p_press_enabled boolean default false
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+    v_runtime_game_id uuid;
+    v_runtime_press_enabled boolean;
+    v_runtime_winner_player_id uuid;
+    v_runtime_pressed_at timestamptz;
+    v_runtime_updated_at timestamptz;
+    v_can_manage boolean := false;
+begin
+    if p_game_id is null then
+        raise exception 'Game ID is required';
+    end if;
+    if p_expected_winner_player_id is null then
+        raise exception 'Expected winner player ID is required';
+    end if;
+
+    -- Allow service role (buzzer backend) and host owner; block everyone else.
+    if auth.role() <> 'service_role' then
+        select exists (
+            select 1
+            from public.games g
+            where g.id = p_game_id
+              and g.created_by = auth.uid()
+        )
+        into v_can_manage;
+
+        if not v_can_manage then
+            raise exception 'Host access denied';
+        end if;
+    end if;
+
+    update public.game_runtime gr
+    set press_enabled = coalesce(p_press_enabled, false),
+        winner_player_id = null,
+        pressed_at = null,
+        updated_at = timezone('utc', now())
+    where gr.game_id = p_game_id
+      and gr.winner_player_id = p_expected_winner_player_id;
+
+    if not found then
+        raise exception 'Press already resolved';
+    end if;
+
+    select
+        gr.game_id,
+        gr.press_enabled,
+        gr.winner_player_id,
+        gr.pressed_at,
+        gr.updated_at
+    into
+        v_runtime_game_id,
+        v_runtime_press_enabled,
+        v_runtime_winner_player_id,
+        v_runtime_pressed_at,
+        v_runtime_updated_at
+    from public.game_runtime gr
+    where gr.game_id = p_game_id;
+
+    return jsonb_build_object(
+        'game_id', v_runtime_game_id,
+        'press_enabled', v_runtime_press_enabled,
+        'winner_player_id', v_runtime_winner_player_id,
+        'pressed_at', v_runtime_pressed_at,
+        'updated_at', v_runtime_updated_at
+    );
+end;
+$$;
+
+grant execute on function public.resolve_game_press(uuid, uuid, boolean) to authenticated;

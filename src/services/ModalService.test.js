@@ -3,14 +3,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
   adjustPlayerScoreMock,
+  resolveGamePressMock,
   updatePlayerMock,
 } = vi.hoisted(() => ({
   adjustPlayerScoreMock: vi.fn(),
+  resolveGamePressMock: vi.fn(),
   updatePlayerMock: vi.fn(),
 }));
 
 vi.mock('../api/gameApi.js', () => ({
   adjustPlayerScore: adjustPlayerScoreMock,
+  resolveGamePress: resolveGamePressMock,
 }));
 
 vi.mock('../api/playersApi.js', () => ({
@@ -24,6 +27,12 @@ describe('ModalService press reset', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.clearAllMocks();
+    resolveGamePressMock.mockResolvedValue({
+      gameId: 'game-1',
+      winnerPlayerId: null,
+      pressEnabled: true,
+      pressedAt: null,
+    });
     updatePlayerMock.mockResolvedValue({});
     vi.stubGlobal('alert', vi.fn());
   });
@@ -54,6 +63,7 @@ describe('ModalService press reset', () => {
 
     await service._handleIncorrect();
 
+    expect(resolveGamePressMock).toHaveBeenCalledWith('game-1', 'player-1', { pressEnabled: true });
     expect(adjustPlayerScoreMock).toHaveBeenCalledWith('game-1', 'player-1', -300);
     expect(service._resetPressRuntime).toHaveBeenCalledTimes(1);
   });
@@ -154,9 +164,26 @@ describe('ModalService press reset', () => {
 
     await service._handleCorrect();
 
+    expect(resolveGamePressMock).toHaveBeenCalledWith('game-1', 'player-2', { pressEnabled: false });
     expect(adjustPlayerScoreMock).toHaveBeenCalledWith('game-1', 'player-2', 500);
     expect(gameService.setCurrentPlayerId).toHaveBeenCalledWith('player-2');
     expect(service.close).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores duplicate incorrect resolution when lock is already taken by another host window', async () => {
+    resolveGamePressMock.mockRejectedValue(new Error('[Game] resolveGamePress failed: Press already resolved'));
+    const gameService = {
+      getGameId: () => 'game-1',
+    };
+    const service = new ModalService(gameService, {});
+    service._pressWinnerId = 'player-1';
+    service._cellValue = 300;
+    service._resetPressRuntime = vi.fn().mockResolvedValue(undefined);
+
+    await service._handleIncorrect();
+
+    expect(adjustPlayerScoreMock).not.toHaveBeenCalled();
+    expect(service._resetPressRuntime).not.toHaveBeenCalled();
   });
 
   it('applies flip-score modifier to the current active player and keeps the banner visible before closing', async () => {

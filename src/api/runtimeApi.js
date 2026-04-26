@@ -77,6 +77,26 @@ export async function claimGamePress(gameId, controllerId) {
     };
 }
 
+export async function resolveGamePress(gameId, expectedWinnerPlayerId, { pressEnabled = false } = {}) {
+    const { data, error } = await supabase.rpc('resolve_game_press', {
+        p_game_id: gameId,
+        p_expected_winner_player_id: expectedWinnerPlayerId,
+        p_press_enabled: !!pressEnabled,
+    });
+
+    if (error) throw new Error(`[Game] resolveGamePress failed: ${error.message}`);
+
+    const row = Array.isArray(data) ? data[0] : data;
+    return {
+        gameId: row?.game_id || gameId,
+        winnerPlayerId: row?.winner_player_id || null,
+        winnerName: null,
+        pressedAt: row?.pressed_at || null,
+        pressEnabled: !!row?.press_enabled,
+        updatedAt: row?.updated_at || null,
+    };
+}
+
 export function subscribeToGameRuntime(gameId, onRuntimeChange) {
     let disposed = false;
     let lastWinnerPlayerId = null;

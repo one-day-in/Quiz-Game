@@ -2,7 +2,7 @@ import { updatePlayer } from '../api/playersApi.js';
 import { QuestionModalView } from '../views/QuestionModalView.js';
 import { Disposer } from '../utils/disposer.js';
 import { showConfirm } from '../utils/confirm.js';
-import { adjustPlayerScore } from '../api/gameApi.js';
+import { adjustPlayerScore, resolveGamePress } from '../api/gameApi.js';
 import {
   isAutoCellModifier,
   isFlipScoreModifier,
@@ -326,8 +326,14 @@ export class ModalService {
     if (!this._pressWinnerId || this._isResolvingPressResult) return;
     this._isResolvingPressResult = true;
     this._clearPressCountdown();
+    const winnerId = this._pressWinnerId;
+    const lockAcquired = await this._acquirePressResolutionLock(winnerId, { pressEnabled: true });
+    if (!lockAcquired) {
+      this._isResolvingPressResult = false;
+      return;
+    }
     try {
-      await adjustPlayerScore(this._game.getGameId(), this._pressWinnerId, -this._cellValue);
+      await adjustPlayerScore(this._game.getGameId(), winnerId, -this._cellValue);
     } catch (e) {
       console.error('[ModalService] adjustPlayerScore (incorrect) failed:', e);
     }
@@ -339,13 +345,38 @@ export class ModalService {
   async _handleCorrect() {
     if (!this._pressWinnerId || this._isResolvingPressResult) return;
     this._isResolvingPressResult = true;
+    const winnerId = this._pressWinnerId;
+    const lockAcquired = await this._acquirePressResolutionLock(winnerId, { pressEnabled: false });
+    if (!lockAcquired) {
+      this._isResolvingPressResult = false;
+      this.close();
+      return;
+    }
     try {
-      await adjustPlayerScore(this._game.getGameId(), this._pressWinnerId, this._cellValue);
-      await this._game?.setCurrentPlayerId?.(this._pressWinnerId);
+      await adjustPlayerScore(this._game.getGameId(), winnerId, this._cellValue);
+      await this._game?.setCurrentPlayerId?.(winnerId);
     } catch (e) {
       console.error('[ModalService] correct resolution failed:', e);
     }
     this.close();
+  }
+
+  async _acquirePressResolutionLock(winnerPlayerId, { pressEnabled = false } = {}) {
+    if (!winnerPlayerId) return false;
+    try {
+      await resolveGamePress(this._game.getGameId(), winnerPlayerId, { pressEnabled });
+      return true;
+    } catch (error) {
+      const message = String(error?.message || '');
+      if (message.includes('Press already resolved')) return false;
+      // Compatibility fallback while DB function is being rolled out.
+      if (message.includes('resolve_game_press')) {
+        console.warn('[ModalService] resolve_game_press RPC is unavailable, using legacy local resolution.');
+        return true;
+      }
+      console.error('[ModalService] resolve_game_press failed:', error);
+      return false;
+    }
   }
 
   async _resetPressRuntime() {
