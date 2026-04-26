@@ -27,6 +27,8 @@ export class ModalService {
     this._onModalClose = options.onModalClose || null;
     this._onControllerMediaControl = options.onControllerMediaControl || null;
     this._onControllerCommand = options.onControllerCommand || null;
+    this._onModalViewStateChange = options.onModalViewStateChange || null;
+    this._onMediaPlaybackStateChange = options.onMediaPlaybackStateChange || null;
 
     this._disposer = new Disposer();
     this.view = null;
@@ -274,6 +276,7 @@ export class ModalService {
       },
 
       onViewStateChange: ({ mode: nextMode, isAnswerShown }) => {
+        this._onModalViewStateChange?.({ mode: nextMode, isAnswerShown });
         if (this.isControllerMode()) return;
         if (nextMode !== 'view' || isAnswerShown) {
           this._pausePressCountdown();
@@ -297,11 +300,13 @@ export class ModalService {
           this._onControllerMediaControl?.({ target, action });
           return;
         }
-        this.controlMedia(target, action);
+        void this.controlMedia(target, action);
       },
     });
 
     this.container.appendChild(this.view.el);
+
+    this._onModalViewStateChange?.({ mode: this.view?._mode || 'view', isAnswerShown: !!this.view?._isAnswerShown });
 
     if (shouldAutoApplyModifier) {
       void this._applyActiveModifierToCurrentPlayer();
@@ -331,6 +336,7 @@ export class ModalService {
   }
 
   close() {
+    const hadOpenModal = !!this.activeCell || !!this.view;
     // Flush any pending debounced text saves before clearing activeCell
     clearTimeout(this._questionTimer);
     clearTimeout(this._answerTimer);
@@ -370,7 +376,9 @@ export class ModalService {
     this._directedBetTimerLabel = '';
     void this._pressRuntime?.closePress?.();
     if (this.container?.isConnected) this.container.innerHTML = '';
-    this._onModalClose?.();
+    if (hadOpenModal) {
+      this._onModalClose?.();
+    }
 
     // Targeted patch — only the closed cell's is-answered state updates
     this._game.touch(lastCell);
@@ -772,8 +780,14 @@ export class ModalService {
     this.container = null;
   }
 
-  controlMedia(target = 'question', action = 'play') {
-    this.view?.controlMedia?.(target, action);
+  async controlMedia(target = '', action = 'play') {
+    const resolvedTarget = target || this.view?.getMediaControlTarget?.() || 'question';
+    const isPlaying = await this.view?.controlMedia?.(resolvedTarget, action);
+    this._onMediaPlaybackStateChange?.({
+      target: resolvedTarget,
+      isPlaying: !!isPlaying,
+    });
+    return { target: resolvedTarget, isPlaying: !!isPlaying };
   }
 
   runRemoteCommand(type, payload = {}) {
@@ -795,7 +809,16 @@ export class ModalService {
       return;
     }
     if (type === 'modal_media_control') {
-      this.controlMedia(payload?.target, payload?.action);
+      return this.controlMedia(payload?.target, payload?.action);
+    }
+    if (type === 'modal_view_state') {
+      const nextTarget = payload?.isAnswerShown ? 'answer' : 'question';
+      this.view?.setControllerMediaTarget?.(nextTarget);
+      return;
+    }
+    if (type === 'modal_media_state') {
+      if (payload?.target) this.view?.setControllerMediaTarget?.(payload.target);
+      this.view?.setControllerMediaPlaying?.(!!payload?.isPlaying);
     }
   }
 }

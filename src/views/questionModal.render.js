@@ -238,6 +238,7 @@ export function applyModeUI(view, refs) {
 
   setHidden(refs.toggleAnswerBtn, isEdit || isController);
   setHidden(refs.footerLeft, isController);
+  setHidden(refs.controllerSharedMediaControls, !isController);
   setHidden(refs.btnIncorrect,   isEdit || isModifierMode);
   setHidden(refs.btnCorrect,     isEdit || isModifierMode);
 }
@@ -271,12 +272,12 @@ export function applyAnswerVisibility(view, refs) {
 export function renderMedia(view, refs, type) {
   const media    = view[`_${type}`]?.media;
   const hasMedia = !!media?.src;
-  const hasAudio = (view[`_${type}`]?.audioFiles || []).length > 0;
+  const mediaMime = (media?.mime || '').toLowerCase();
+  const hasVideoMedia = hasMedia && mediaMime.startsWith('video/');
   const isController = view._displayMode === 'controller';
 
   view._mediaUI[type]?.set(media);
   setHidden(refs[`${type}MediaHostWrap`], isController || !hasMedia);
-  setHidden(refs[`${type}ControllerMediaControls`], !isController || (!hasMedia && !hasAudio));
 
   if (view._mode === 'edit') {
     const uploadBtn = refs[`${type}UploadBtn`];
@@ -447,6 +448,12 @@ export function renderAll(view, refs) {
   const aHasAudio = sections.answer.audio.length   > 0;
   const qHasAny   = qHasText || qHasMedia || qHasAudio;
   const aHasAny   = aHasText || aHasMedia || aHasAudio;
+  const isController = view._displayMode === 'controller';
+  const qMediaMime = (sections.question.media?.mime || '').toLowerCase();
+  const aMediaMime = (sections.answer.media?.mime || '').toLowerCase();
+  const qHasPlayableMedia = (qHasMedia && (qMediaMime.startsWith('video/') || qMediaMime.startsWith('audio/'))) || qHasAudio;
+  const aHasPlayableMedia = (aHasMedia && (aMediaMime.startsWith('video/') || aMediaMime.startsWith('audio/'))) || aHasAudio;
+  const hasAnyPlayableMedia = qHasPlayableMedia || aHasPlayableMedia;
   const hasModifierOverlay = isModifierSelectionMode(view);
   const qHeroAudio = view._mode === 'view' && !qHasText && !qHasMedia && qHasAudio;
   const aHeroAudio = view._mode === 'view' && !aHasText && !aHasMedia && aHasAudio;
@@ -504,14 +511,22 @@ export function renderAll(view, refs) {
   // View-mode visibility
   if (view._mode === 'view') {
     setHidden(refs.questionTextView,      !qHasText);
-    setHidden(refs.questionMediaHostWrap, !qHasMedia);
+    setHidden(refs.questionMediaHostWrap, isController || !qHasMedia);
     setHidden(refs.answerTextView,        !aHasText);
-    setHidden(refs.answerMediaHostWrap,   !aHasMedia);
+    setHidden(refs.answerMediaHostWrap,   isController || !aHasMedia);
+    setHidden(refs.questionMediaPeekBtn, isController || !qHasMedia);
+    setHidden(refs.answerMediaPeekBtn, isController || !aHasMedia);
+    setHidden(refs.controllerSharedMediaControls, !isController || !hasAnyPlayableMedia);
+    if (isController && !hasAnyPlayableMedia) {
+      view.setControllerMediaPlaying?.(false);
+    }
 
     if (refs.toggleAnswerBtn) refs.toggleAnswerBtn.disabled = !aHasAny;
     if (!aHasAny) view._isAnswerShown = false;
   } else {
     if (refs.toggleAnswerBtn) refs.toggleAnswerBtn.disabled = false;
+    setHidden(refs.controllerSharedMediaControls, true);
+    if (isController) view.setControllerMediaPlaying?.(false);
   }
 
   applyAnswerVisibility(view, refs);
@@ -519,7 +534,7 @@ export function renderAll(view, refs) {
   // Post-render: check whether media needs to collapse to a peek button.
   // Must run in a requestAnimationFrame so layout is settled and offsetHeight
   // values reflect the actual rendered dimensions.
-  if (view._mode === 'view') {
+  if (view._mode === 'view' && !isController) {
     requestAnimationFrame(() => {
       checkMediaCollapse(view, refs, 'question');
       checkMediaCollapse(view, refs, 'answer');

@@ -170,6 +170,15 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
         const roundNavigationService = createRoundNavigationService(gameService);
         const modalService = createModalService(gameService, mediaService, pressRuntimeService, playersService, {
             presentationMode: hostMode === 'controller' ? 'controller' : 'host',
+            onModalClose: hostMode === 'host'
+                ? () => { void hostControlChannel.send('close_modal'); }
+                : null,
+            onModalViewStateChange: hostMode === 'host'
+                ? ({ mode, isAnswerShown }) => { void hostControlChannel.send('modal_view_state', { mode, isAnswerShown }); }
+                : null,
+            onMediaPlaybackStateChange: hostMode === 'host'
+                ? ({ target, isPlaying }) => { void hostControlChannel.send('modal_media_state', { target, isPlaying }); }
+                : null,
             onControllerMediaControl: ({ target, action }) => {
                 void hostControlChannel.send('modal_media_control', { target, action });
             },
@@ -211,7 +220,6 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
             onBackToLobby: hostMode === 'controller' ? null : () => renderLobby(user, { hostMode }),
             isReadOnly: hostMode === 'controller',
             onCellOpen: (payload) => {
-                if (hostMode !== 'controller') return;
                 void hostControlChannel.send('open_cell', payload);
             },
         });
@@ -227,8 +235,19 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
                 return;
             }
 
+            if (hostMode === 'controller' && (type === 'modal_view_state' || type === 'modal_media_state')) {
+                modalService.runRemoteCommand(type, payload);
+                return;
+            }
+
             if (hostMode !== 'host') return;
-            modalService.runRemoteCommand(type, payload);
+            const result = modalService.runRemoteCommand(type, payload);
+            if (type === 'modal_media_control') {
+                void Promise.resolve(result).then((state) => {
+                    if (!state) return;
+                    void hostControlChannel.send('modal_media_state', state);
+                });
+            }
         });
 
         _currentCleanup = () => {

@@ -135,6 +135,15 @@
   min-width: 168px;
 }
 
+.qmodal__controllerSharedMediaControls .qmodal__btn {
+  min-width: 60px;
+  width: 60px;
+  height: 60px;
+  padding: 0;
+  font-size: 28px;
+  line-height: 1;
+}
+
 /* utility */
 .is-hidden {
   display: none !important;

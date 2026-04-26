@@ -3,6 +3,7 @@ import { ViewDisposer } from '../utils/disposer.js';
 import { bindOverlayDismiss } from '../utils/overlayDismiss.js';
 import { buildModalDom } from './questionModal.template.js';
 import { initMediaUI, applyModeUI, renderAll } from './questionModal.render.js';
+import { t } from '../i18n.js';
 
 export class QuestionModalView {
     constructor({
@@ -47,6 +48,8 @@ export class QuestionModalView {
             betOptions: [100, 200, 300, 400, 500],
             selectedBet: 300,
         };
+        this._controllerMediaTarget = 'question';
+        this._controllerMediaPlaying = false;
 
         this._cb = {
             onClose, onIncorrect, onCorrect,
@@ -70,6 +73,7 @@ export class QuestionModalView {
 
         applyModeUI(this, this._refs);
         renderAll(this, this._refs);
+        this.setControllerMediaPlaying(false);
 
         // Result buttons start disabled — enabled only when a player claims the press
         this._updateResolutionButtons();
@@ -163,33 +167,62 @@ export class QuestionModalView {
         this.syncPressBannerVisibility();
     }
 
-    controlMedia(target, action) {
-        const type = target === 'answer' ? 'answer' : 'question';
+    async controlMedia(target, action) {
+        const type = target || this.getMediaControlTarget();
         const mediaHost = this._refs[`${type}MediaHost`];
         const video = mediaHost?.querySelector('video:not([hidden])');
         const firstAudio = this._refs[`${type}AudioList`]?.querySelector('.qmodal__audioTrack');
+        const normalizedAction = action === 'pause' ? 'pause' : (action === 'stop' ? 'stop' : 'play');
 
-        const shouldPlay = action === 'play';
         if (video) {
-            if (shouldPlay) {
-                void video.play().catch(() => {});
-            } else {
-                try {
-                    video.pause();
-                    video.currentTime = 0;
-                } catch {}
+            if (normalizedAction === 'play') {
+                try { await video.play(); } catch {}
+                return !video.paused;
             }
-            return;
+            try {
+                video.pause();
+                if (normalizedAction === 'stop') video.currentTime = 0;
+            } catch {}
+            return false;
         }
 
-        if (!firstAudio) return;
-        if (shouldPlay) {
-            void firstAudio.play().catch(() => {});
+        if (!firstAudio) return false;
+        if (normalizedAction === 'play') {
+            try { await firstAudio.play(); } catch {}
+            return !firstAudio.paused;
+        }
+        try {
+            firstAudio.pause();
+            if (normalizedAction === 'stop') firstAudio.currentTime = 0;
+        } catch {}
+        return false;
+    }
+
+    getMediaControlTarget() {
+        if (this._displayMode === 'controller') return this._controllerMediaTarget || 'question';
+        if (this._mode === 'view' && this._isAnswerShown) return 'answer';
+        return 'question';
+    }
+
+    setControllerMediaTarget(target) {
+        this._controllerMediaTarget = target === 'answer' ? 'answer' : 'question';
+    }
+
+    setControllerMediaPlaying(isPlaying) {
+        this._controllerMediaPlaying = !!isPlaying;
+        const toggleBtn = this._refs.controllerMediaToggleBtn;
+        if (!toggleBtn) return;
+
+        if (this._controllerMediaPlaying) {
+            toggleBtn.dataset.action = 'pause';
+            toggleBtn.textContent = '❚❚';
+            toggleBtn.setAttribute('aria-label', t('pause_media'));
+            toggleBtn.setAttribute('title', t('pause_media'));
         } else {
-            try {
-                firstAudio.pause();
-                firstAudio.currentTime = 0;
-            } catch {}
+            toggleBtn.dataset.action = 'play';
+            toggleBtn.textContent = '▶';
+            toggleBtn.setAttribute('aria-label', t('play_media'));
+            toggleBtn.setAttribute('title', t('play_media'));
         }
     }
 
@@ -374,9 +407,13 @@ export class QuestionModalView {
         this._disposer.addEventListener(this._root, 'click', (e) => {
             const button = e.target.closest('.qmodal__controllerMediaBtn');
             if (!button) return;
-            const target = button.dataset.target || 'question';
             const action = button.dataset.action || 'play';
-            this._cb.onControllerMediaControl?.({ target, action });
+            this._cb.onControllerMediaControl?.({
+                action,
+                target: this.getMediaControlTarget(),
+            });
+            if (action === 'play') this.setControllerMediaPlaying(true);
+            if (action === 'pause' || action === 'stop') this.setControllerMediaPlaying(false);
         });
 
         // ── Media peek buttons (view mode: opens a lightbox overlay) ────────
