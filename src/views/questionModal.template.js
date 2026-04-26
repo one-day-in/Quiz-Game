@@ -191,10 +191,14 @@ export function buildModalDom() {
           <button type="button" class="qmodal__btn qmodal__btnToggleAnswer">
             👁️ ${t('show_answer')}
           </button>
-        </div>
 
-        <!-- Right: result buttons (equal width, side by side) -->
-        <div class="qmodal__footerRight">
+          <button
+            type="button"
+            class="qmodal__btn qmodal__btn--secondary qmodal__controllerAnswerToggleBtn"
+            aria-label="${t('show_answer')}"
+            title="${t('show_answer')}"
+            hidden
+          >👁️ ${t('show_answer')}</button>
           <div class="qmodal__controllerMediaControls qmodal__controllerSharedMediaControls" hidden>
             <button
               type="button"
@@ -211,6 +215,10 @@ export function buildModalDom() {
               title="${t('stop_media')}"
             >■</button>
           </div>
+        </div>
+
+        <!-- Right: result buttons (equal width, side by side) -->
+        <div class="qmodal__footerRight">
           <button type="button" class="qmodal__btn qmodal__btn--danger qmodal__btnIncorrect">
             ✕ ${t('not_correct')}
           </button>
@@ -252,6 +260,7 @@ export function buildModalDom() {
       btnToggleMode:      qs('.qmodal__btnToggleMode'),
       btnIncorrect:       qs('.qmodal__btnIncorrect'),
       btnCorrect:         qs('.qmodal__btnCorrect'),
+      answeredToggle:     qs('.qmodal__toggle'),
       answeredCheckbox:   qs('.qmodal__toggleInput'),
       toggleAnswerBtn:    qs('.qmodal__btnToggleAnswer'),
       footerLeft:         qs('.qmodal__footerLeft'),
@@ -289,6 +298,7 @@ export function buildModalDom() {
       controllerSharedMediaControls: qs('.qmodal__controllerSharedMediaControls'),
       controllerMediaToggleBtn: qs('.qmodal__controllerMediaToggleBtn'),
       controllerMediaStopBtn: qs('.qmodal__controllerMediaStopBtn'),
+      controllerAnswerToggleBtn: qs('.qmodal__controllerAnswerToggleBtn'),
     }
   };
 }

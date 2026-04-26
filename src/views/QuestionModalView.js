@@ -208,6 +208,22 @@ export class QuestionModalView {
         this._controllerMediaTarget = target === 'answer' ? 'answer' : 'question';
     }
 
+    setAnswerShown(isShown) {
+        this._isAnswerShown = !!isShown;
+        applyModeUI(this, this._refs);
+        renderAll(this, this._refs);
+        this.syncPressBannerVisibility();
+    }
+
+    toggleAnswerVisibility() {
+        if (this._mode !== 'view') return;
+        this._isAnswerShown = !this._isAnswerShown;
+        applyModeUI(this, this._refs);
+        renderAll(this, this._refs);
+        this.syncPressBannerVisibility();
+        this._cb.onViewStateChange?.({ mode: this._mode, isAnswerShown: this._isAnswerShown });
+    }
+
     setControllerMediaPlaying(isPlaying) {
         this._controllerMediaPlaying = !!isPlaying;
         const toggleBtn = this._refs.controllerMediaToggleBtn;
@@ -415,6 +431,12 @@ export class QuestionModalView {
             if (action === 'play') this.setControllerMediaPlaying(true);
             if (action === 'pause' || action === 'stop') this.setControllerMediaPlaying(false);
         });
+        this._disposer.addEventListener(r.controllerAnswerToggleBtn, 'click', () => {
+            this._cb.onControllerMediaControl?.({
+                action: 'toggle_answer',
+                target: this.getMediaControlTarget(),
+            });
+        });
 
         // ── Media peek buttons (view mode: opens a lightbox overlay) ────────
         // The body uses overflow:hidden + flex layout, so there is no scrollable
@@ -435,11 +457,7 @@ export class QuestionModalView {
         // ── Question ↔ Answer toggle (view mode) ───────────────────────────────
         this._disposer.addEventListener(r.toggleAnswerBtn, 'click', () => {
             if (r.toggleAnswerBtn.disabled || this._mode !== 'view') return;
-            this._isAnswerShown = !this._isAnswerShown;
-            applyModeUI(this, this._refs);
-            renderAll(this, this._refs);
-            this.syncPressBannerVisibility();
-            this._cb.onViewStateChange?.({ mode: this._mode, isAnswerShown: this._isAnswerShown });
+            this.toggleAnswerVisibility();
 
             if (this._isAnswerShown) {
                 requestAnimationFrame(() => {

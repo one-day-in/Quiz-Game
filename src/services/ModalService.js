@@ -300,6 +300,10 @@ export class ModalService {
           this._onControllerMediaControl?.({ target, action });
           return;
         }
+        if (action === 'toggle_answer') {
+          this.view?.toggleAnswerVisibility?.();
+          return;
+        }
         void this.controlMedia(target, action);
       },
     });
@@ -811,9 +815,14 @@ export class ModalService {
     if (type === 'modal_media_control') {
       return this.controlMedia(payload?.target, payload?.action);
     }
+    if (type === 'modal_toggle_answer') {
+      this.view?.toggleAnswerVisibility?.();
+      return;
+    }
     if (type === 'modal_view_state') {
       const nextTarget = payload?.isAnswerShown ? 'answer' : 'question';
       this.view?.setControllerMediaTarget?.(nextTarget);
+      this.view?.setAnswerShown?.(!!payload?.isAnswerShown);
       return;
     }
     if (type === 'modal_media_state') {

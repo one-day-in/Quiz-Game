@@ -180,6 +180,10 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
                 ? ({ target, isPlaying }) => { void hostControlChannel.send('modal_media_state', { target, isPlaying }); }
                 : null,
             onControllerMediaControl: ({ target, action }) => {
+                if (action === 'toggle_answer') {
+                    void hostControlChannel.send('modal_toggle_answer');
+                    return;
+                }
                 void hostControlChannel.send('modal_media_control', { target, action });
             },
             onControllerCommand: (type, payload = {}) => {
@@ -235,7 +239,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
                 return;
             }
 
-            if (hostMode === 'controller' && (type === 'modal_view_state' || type === 'modal_media_state')) {
+            if (hostMode === 'controller' && (type === 'modal_view_state' || type === 'modal_media_state' || type === 'close_modal')) {
                 modalService.runRemoteCommand(type, payload);
                 return;
             }

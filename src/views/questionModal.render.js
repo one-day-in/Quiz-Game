@@ -237,7 +237,8 @@ export function applyModeUI(view, refs) {
   }
 
   setHidden(refs.toggleAnswerBtn, isEdit || isController);
-  setHidden(refs.footerLeft, isController);
+  setHidden(refs.answeredToggle, isController);
+  setHidden(refs.footerLeft, false);
   setHidden(refs.controllerSharedMediaControls, !isController);
   setHidden(refs.btnIncorrect,   isEdit || isModifierMode);
   setHidden(refs.btnCorrect,     isEdit || isModifierMode);
@@ -517,6 +518,14 @@ export function renderAll(view, refs) {
     setHidden(refs.questionMediaPeekBtn, isController || !qHasMedia);
     setHidden(refs.answerMediaPeekBtn, isController || !aHasMedia);
     setHidden(refs.controllerSharedMediaControls, !isController || !hasAnyPlayableMedia);
+    if (refs.controllerAnswerToggleBtn) {
+      const showAnswer = !view._isAnswerShown;
+      refs.controllerAnswerToggleBtn.textContent = `👁️ ${showAnswer ? t('show_answer') : t('show_question')}`;
+      refs.controllerAnswerToggleBtn.setAttribute('aria-label', showAnswer ? t('show_answer') : t('show_question'));
+      refs.controllerAnswerToggleBtn.setAttribute('title', showAnswer ? t('show_answer') : t('show_question'));
+      refs.controllerAnswerToggleBtn.disabled = !aHasAny;
+      setHidden(refs.controllerAnswerToggleBtn, !isController);
+    }
     if (isController && !hasAnyPlayableMedia) {
       view.setControllerMediaPlaying?.(false);
     }
@@ -526,6 +535,7 @@ export function renderAll(view, refs) {
   } else {
     if (refs.toggleAnswerBtn) refs.toggleAnswerBtn.disabled = false;
     setHidden(refs.controllerSharedMediaControls, true);
+    setHidden(refs.controllerAnswerToggleBtn, true);
     if (isController) view.setControllerMediaPlaying?.(false);
   }
 
