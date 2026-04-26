@@ -5,12 +5,14 @@ import { showConfirm } from '../utils/confirm.js';
 import { adjustPlayerScore, resolveGamePress } from '../api/gameApi.js';
 import {
   isAutoCellModifier,
+  isDirectedBetModifier,
   isFlipScoreModifier,
   isStealLeaderPointsModifier,
 } from '../constants/cellModifiers.js';
 import { t } from '../i18n.js';
 
 const PRESS_RESPONSE_SECONDS = 30;
+const DIRECTED_BET_RESPONSE_SECONDS = 40;
 const MODIFIER_BANNER_SECONDS = 10;
 
 export class ModalService {
@@ -42,6 +44,9 @@ export class ModalService {
     this._isResolvingPressResult = false;
     this._activeModifier = null;
     this._modifierCloseTimer = null;
+    this._currentResolutionValue = 0;
+    this._isDirectedBetTimerMode = false;
+    this._directedBetTimerLabel = '';
   }
 
   _ensureContainer() {
@@ -97,10 +102,12 @@ export class ModalService {
       cellId: cellData.cellId
     };
     this._cellValue = Number(cellData.value) || 0;
+    this._currentResolutionValue = this._cellValue;
     this._activeModifier = cellData.modifier || null;
     const shouldAutoApplyModifier = this._shouldAutoApplyModifier(this._activeModifier);
+    const shouldUseDirectedBetModifier = this._shouldUseDirectedBetModifier(this._activeModifier);
 
-    if (!shouldAutoApplyModifier) {
+    if (!shouldAutoApplyModifier && !shouldUseDirectedBetModifier) {
       void this._resetPressRuntime();
     }
 
@@ -249,12 +256,17 @@ export class ModalService {
       },
 
       onModifierAcknowledge: () => this.close(),
+      onDirectedBetStart: ({ playerId, betValue }) => {
+        void this._startDirectedBetRound(playerId, betValue);
+      },
     });
 
     this.container.appendChild(this.view.el);
 
     if (shouldAutoApplyModifier) {
       void this._applyActiveModifierToCurrentPlayer();
+    } else if (shouldUseDirectedBetModifier) {
+      this._startDirectedBetSelection();
     } else {
       this._bindPressRuntime();
     }
@@ -315,6 +327,9 @@ export class ModalService {
     this._pressTimerPaused = false;
     this._isResolvingPressResult = false;
     this._activeModifier = null;
+    this._currentResolutionValue = 0;
+    this._isDirectedBetTimerMode = false;
+    this._directedBetTimerLabel = '';
     void this._pressRuntime?.closePress?.();
     if (this.container?.isConnected) this.container.innerHTML = '';
 
@@ -327,18 +342,25 @@ export class ModalService {
     this._isResolvingPressResult = true;
     this._clearPressCountdown();
     const winnerId = this._pressWinnerId;
-    const lockAcquired = await this._acquirePressResolutionLock(winnerId, { pressEnabled: true });
-    if (!lockAcquired) {
-      this._isResolvingPressResult = false;
-      return;
+    const shouldUseRuntimeLock = !this._isDirectedBetTimerMode;
+    if (shouldUseRuntimeLock) {
+      const lockAcquired = await this._acquirePressResolutionLock(winnerId, { pressEnabled: true });
+      if (!lockAcquired) {
+        this._isResolvingPressResult = false;
+        return;
+      }
     }
     try {
-      await adjustPlayerScore(this._game.getGameId(), winnerId, -this._cellValue);
+      await adjustPlayerScore(this._game.getGameId(), winnerId, -this._currentResolutionValue);
     } catch (e) {
       console.error('[ModalService] adjustPlayerScore (incorrect) failed:', e);
     }
-    // Reset press — modal stays open, another player can press
-    await this._resetPressRuntime();
+    if (this._isDirectedBetTimerMode) {
+      await this._openPressForRemainingPlayers();
+    } else {
+      // Reset press — modal stays open, another player can press
+      await this._resetPressRuntime();
+    }
     this._isResolvingPressResult = false;
   }
 
@@ -346,14 +368,17 @@ export class ModalService {
     if (!this._pressWinnerId || this._isResolvingPressResult) return;
     this._isResolvingPressResult = true;
     const winnerId = this._pressWinnerId;
-    const lockAcquired = await this._acquirePressResolutionLock(winnerId, { pressEnabled: false });
-    if (!lockAcquired) {
-      this._isResolvingPressResult = false;
-      this.close();
-      return;
+    const shouldUseRuntimeLock = !this._isDirectedBetTimerMode;
+    if (shouldUseRuntimeLock) {
+      const lockAcquired = await this._acquirePressResolutionLock(winnerId, { pressEnabled: false });
+      if (!lockAcquired) {
+        this._isResolvingPressResult = false;
+        this.close();
+        return;
+      }
     }
     try {
-      await adjustPlayerScore(this._game.getGameId(), winnerId, this._cellValue);
+      await adjustPlayerScore(this._game.getGameId(), winnerId, this._currentResolutionValue);
       await this._game?.setCurrentPlayerId?.(winnerId);
     } catch (e) {
       console.error('[ModalService] correct resolution failed:', e);
@@ -418,6 +443,10 @@ export class ModalService {
 
   _shouldAutoApplyModifier(modifier) {
     return isAutoCellModifier(modifier) && this._getPlayersSnapshot().length > 0;
+  }
+
+  _shouldUseDirectedBetModifier(modifier) {
+    return isDirectedBetModifier(modifier) && this._getPlayersSnapshot().length > 0;
   }
 
   _getCurrentModifierPlayer(playerId) {
@@ -515,7 +544,11 @@ export class ModalService {
     this._pressCountdownTimer = null;
     this._pressCountdownDeadline = null;
     this._pressCountdownRemainingMs = null;
-    this.view?.updatePressTimer?.(null);
+    if (this._isDirectedBetTimerMode) {
+      this.view?.updateDirectedBetTimer?.(null);
+    } else {
+      this.view?.updatePressTimer?.(null);
+    }
   }
 
   _pausePressCountdown() {
@@ -536,12 +569,20 @@ export class ModalService {
 
   _syncPressCountdownView() {
     if (!this._pressCountdownDeadline) {
-      this.view?.updatePressTimer?.(null);
+      if (this._isDirectedBetTimerMode) {
+        this.view?.updateDirectedBetTimer?.(null);
+      } else {
+        this.view?.updatePressTimer?.(null);
+      }
       return;
     }
 
     const secondsRemaining = Math.max(0, (this._pressCountdownDeadline - Date.now()) / 1000);
-    this.view?.updatePressTimer?.(secondsRemaining);
+    if (this._isDirectedBetTimerMode) {
+      this.view?.updateDirectedBetTimer?.(secondsRemaining, { label: this._directedBetTimerLabel });
+    } else {
+      this.view?.updatePressTimer?.(secondsRemaining);
+    }
   }
 
   _startPressCountdown(durationMs = PRESS_RESPONSE_SECONDS * 1000) {
@@ -588,6 +629,8 @@ export class ModalService {
     }
 
     this._setPressWinner(nextWinnerId, nextWinnerName);
+    this._currentResolutionValue = this._cellValue;
+    this.view?.setResolutionButtonsEnabled?.(null);
 
     if (nextWinnerId !== prevWinnerId) {
       this._clearPressCountdown();
@@ -607,6 +650,59 @@ export class ModalService {
     this._stopRuntimeSubscription = () => {
       stopSub?.();
     };
+  }
+
+  _normalizeDirectedBetValue(rawValue) {
+    const rounded = Math.round((Number(rawValue) || 0) / 100) * 100;
+    return Math.max(100, Math.min(500, rounded));
+  }
+
+  _startDirectedBetSelection() {
+    const players = this._getPlayersSnapshot();
+    if (!players.length) {
+      alert(t('modifier_not_available'));
+      this.close();
+      return;
+    }
+
+    const defaultBet = this._normalizeDirectedBetValue(this._cellValue || 300);
+    this._isDirectedBetTimerMode = false;
+    this._directedBetTimerLabel = '';
+    this.view?.setPressBannerSuppressed?.(true);
+    this.view?.updateDirectedBetTimer?.(null);
+    this.view?.showDirectedBetPanel?.({
+      players,
+      betOptions: [100, 200, 300, 400, 500],
+      defaultBet,
+    });
+    this.view?.setResolutionButtonsEnabled?.(false);
+  }
+
+  async _startDirectedBetRound(playerId, betValue) {
+    const player = this._getPlayersSnapshot().find((entry) => String(entry?.id) === String(playerId));
+    if (!player) return;
+
+    this._isDirectedBetTimerMode = true;
+    this._currentResolutionValue = this._normalizeDirectedBetValue(betValue);
+    this._directedBetTimerLabel = `${t('directed_bet_timer_label')} • ${player.name} • ${this._currentResolutionValue}`;
+    this._setPressWinner(player.id, player.name);
+    this.view?.hideDirectedBetPanel?.();
+    this.view?.setPressBannerSuppressed?.(true);
+    this.view?.setResolutionButtonsEnabled?.(true);
+    this._clearPressCountdown();
+    this._pressTimerPaused = false;
+    this._startPressCountdown(DIRECTED_BET_RESPONSE_SECONDS * 1000);
+  }
+
+  async _openPressForRemainingPlayers() {
+    this._isDirectedBetTimerMode = false;
+    this._directedBetTimerLabel = '';
+    this._currentResolutionValue = this._cellValue;
+    this.view?.setPressBannerSuppressed?.(false);
+    this.view?.updateDirectedBetTimer?.(null);
+    this.view?.setResolutionButtonsEnabled?.(null);
+    this._bindPressRuntime();
+    await this._resetPressRuntime();
   }
 
   destroy() {

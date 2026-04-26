@@ -4,6 +4,7 @@ import {
   getCellModifierBanner,
   getCellModifierOptions,
   isAutoCellModifier,
+  isDirectedBetModifier,
   isFlipScoreModifier,
   isStealLeaderPointsModifier,
 } from './cellModifiers.js';
@@ -14,6 +15,8 @@ describe('cell modifiers', () => {
     expect(isStealLeaderPointsModifier(CELL_MODIFIERS.STEAL_LEADER_POINTS)).toBe(true);
     expect(isAutoCellModifier(CELL_MODIFIERS.FLIP_SCORE)).toBe(true);
     expect(isAutoCellModifier(CELL_MODIFIERS.STEAL_LEADER_POINTS)).toBe(true);
+    expect(isDirectedBetModifier(CELL_MODIFIERS.DIRECTED_BET)).toBe(true);
+    expect(isAutoCellModifier(CELL_MODIFIERS.DIRECTED_BET)).toBe(false);
     expect(isFlipScoreModifier('quiz-spinner')).toBe(false);
     expect(isFlipScoreModifier(null)).toBe(false);
     expect(isFlipScoreModifier(undefined)).toBe(false);
@@ -31,6 +34,7 @@ describe('cell modifiers', () => {
       { value: '', label: 'no_modifier' },
       { value: CELL_MODIFIERS.FLIP_SCORE, label: 'flip_score_modifier' },
       { value: CELL_MODIFIERS.STEAL_LEADER_POINTS, label: 'steal_leader_points_modifier' },
+      { value: CELL_MODIFIERS.DIRECTED_BET, label: 'directed_bet_modifier' },
     ]);
   });
 

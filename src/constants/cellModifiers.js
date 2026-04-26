@@ -1,6 +1,7 @@
 export const CELL_MODIFIERS = Object.freeze({
   FLIP_SCORE: 'flip-score',
   STEAL_LEADER_POINTS: 'steal-leader-points',
+  DIRECTED_BET: 'directed-bet',
 });
 
 const MODIFIER_DEFINITIONS = Object.freeze({
@@ -21,7 +22,7 @@ export function isKnownCellModifier(modifier) {
 }
 
 export function isAutoCellModifier(modifier) {
-  return isKnownCellModifier(modifier);
+  return modifier === CELL_MODIFIERS.FLIP_SCORE || modifier === CELL_MODIFIERS.STEAL_LEADER_POINTS;
 }
 
 export function isFlipScoreModifier(modifier) {
@@ -30,6 +31,10 @@ export function isFlipScoreModifier(modifier) {
 
 export function isStealLeaderPointsModifier(modifier) {
   return modifier === CELL_MODIFIERS.STEAL_LEADER_POINTS;
+}
+
+export function isDirectedBetModifier(modifier) {
+  return modifier === CELL_MODIFIERS.DIRECTED_BET;
 }
 
 export function getCellModifierOptions(t) {
@@ -42,6 +47,10 @@ export function getCellModifierOptions(t) {
     {
       value: CELL_MODIFIERS.STEAL_LEADER_POINTS,
       label: t('steal_leader_points_modifier'),
+    },
+    {
+      value: CELL_MODIFIERS.DIRECTED_BET,
+      label: t('directed_bet_modifier'),
     },
   ];
 }

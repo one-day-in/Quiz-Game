@@ -26,6 +26,10 @@ export function buildModalDom() {
         <!-- Center: title -->
         <div class="qmodal__headerMain">
           <div class="qmodal__headerTitle"></div>
+          <div class="qmodal__directedTimer" hidden>
+            <span class="qmodal__directedTimerLabel">${t('directed_bet_timer_label')}</span>
+            <span class="qmodal__directedTimerValue">00:40</span>
+          </div>
         </div>
 
         <div class="qmodal__headerActions">
@@ -53,6 +57,16 @@ export function buildModalDom() {
           <div class="qmodal__modifierTitle"></div>
           <div class="qmodal__modifierSubtitle"></div>
           <div class="qmodal__modifierDetail"></div>
+        </div>
+        <div class="qmodal__directedBetPanel" hidden>
+          <div class="qmodal__directedBetTitle">${t('directed_bet_pick_player')}</div>
+          <div class="qmodal__directedBetSubtitle">${t('directed_bet_pick_subtitle')}</div>
+          <div class="qmodal__directedBetPlayers"></div>
+          <div class="qmodal__directedBetStakeLabel">${t('directed_bet_choose_stake')}</div>
+          <div class="qmodal__directedBetStake"></div>
+          <button type="button" class="qmodal__btn qmodal__btn--primary qmodal__directedBetStartBtn" disabled>
+            ${t('directed_bet_start')}
+          </button>
         </div>
         <div class="qmodal__emptyState">✏️ is empty</div>
 
@@ -206,11 +220,18 @@ export function buildModalDom() {
       pressBanner:        qs('.qmodal__pressBanner'),
       pressBannerMain:    qs('.qmodal__pressBannerMain'),
       pressBannerTimer:   qs('.qmodal__pressBannerTimer'),
+      directedTimer:      qs('.qmodal__directedTimer'),
+      directedTimerLabel: qs('.qmodal__directedTimerLabel'),
+      directedTimerValue: qs('.qmodal__directedTimerValue'),
       modifierPanel:      qs('.qmodal__modifierPanel'),
       modifierBadge:      qs('.qmodal__modifierBadge'),
       modifierTitle:      qs('.qmodal__modifierTitle'),
       modifierSubtitle:   qs('.qmodal__modifierSubtitle'),
       modifierDetail:     qs('.qmodal__modifierDetail'),
+      directedBetPanel:       qs('.qmodal__directedBetPanel'),
+      directedBetPlayers:     qs('.qmodal__directedBetPlayers'),
+      directedBetStake:       qs('.qmodal__directedBetStake'),
+      directedBetStartBtn:    qs('.qmodal__directedBetStartBtn'),
       headerModifier:     qs('.qmodal__modifierPicker'),
       btnToggleMode:      qs('.qmodal__btnToggleMode'),
       btnIncorrect:       qs('.qmodal__btnIncorrect'),

@@ -25,6 +25,7 @@ export class QuestionModalView {
         onDeleteAudio,
         onViewStateChange,
         onModifierAcknowledge,
+        onDirectedBetStart,
     }) {
         this._mode          = mode;
         this._headerTitle   = (headerTitle || '').trim();
@@ -34,11 +35,20 @@ export class QuestionModalView {
         this._question      = { ...(question || {}), audioFiles: question?.audioFiles || [] };
         this._answer        = { ...(answer   || {}), audioFiles: answer?.audioFiles   || [] };
         this._isAnswerShown = mode === 'edit';
+        this._isPressBannerSuppressed = false;
+        this._manualResolutionButtons = null;
+        this._directedBetState = {
+            visible: false,
+            players: [],
+            selectedPlayerId: null,
+            betOptions: [100, 200, 300, 400, 500],
+            selectedBet: 300,
+        };
 
         this._cb = {
             onClose, onIncorrect, onCorrect,
             onToggleAnswered, onSelectModifier, onQuestionChange, onAnswerChange,
-            onUploadMedia, onDeleteMedia, onAddAudio, onDeleteAudio, onViewStateChange, onModifierAcknowledge,
+            onUploadMedia, onDeleteMedia, onAddAudio, onDeleteAudio, onViewStateChange, onModifierAcknowledge, onDirectedBetStart,
         };
 
         const { root, refs } = buildModalDom();
@@ -59,8 +69,7 @@ export class QuestionModalView {
         renderAll(this, this._refs);
 
         // Result buttons start disabled — enabled only when a player claims the press
-        if (this._refs.btnIncorrect) this._refs.btnIncorrect.disabled = true;
-        if (this._refs.btnCorrect)   this._refs.btnCorrect.disabled   = true;
+        this._updateResolutionButtons();
 
         this._prefetchMedia(this._question.media);
         this._prefetchMedia(this._answer.media);
@@ -143,9 +152,56 @@ export class QuestionModalView {
         this.syncPressBannerVisibility({ animate: !!this._winnerName });
 
         // Enable/disable result buttons based on whether there is a winner
-        const hasWinner = !!this._winnerName;
-        if (this._refs.btnIncorrect) this._refs.btnIncorrect.disabled = !hasWinner;
-        if (this._refs.btnCorrect)   this._refs.btnCorrect.disabled   = !hasWinner;
+        this._updateResolutionButtons();
+    }
+
+    setPressBannerSuppressed(suppressed) {
+        this._isPressBannerSuppressed = !!suppressed;
+        this.syncPressBannerVisibility();
+    }
+
+    setResolutionButtonsEnabled(enabled = null) {
+        this._manualResolutionButtons = typeof enabled === 'boolean' ? enabled : null;
+        this._updateResolutionButtons();
+    }
+
+    showDirectedBetPanel({ players = [], betOptions = [100, 200, 300, 400, 500], defaultBet = 300 } = {}) {
+        this._directedBetState = {
+            visible: true,
+            players: Array.isArray(players) ? players : [],
+            selectedPlayerId: null,
+            betOptions: Array.isArray(betOptions) && betOptions.length ? betOptions : [100, 200, 300, 400, 500],
+            selectedBet: Number(defaultBet) || 300,
+        };
+        this.setResolutionButtonsEnabled(false);
+        if (this._refs.btnToggleMode) this._refs.btnToggleMode.disabled = true;
+        this._renderDirectedBetPanel();
+    }
+
+    hideDirectedBetPanel() {
+        this._directedBetState.visible = false;
+        if (this._refs.btnToggleMode) this._refs.btnToggleMode.disabled = false;
+        this._renderDirectedBetPanel();
+    }
+
+    updateDirectedBetTimer(secondsRemaining, { label = '' } = {}) {
+        const timerWrap = this._refs.directedTimer;
+        const timerValue = this._refs.directedTimerValue;
+        const timerLabel = this._refs.directedTimerLabel;
+        if (!timerWrap || !timerValue) return;
+
+        if (label && timerLabel) timerLabel.textContent = label;
+
+        if (!Number.isFinite(secondsRemaining)) {
+            timerWrap.hidden = true;
+            return;
+        }
+
+        const total = Math.max(0, Math.ceil(secondsRemaining));
+        const mins = Math.floor(total / 60);
+        const secs = total % 60;
+        timerValue.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        timerWrap.hidden = false;
     }
 
     updatePressTimer(secondsRemaining) {
@@ -172,7 +228,7 @@ export class QuestionModalView {
         const bannerEl = this._refs.pressBanner;
         if (!bannerEl) return;
 
-        const shouldShow = !!this._winnerName && !(this._mode === 'view' && this._isAnswerShown);
+        const shouldShow = !this._isPressBannerSuppressed && !!this._winnerName && !(this._mode === 'view' && this._isAnswerShown);
         if (!shouldShow) {
             bannerEl.hidden = true;
             bannerEl.classList.remove('is-visible');
@@ -255,6 +311,26 @@ export class QuestionModalView {
             if (!r.modifierPanel.hidden) {
                 this._cb.onModifierAcknowledge?.();
             }
+        });
+        this._disposer.addEventListener(r.directedBetPlayers, 'click', (e) => {
+            const button = e.target.closest('.qmodal__directedBetPlayerBtn');
+            if (!button) return;
+            this._directedBetState.selectedPlayerId = button.dataset.playerId || null;
+            this._renderDirectedBetPanel();
+        });
+        this._disposer.addEventListener(r.directedBetStake, 'click', (e) => {
+            const button = e.target.closest('.qmodal__directedBetStakeBtn');
+            if (!button) return;
+            this._directedBetState.selectedBet = Number(button.dataset.bet) || this._directedBetState.selectedBet;
+            this._renderDirectedBetPanel();
+        });
+        this._disposer.addEventListener(r.directedBetStartBtn, 'click', () => {
+            const selectedPlayerId = this._directedBetState.selectedPlayerId;
+            if (!selectedPlayerId) return;
+            this._cb.onDirectedBetStart?.({
+                playerId: selectedPlayerId,
+                betValue: Number(this._directedBetState.selectedBet) || 300,
+            });
         });
 
         // ── Media peek buttons (view mode: opens a lightbox overlay) ────────
@@ -357,6 +433,55 @@ export class QuestionModalView {
             if (!btn) return;
             this._cb.onDeleteAudio?.(btn.dataset.filename, btn.dataset.target);
         });
+    }
+
+    _renderDirectedBetPanel() {
+        const refs = this._refs;
+        if (!refs.directedBetPanel) return;
+
+        const state = this._directedBetState;
+        refs.directedBetPanel.hidden = !state.visible;
+        if (!state.visible) return;
+
+        if (refs.directedBetPlayers) {
+            refs.directedBetPlayers.innerHTML = '';
+            state.players.forEach((player) => {
+                const id = String(player?.id || '');
+                const name = String(player?.name || '');
+                const isSelected = id && state.selectedPlayerId === id;
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = `qmodal__directedBetPlayerBtn${isSelected ? ' is-active' : ''}`;
+                button.dataset.playerId = id;
+                button.textContent = name;
+                refs.directedBetPlayers.append(button);
+            });
+        }
+
+        if (refs.directedBetStake) {
+            refs.directedBetStake.innerHTML = '';
+            state.betOptions.forEach((bet) => {
+                const value = Number(bet) || 0;
+                const isSelected = value === Number(state.selectedBet);
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = `qmodal__directedBetStakeBtn${isSelected ? ' is-active' : ''}`;
+                button.dataset.bet = String(value);
+                button.textContent = String(value);
+                refs.directedBetStake.append(button);
+            });
+        }
+
+        if (refs.directedBetStartBtn) {
+            refs.directedBetStartBtn.disabled = !state.selectedPlayerId;
+        }
+    }
+
+    _updateResolutionButtons() {
+        const hasWinner = !!this._winnerName;
+        const enabled = this._manualResolutionButtons ?? hasWinner;
+        if (this._refs.btnIncorrect) this._refs.btnIncorrect.disabled = !enabled;
+        if (this._refs.btnCorrect) this._refs.btnCorrect.disabled = !enabled;
     }
 
     _openMediaLightbox(media, dialogEl) {
