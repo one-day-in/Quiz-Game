@@ -156,10 +156,10 @@ async function renderGame(user, gameId, gameName) {
         const roundNavigationService = createRoundNavigationService(gameService);
         const modalService = createModalService(gameService, mediaService, pressRuntimeService, playersService);
 
-        await gameService.initialize();
-        await playersService.initialize();
-        void warmBuzzerServer();
-        await pressRuntimeService.connect();
+        await Promise.all([
+            gameService.initialize(),
+            playersService.initialize(),
+        ]);
         gameService.restoreUiState();
 
         if (IS_DEV) {
@@ -202,6 +202,14 @@ async function renderGame(user, gameId, gameName) {
         };
 
         app.render();
+
+        // Keep game boot fast: connect press runtime in background.
+        void warmBuzzerServer();
+        void pressRuntimeService.connect().catch((error) => {
+            if (IS_DEV) {
+                console.info('[Bootstrap] press runtime connected via fallback:', error?.message || error);
+            }
+        });
     } catch (error) {
         console.error('[Bootstrap] Game load failed:', error);
         if (isGameNotFoundError(error)) {

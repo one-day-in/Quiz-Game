@@ -9,6 +9,9 @@ import { getActiveBuzzerUrl } from '../utils/localBuzzerUrl.js';
 
 const DEV_BUZZER_PORT = '8787';
 const FALLBACK_POLL_MS = 1000;
+const IS_DEV =
+  typeof window !== 'undefined' &&
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
 function resolveBuzzerUrl(overrideUrl = '') {
   const resolved = getActiveBuzzerUrl({ overrideUrl });
@@ -347,7 +350,9 @@ class HybridPressRuntimeService {
         this._activate(this._primary);
         void this._connectFallbackShadow();
       } catch (error) {
-        console.warn('[PressRuntimeService] websocket runtime unavailable, using API fallback:', error);
+        if (IS_DEV) {
+          console.info('[PressRuntimeService] websocket runtime unavailable, using API fallback:', error?.message || error);
+        }
         await this._fallback.connect();
         this._activate(this._fallback);
       } finally {
@@ -389,8 +394,8 @@ class HybridPressRuntimeService {
       const isExpectedSocketDrop =
         methodName === 'closePress' &&
         String(error?.message || '').includes('Buzzer socket is not connected');
-      if (!isExpectedSocketDrop) {
-        console.warn(`[PressRuntimeService] ${methodName} failed on websocket runtime, switching to fallback:`, error);
+      if (!isExpectedSocketDrop && IS_DEV) {
+        console.info(`[PressRuntimeService] ${methodName} failed on websocket runtime, switching to fallback:`, error?.message || error);
       }
       await this._fallback.connect();
       this._activate(this._fallback);
@@ -421,7 +426,9 @@ class HybridPressRuntimeService {
         }
       }
     } catch (error) {
-      console.warn('[PressRuntimeService] background fallback subscription failed:', error);
+      if (IS_DEV) {
+        console.info('[PressRuntimeService] background fallback subscription failed:', error?.message || error);
+      }
     }
   }
 }
