@@ -14,6 +14,8 @@ import { t } from '../i18n.js';
 const PRESS_RESPONSE_SECONDS = 30;
 const DIRECTED_BET_RESPONSE_SECONDS = 40;
 const MODIFIER_BANNER_SECONDS = 10;
+const PRESS_OPEN_RETRY_ATTEMPTS = 3;
+const PRESS_OPEN_RETRY_DELAY_MS = 220;
 
 export class ModalService {
   constructor(gameService, mediaService, pressRuntime, playersService) {
@@ -33,7 +35,6 @@ export class ModalService {
     this._questionTimer       = null;
     this._answerTimer         = null;
     this._stopRuntimeSubscription = null;
-    this._pressEnableTimer = null;
     this._pressWinnerId = null;
     this._cellValue = 0;
     this._pressCountdownTimer = null;
@@ -294,12 +295,10 @@ export class ModalService {
     // Flush any pending debounced text saves before clearing activeCell
     clearTimeout(this._questionTimer);
     clearTimeout(this._answerTimer);
-    clearTimeout(this._pressEnableTimer);
     clearTimeout(this._modifierCloseTimer);
     this._clearPressCountdown();
     this._questionTimer = null;
     this._answerTimer   = null;
-    this._pressEnableTimer = null;
     this._modifierCloseTimer = null;
     const cell = this.activeCell;
     if (cell) {
@@ -408,17 +407,29 @@ export class ModalService {
 
   async _resetPressRuntime() {
     try {
-      clearTimeout(this._pressEnableTimer);
-      this._pressEnableTimer = null;
-
       this._isResettingPressRuntime = true;
       this._clearPressCountdown();
       this._pressTimerPaused = false;
       this._setPressWinner(null, '');
-      await this._pressRuntime?.openPress?.();
+      await this._openPressRuntimeWithRetry();
     } catch (error) {
       console.error('[ModalService] Failed to reset press runtime:', error);
     }
+  }
+
+  async _openPressRuntimeWithRetry() {
+    let lastError = null;
+    for (let attempt = 1; attempt <= PRESS_OPEN_RETRY_ATTEMPTS; attempt += 1) {
+      try {
+        await this._pressRuntime?.openPress?.();
+        return true;
+      } catch (error) {
+        lastError = error;
+        if (attempt >= PRESS_OPEN_RETRY_ATTEMPTS) break;
+        await new Promise((resolve) => setTimeout(resolve, PRESS_OPEN_RETRY_DELAY_MS));
+      }
+    }
+    throw lastError || new Error('Failed to open press runtime');
   }
 
   _setPressWinner(winnerPlayerId = null, winnerName = '') {
