@@ -21,6 +21,8 @@ export function createAppController({
   scoreLogs = [],
   onAdjustPlayerScore = null,
   onLeaderboardExpandedChange = null,
+  onScoreLogsOpenChange = null,
+  onRoundChangeRequest = null,
 }) {
   let appViewRef = null; // { el, update } — kept alive across state changes
   const disposer = new Disposer();
@@ -56,7 +58,12 @@ export function createAppController({
       rounds: st.roundNames,
       currentRound: st.activeRoundId,
     });
-    if (picked !== null) roundNavigationService.setActiveRound(picked);
+    if (picked === null) return;
+    if (typeof onRoundChangeRequest === 'function') {
+      onRoundChangeRequest(picked);
+      return;
+    }
+    roundNavigationService.setActiveRound(picked);
   }
 
   function buildCellPayload({ roundId, rowId, cellId, value }) {
@@ -118,6 +125,7 @@ export function createAppController({
         showLeaderboardQr,
         scoreLogs,
         onLeaderboardExpandedChange,
+        onScoreLogsOpenChange,
       });
       root.appendChild(appViewRef.el);
       return;
@@ -159,6 +167,7 @@ export function createAppController({
     openCell: (payload, options) => openCell(payload, options),
     updateScoreLogs: (nextLogs) => appViewRef?.updateScoreLogs?.(nextLogs),
     setLeaderboardExpanded: (expanded, options = {}) => appViewRef?.setLeaderboardExpanded?.(expanded, options),
+    setScoreLogsOpen: (isOpen, options = {}) => appViewRef?.setScoreLogsOpen?.(isOpen, options),
     destroy: () => disposer.destroy()
   };
 }

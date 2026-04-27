@@ -161,6 +161,23 @@ class GameService {
         this._emit();
     }
 
+    setRoundStateLocal(nextState = {}) {
+        const activeRoundId = Number(nextState?.activeRoundId);
+        const pendingRoundRaw = nextState?.pendingRoundId;
+        const pendingRoundId = pendingRoundRaw === null || typeof pendingRoundRaw === 'undefined'
+            ? null
+            : Number(pendingRoundRaw);
+
+        if (Number.isFinite(activeRoundId) && activeRoundId >= 0) {
+            this.uiState.activeRoundId = activeRoundId;
+        }
+        this.uiState.isRoundTransitioning = !!nextState?.isRoundTransitioning;
+        this.uiState.pendingRoundId = Number.isFinite(pendingRoundId) && pendingRoundId >= 0
+            ? pendingRoundId
+            : null;
+        this._emit();
+    }
+
     getCell(roundId, rowId, cellId) {
         return this.model?.getCell(roundId, rowId, cellId) ?? null;
     }

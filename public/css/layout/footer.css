@@ -235,14 +235,43 @@
 }
 
 .leaderboard-panel__logsPopover {
-  width: min(clamp(280px, 42vw, 560px), calc(100vw - 24px));
-  max-height: min(calc(var(--leaderboard-panel-expanded-h) - 120px), calc(100dvh - 120px));
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  right: auto;
+  width: min(50vw, 920px);
+  min-width: 360px;
+  height: 90vh;
+  max-height: 90dvh;
+  padding: 18px;
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 100vmax rgba(2, 6, 23, 0.58),
+    var(--shadow-lg);
+  transform: translate(-50%, calc(-50% - 8px)) scale(0.98);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms var(--ease), transform 160ms var(--ease);
+}
+
+.leaderboard-panel__logsPopover.is-open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, -50%) scale(1);
 }
 
 .leaderboard-panel__logsList {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 4px;
 }
 
 .leaderboard-panel__logItem {
@@ -403,9 +432,9 @@
   width: 100%;
   max-width: 1600px;
   margin: 0 auto;
-  display: flex;
-  align-items: center;
-  gap: 20px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
   padding: 16px 18px 0;
 }
 
@@ -435,7 +464,7 @@
 
 .leaderboard-panel__selectionMeta {
   min-width: 0;
-  flex: 1 1 auto;
+  width: 100%;
 }
 
 .leaderboard-panel__selectionText {
@@ -456,8 +485,14 @@
 }
 
 .leaderboard-panel__scoreBar {
-  flex: 0 1 560px;
-  width: min(100%, 560px);
+  width: min(100%, 740px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.leaderboard-panel__scoreRow {
+  width: 100%;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 10px;
@@ -997,15 +1032,13 @@
   }
 
   .leaderboard-panel__controlsInner {
-    flex-direction: column;
-    align-items: stretch;
     gap: 14px;
     padding-top: 12px;
   }
 
   .leaderboard-panel__scoreBar {
     width: 100%;
-    max-width: 560px;
+    max-width: 740px;
     gap: 8px;
   }
 
@@ -1046,7 +1079,10 @@
 
 @media (max-width: 640px) {
   .leaderboard-panel__scoreBar {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .leaderboard-panel__scoreRow {
     gap: 6px;
   }
 
@@ -1073,6 +1109,14 @@
 
   .leaderboard-panel__copy {
     font-size: 14px;
+  }
+
+  .leaderboard-panel__logsPopover {
+    width: min(92vw, 640px);
+    min-width: 0;
+    height: 90vh;
+    max-height: 90dvh;
+    padding: 14px;
   }
 }
 

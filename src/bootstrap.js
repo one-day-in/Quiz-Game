@@ -175,6 +175,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
         const makeLogId = () => `log-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
         let appRef = null;
         let leaderboardPanelExpanded = false;
+        let scoreLogsOpen = false;
         let hostActivityPingTimer = null;
         let hostActivityStaleTimer = null;
         const ensureControllerInactiveBanner = () => {
@@ -234,6 +235,16 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
                 delta: Number(delta) || 0,
                 happenedAt: new Date().toISOString(),
             };
+        };
+        const sendRoundState = () => {
+            const uiState = gameService.getState()?.uiState || {};
+            void hostControlChannel.send('round_state', {
+                activeRoundId: Number(uiState?.activeRoundId) || 0,
+                isRoundTransitioning: !!uiState?.isRoundTransitioning,
+                pendingRoundId: Number.isFinite(Number(uiState?.pendingRoundId))
+                    ? Number(uiState.pendingRoundId)
+                    : null,
+            });
         };
         const modalService = createModalService(gameService, mediaService, pressRuntimeService, playersService, {
             presentationMode: hostMode === 'controller' ? 'controller' : 'host',
@@ -319,6 +330,17 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
                 leaderboardPanelExpanded = !!isExpanded;
                 void hostControlChannel.send('leaderboard_panel_state', { isExpanded: !!isExpanded });
             },
+            onScoreLogsOpenChange: (isOpen) => {
+                scoreLogsOpen = !!isOpen;
+                void hostControlChannel.send('score_logs_state', { isOpen: !!isOpen });
+            },
+            onRoundChangeRequest: (roundId) => {
+                if (hostMode === 'controller') {
+                    void hostControlChannel.send('round_set', { roundId });
+                    return;
+                }
+                void roundNavigationService.setActiveRound(roundId);
+            },
         });
         appRef = app;
 
@@ -330,6 +352,22 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
                 if (nextPlayerId === lastCurrentPlayerId) return;
                 lastCurrentPlayerId = nextPlayerId;
                 void hostControlChannel.send('current_player_state', { playerId: nextPlayerId });
+            });
+        }
+
+        let stopRoundBroadcast = null;
+        if (hostMode === 'host') {
+            let prevRoundSync = '';
+            stopRoundBroadcast = gameService.subscribe((state) => {
+                const ui = state?.uiState || {};
+                const nextSync = JSON.stringify({
+                    activeRoundId: Number(ui?.activeRoundId) || 0,
+                    isRoundTransitioning: !!ui?.isRoundTransitioning,
+                    pendingRoundId: Number.isFinite(Number(ui?.pendingRoundId)) ? Number(ui?.pendingRoundId) : null,
+                });
+                if (nextSync === prevRoundSync) return;
+                prevRoundSync = nextSync;
+                sendRoundState();
             });
         }
 
@@ -395,10 +433,36 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
                 return;
             }
 
+            if (type === 'score_logs_state') {
+                scoreLogsOpen = !!payload?.isOpen;
+                app.setScoreLogsOpen?.(scoreLogsOpen, { silent: true });
+                return;
+            }
+
+            if (type === 'score_logs_sync_request' && hostMode === 'host') {
+                void hostControlChannel.send('score_logs_state', { isOpen: !!scoreLogsOpen });
+                return;
+            }
+
             if (type === 'current_player_set' && hostMode === 'host') {
                 void gameService.setCurrentPlayerId(payload?.playerId || null).then(() => {
                     void hostControlChannel.send('current_player_state', { playerId: payload?.playerId || null });
                 });
+                return;
+            }
+
+            if (type === 'round_set' && hostMode === 'host') {
+                void roundNavigationService.setActiveRound(payload?.roundId);
+                return;
+            }
+
+            if (type === 'round_state') {
+                gameService.setRoundStateLocal(payload || {});
+                return;
+            }
+
+            if (type === 'round_sync_request' && hostMode === 'host') {
+                sendRoundState();
                 return;
             }
 
@@ -441,6 +505,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
                 });
             }
             stopCurrentPlayerBroadcast?.();
+            stopRoundBroadcast?.();
             stopHostControlSubscription?.();
             hostControlChannel?.destroy?.();
             playersService?.destroy?.();
@@ -458,7 +523,11 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
         if (hostMode === 'controller') {
             void hostControlChannel.send('host_runtime_state_request');
             void hostControlChannel.send('score_log_sync_request');
+            void hostControlChannel.send('score_logs_sync_request');
             void hostControlChannel.send('leaderboard_panel_sync_request');
+            void hostControlChannel.send('round_sync_request');
+        } else {
+            sendRoundState();
         }
 
         // Keep game boot fast: connect press runtime in background.

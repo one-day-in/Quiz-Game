@@ -21,6 +21,7 @@ export function AppView({
   showLeaderboardQr = true,
   scoreLogs = [],
   onLeaderboardExpandedChange = null,
+  onScoreLogsOpenChange = null,
 }) {
   const container = document.createElement('div');
   container.className = 'app-shell';
@@ -52,6 +53,7 @@ export function AppView({
     currentPlayerId: model?.getCurrentPlayerId?.() ?? null,
     onBackToLobby: isReadOnly ? null : onBackToLobby,
     onRoundClick,
+    onScoreLogsClick: () => leaderboardPanel?.toggleScoreLogs?.(),
     onCurrentPlayerChange: (isReadOnly && !allowCurrentPlayerControl) ? null : (playerId) => actions.setCurrentPlayer?.(playerId),
   });
   container.appendChild(header.el);
@@ -88,6 +90,7 @@ export function AppView({
         onAdjustPlayerScore: (playerId, delta) => actions.adjustPlayerScore?.(playerId, delta),
         onDeletePlayer: (isReadOnly && !allowLeaderboardControls) ? null : (playerId) => actions.removePlayer?.(playerId),
         onExpandedChange: (expanded) => onLeaderboardExpandedChange?.(expanded),
+        onScoreLogsOpenChange: (isOpen) => onScoreLogsOpenChange?.(isOpen),
         readOnly: isReadOnly && !allowLeaderboardControls,
         showQr: showLeaderboardQr,
       });
@@ -154,6 +157,10 @@ export function AppView({
     leaderboardPanel?.setExpanded?.(!!expanded, options);
   }
 
+  function setScoreLogsOpen(isOpen, options = {}) {
+    leaderboardPanel?.setScoreLogsOpen?.(!!isOpen, options);
+  }
+
   // Targeted patch for a single cell (avoids full grid rebuild)
   function patchCell(rowId, cellId, isAnswered) {
     const el = gridEl?.querySelector(`[data-cell="r${rowId}c${cellId}"]`);
@@ -164,5 +171,5 @@ export function AppView({
   renderLeaderboard(leaderboardPlayers);
   disposer.add(() => leaderboardPanel?.destroy?.());
 
-  return { el: container, update, updatePlayers, updateScoreLogs, setLeaderboardExpanded, patchCell, syncLive, setRoundTransition };
+  return { el: container, update, updatePlayers, updateScoreLogs, setLeaderboardExpanded, setScoreLogsOpen, patchCell, syncLive, setRoundTransition };
 }

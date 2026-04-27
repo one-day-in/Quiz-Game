@@ -20,6 +20,7 @@ export class LeaderboardPanelView {
     onAdjustPlayerScore = null,
     onDeletePlayer = null,
     onExpandedChange = null,
+    onScoreLogsOpenChange = null,
     readOnly = false,
     showQr = true
   } = {}) {
@@ -29,11 +30,13 @@ export class LeaderboardPanelView {
     this._onAdjustPlayerScore = onAdjustPlayerScore;
     this._onDeletePlayer = onDeletePlayer;
     this._onExpandedChange = onExpandedChange;
+    this._onScoreLogsOpenChange = onScoreLogsOpenChange;
     this._readOnly = !!readOnly;
     this._showQr = !!showQr;
     this._isExpanded = false;
     this._openQrDock = null;
     this._selectedPlayerId = null;
+    this._isScoreLogsOpen = false;
 
     this._build();
     this._disposer = new ViewDisposer(this._root);
@@ -65,6 +68,10 @@ export class LeaderboardPanelView {
     this.setExpanded(!this._isExpanded);
   }
 
+  toggleScoreLogs() {
+    this.setScoreLogsOpen(!this._isScoreLogsOpen);
+  }
+
   setExpanded(nextExpanded, { silent = false } = {}) {
     const isExpanded = !!nextExpanded;
     if (this._isExpanded === isExpanded) return;
@@ -75,10 +82,23 @@ export class LeaderboardPanelView {
     this._toggleBtn.setAttribute('aria-expanded', String(isExpanded));
     this._toggleBtn.setAttribute('aria-label', isExpanded ? t('close') : t('show_all_players'));
     this._toggleBtn.setAttribute('title', isExpanded ? t('close') : t('show_all_players'));
-    if (!isExpanded) this._setQrOpen(null);
+    if (!isExpanded) {
+      this._setQrOpen(null);
+      this.setScoreLogsOpen(false, { silent: true });
+    }
     if (!silent) {
       this._onExpandedChange?.(isExpanded);
     }
+  }
+
+  setScoreLogsOpen(nextOpen, { silent = false } = {}) {
+    const isOpen = !!nextOpen;
+    if (this._isScoreLogsOpen === isOpen) return;
+    this._isScoreLogsOpen = isOpen;
+    this._logsPopover?.setAttribute('aria-hidden', String(!isOpen));
+    this._logsPopover?.classList.toggle('is-open', isOpen);
+    this._root?.classList.toggle('is-score-logs-open', isOpen);
+    if (!silent) this._onScoreLogsOpenChange?.(isOpen);
   }
 
   destroy() {
@@ -117,26 +137,6 @@ export class LeaderboardPanelView {
               </svg>
             </span>
           </button>
-
-          <div class="leaderboard-panel__qrDock leaderboard-panel__qrDock--logs" data-qr-dock="logs">
-            <button
-              class="leaderboard-panel__qrTrigger"
-              type="button"
-              aria-label="${t('score_logs')}"
-              aria-expanded="false"
-              title="${t('score_logs')}"
-            >
-              <svg class="leaderboard-panel__qrTriggerIcon" viewBox="0 0 24 24" focusable="false" aria-hidden="true">
-                <path d="M5 4h11l3 3v13H5z" />
-                <path d="M8 9h8M8 13h8M8 17h6" />
-              </svg>
-            </button>
-
-            <div class="leaderboard-panel__qrPopover leaderboard-panel__logsPopover" role="dialog" aria-label="${t('score_logs')}" aria-hidden="true">
-              <p class="leaderboard-panel__eyebrow">${t('score_logs')}</p>
-              <div class="leaderboard-panel__logsList"></div>
-            </div>
-          </div>
 
           ${this._showQr ? `
           <div class="leaderboard-panel__qrDock leaderboard-panel__qrDock--left" data-qr-dock="host">
@@ -189,6 +189,11 @@ export class LeaderboardPanelView {
           ` : ''}
         </div>
 
+        <div class="leaderboard-panel__logsPopover" role="dialog" aria-label="${t('score_logs')}" aria-hidden="true">
+          <p class="leaderboard-panel__eyebrow">${t('score_logs')}</p>
+          <div class="leaderboard-panel__logsList"></div>
+        </div>
+
         <div class="leaderboard-panel__preview">
           <div class="leaderboard-panel__previewMount"></div>
         </div>
@@ -223,6 +228,7 @@ export class LeaderboardPanelView {
     this._selectionText = root.querySelector('.leaderboard-panel__selectionText');
     this._scoreBar = root.querySelector('.leaderboard-panel__scoreBar');
     this._logsList = root.querySelector('.leaderboard-panel__logsList');
+    this._logsPopover = root.querySelector('.leaderboard-panel__logsPopover');
     this._playerQrImg = root.querySelector('.leaderboard-panel__playerQrImg');
     this._hostQrImg = root.querySelector('.leaderboard-panel__hostQrImg');
 
@@ -300,18 +306,27 @@ export class LeaderboardPanelView {
       if (this._isExpanded && this._openQrDock && !target.closest('.leaderboard-panel__qrDock')) {
         this._setQrOpen(null);
       }
+      if (this._isScoreLogsOpen && !target.closest('.leaderboard-panel__logsPopover') && !target.closest('.hdr-logs-btn')) {
+        this.setScoreLogsOpen(false);
+      }
       if (!this._isExpanded || !this._selectedPlayerId) return;
       if (target.closest('.leaderboard__rowWrap, .leaderboard__row')) return;
-      if (target.closest('.leaderboard-panel__scoreBar, .leaderboard-panel__qrDock, .leaderboard-panel__toggle')) return;
+      if (target.closest('.leaderboard-panel__scoreBar, .leaderboard-panel__qrDock, .leaderboard-panel__toggle, .leaderboard-panel__logsPopover, .hdr-logs-btn')) return;
 
       this._clearSelectedPlayer();
     }, true);
+
+    this._disposer.addEventListener(document, 'keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      if (this._isScoreLogsOpen) this.setScoreLogsOpen(false);
+    });
 
     bindOverlayDismiss({
       disposer: this._disposer,
       overlay: this._backdrop,
       onDismiss: () => {
         this._setQrOpen(null);
+        this.setScoreLogsOpen(false, { silent: true });
         this.setExpanded(false);
       },
       shouldDismissOnEscape: () => this._isExpanded,
@@ -349,20 +364,32 @@ export class LeaderboardPanelView {
   }
 
   _buildScoreBar() {
-    const deltas = [-500, -400, -300, -200, -100, 100, 200, 300, 400, 500];
-    for (const delta of deltas) {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'leaderboard-panel__scoreBtn';
-      button.textContent = delta > 0 ? `+${delta}` : String(delta);
-      button.dataset.delta = String(delta);
-      button.disabled = true;
-      this._disposer.addEventListener(button, 'click', () => {
-        if (this._readOnly) return;
-        if (!this._selectedPlayerId) return;
-        this._onAdjustPlayerScore?.(this._selectedPlayerId, delta);
-      });
-      this._scoreBar.appendChild(button);
+    const rows = [
+      { className: 'leaderboard-panel__scoreRow--negative', deltas: [-500, -400, -300, -200, -100] },
+      { className: 'leaderboard-panel__scoreRow--positive', deltas: [100, 200, 300, 400, 500] },
+    ];
+
+    for (const { className, deltas } of rows) {
+      const row = document.createElement('div');
+      row.className = `leaderboard-panel__scoreRow ${className}`;
+      row.setAttribute('role', 'presentation');
+
+      for (const delta of deltas) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'leaderboard-panel__scoreBtn';
+        button.textContent = delta > 0 ? `+${delta}` : String(delta);
+        button.dataset.delta = String(delta);
+        button.disabled = true;
+        this._disposer.addEventListener(button, 'click', () => {
+          if (this._readOnly) return;
+          if (!this._selectedPlayerId) return;
+          this._onAdjustPlayerScore?.(this._selectedPlayerId, delta);
+        });
+        row.appendChild(button);
+      }
+
+      this._scoreBar.appendChild(row);
     }
   }
 

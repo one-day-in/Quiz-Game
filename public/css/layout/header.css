@@ -438,7 +438,8 @@
 }
 /* ── Lobby + Logout buttons (same style as leaderboard button) ── */
 .hdr-lobby-btn,
-.hdr-logout-btn {
+.hdr-logout-btn,
+.hdr-logs-btn {
   height: 44px;
   padding: 0 16px;
 
@@ -470,7 +471,8 @@
 }
 
 .hdr-lobby-btn:hover,
-.hdr-logout-btn:hover {
+.hdr-logout-btn:hover,
+.hdr-logs-btn:hover {
   transform: translateY(calc(-1 * (var(--lift-y) / 3)));
   background: var(--btn-bg-hover);
   border-color: var(--border-5);
@@ -479,13 +481,32 @@
 }
 
 .hdr-lobby-btn:active,
-.hdr-logout-btn:active {
+.hdr-logout-btn:active,
+.hdr-logs-btn:active {
   transform: translateY(var(--btn-press-y));
   filter: brightness(0.98);
 }
 
 .hdr-lobby-btn:focus-visible,
-.hdr-logout-btn:focus-visible {
+.hdr-logout-btn:focus-visible,
+.hdr-logs-btn:focus-visible {
   outline: none;
   box-shadow: var(--shadow-md), var(--ring);
+}
+
+.hdr-logs-btn {
+  width: 44px;
+  min-width: 44px;
+  padding: 0;
+  border-radius: 999px;
+}
+
+.hdr-logs-btn-icon {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
 }

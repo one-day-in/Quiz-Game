@@ -12,6 +12,7 @@ export function HeaderView({
   currentPlayerId = null,
   onBackToLobby,
   onRoundClick,
+  onScoreLogsClick,
   onCurrentPlayerChange,
 }) {
   const el = document.createElement('header');
@@ -21,10 +22,20 @@ export function HeaderView({
   let currentPlayers = Array.isArray(players) ? players.slice() : [];
   let currentChooserId = currentPlayerId ? String(currentPlayerId) : null;
   let isChooserMenuOpen = false;
+  const canBackToLobby = typeof onBackToLobby === 'function';
+  const canOpenScoreLogs = typeof onScoreLogsClick === 'function';
 
   el.innerHTML = `
     <div class="hdr-left">
-      <button class="hdr-lobby-btn" type="button" title="${escapeHtml(t('back_to_lobby'))}">← ${escapeHtml(t('lobby'))}</button>
+      ${canOpenScoreLogs ? `
+      <button class="hdr-logs-btn" type="button" title="${escapeHtml(t('score_logs'))}" aria-label="${escapeHtml(t('score_logs'))}">
+        <svg class="hdr-logs-btn-icon" viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+          <path d="M5 4h11l3 3v13H5z" />
+          <path d="M8 9h8M8 13h8M8 17h6" />
+        </svg>
+      </button>
+      ` : ''}
+      ${canBackToLobby ? `<button class="hdr-lobby-btn" type="button" title="${escapeHtml(t('back_to_lobby'))}">← ${escapeHtml(t('lobby'))}</button>` : ''}
       <button class="round-indicator" type="button" title="${escapeHtml(t('switch_round'))}">
         ${escapeHtml(t('round'))}: <b class="js-round-value"></b>
       </button>
@@ -137,7 +148,8 @@ export function HeaderView({
     onCurrentPlayerChange?.(button.dataset.playerId || null);
   });
 
-  el.querySelector('.hdr-lobby-btn').addEventListener('click', () => onBackToLobby?.());
+  el.querySelector('.hdr-logs-btn')?.addEventListener('click', () => onScoreLogsClick?.());
+  el.querySelector('.hdr-lobby-btn')?.addEventListener('click', () => onBackToLobby?.());
   el.querySelector('.round-indicator').addEventListener('click', () => onRoundClick?.());
   document.addEventListener('pointerdown', handleDocumentPointerDown);
   document.addEventListener('keydown', handleDocumentKeyDown);
