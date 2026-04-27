@@ -79,6 +79,7 @@ The project expects:
 - a `games` table for board data
 - a `game_players` table and RPC functions for player join/rename/score/leave
 - a `game_runtime` table plus `claim_game_press(...)` and `resolve_game_press(...)` for press winner state
+- a `score_logs` table for score-change history sync between host/controller
 - a `media` storage bucket
 - a `service_role` key for the dedicated buzzer server
 
@@ -87,6 +88,7 @@ Apply the SQL files in [/Users/oneday_in/Desktop/Quiz-Game/supabase](/Users/oned
 - [games.sql](/Users/oneday_in/Desktop/WEB-products/Quiz-Game/supabase/games.sql)
 - [game_players.sql](/Users/oneday_in/Desktop/Quiz-Game/supabase/game_players.sql)
 - [game_runtime.sql](/Users/oneday_in/Desktop/Quiz-Game/supabase/game_runtime.sql)
+- [score_logs.sql](/Users/oneday_in/Desktop/Quiz-Game/supabase/score_logs.sql)
 
 Recommended `games` RLS:
 

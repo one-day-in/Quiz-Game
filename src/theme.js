@@ -2,7 +2,7 @@ const THEME_KEY = 'quiz-game:ui-theme';
 const DEFAULT_THEME = 'base';
 const listeners = new Set();
 
-const supportedThemes = Object.freeze(['base', 'skillcore', 'play-listen']);
+const supportedThemes = Object.freeze(['base', 'skillcore', 'play-listen', 'birthday']);
 
 function canUseStorage() {
   if (typeof window === 'undefined') return false;

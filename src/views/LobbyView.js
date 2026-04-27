@@ -11,6 +11,7 @@ const THEME_OPTIONS = Object.freeze([
     { id: 'base', labelKey: 'theme_base' },
     { id: 'skillcore', labelKey: 'theme_skillcore' },
     { id: 'play-listen', labelKey: 'theme_play_listen' },
+    { id: 'birthday', labelKey: 'theme_birthday' },
 ]);
 
 export class LobbyView {

@@ -1,6 +1,7 @@
 // src/bootstrap.js
 import { getSession, signOut, onAuthStateChange } from './api/authApi.js';
 import { createGame } from './api/gameApi.js';
+import { insertScoreLog, listScoreLogs, subscribeToScoreLogs } from './api/scoreLogsApi.js';
 import { syncCurrentUserProfile } from './api/profileApi.js';
 import { escapeHtml } from './utils/utils.js';
 import { createAppController } from './AppController.js';
@@ -29,6 +30,8 @@ const LAST_GAME_NAME_KEY = 'lastGameName';
 const BUZZER_WARMUP_TIMEOUT_MS = 1200;
 const HOST_ACTIVITY_PING_MS = 3000;
 const HOST_ACTIVITY_STALE_MS = 9000;
+const SCORE_LOGS_LIMIT = 500;
+const SCORE_LOGS_KEY_PREFIX = 'quiz-game:score-logs:';
 let _buzzerWarmupAttempted = false;
 let _buzzerWarmupSuppressed = false;
 
@@ -49,6 +52,41 @@ function getLastGame() {
     const id = localStorage.getItem(LAST_GAME_ID_KEY);
     if (!id) return null;
     return { id, name: localStorage.getItem(LAST_GAME_NAME_KEY) || t('new_game') };
+}
+
+function canUseStorage() {
+    try {
+        return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+    } catch {
+        return false;
+    }
+}
+
+function getScoreLogsStorageKey(gameId) {
+    return `${SCORE_LOGS_KEY_PREFIX}${gameId}`;
+}
+
+function loadScoreLogsFromStorage(gameId) {
+    if (!canUseStorage() || !gameId) return [];
+    try {
+        const raw = window.localStorage.getItem(getScoreLogsStorageKey(gameId));
+        const parsed = JSON.parse(raw || '[]');
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
+}
+
+function saveScoreLogsToStorage(gameId, logs = []) {
+    if (!canUseStorage() || !gameId) return;
+    try {
+        window.localStorage.setItem(
+            getScoreLogsStorageKey(gameId),
+            JSON.stringify(Array.isArray(logs) ? logs.slice(0, SCORE_LOGS_LIMIT) : [])
+        );
+    } catch {
+        // Ignore storage quota and private-mode failures.
+    }
 }
 
 function isGameNotFoundError(error) {
@@ -171,7 +209,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
             role: hostMode === 'controller' ? 'controller' : 'host',
         });
         const roundNavigationService = createRoundNavigationService(gameService);
-        let scoreLogs = [];
+        let scoreLogs = loadScoreLogsFromStorage(gameId).slice(0, SCORE_LOGS_LIMIT);
         const makeLogId = () => `log-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
         let appRef = null;
         let leaderboardPanelExpanded = false;
@@ -179,6 +217,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
         let hostActivityPingTimer = null;
         let hostActivityStaleTimer = null;
         let roundSyncRetryTimer = null;
+        let stopScoreLogsSubscription = null;
         let hasRoundStateSynced = false;
         const ensureControllerInactiveBanner = () => {
             let banner = root.querySelector('.app-mainHostBanner');
@@ -203,24 +242,53 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
                 setControllerAvailability(false);
             }, HOST_ACTIVITY_STALE_MS);
         };
+        const normalizeScoreLog = (entry = {}) => ({
+            id: entry?.id || makeLogId(),
+            playerId: entry?.playerId || null,
+            playerName: entry?.playerName || t('player_fallback'),
+            cellLabel: entry?.cellLabel || '',
+            outcome: entry?.outcome || null,
+            delta: Number(entry?.delta) || 0,
+            happenedAt: entry?.happenedAt || new Date().toISOString(),
+            kind: entry?.kind || 'manual',
+        });
+        const dedupeAndSortScoreLogs = (entries = []) => {
+            const byId = new Map();
+            for (const raw of entries) {
+                const entry = normalizeScoreLog(raw);
+                if (!entry.id) continue;
+                if (!byId.has(entry.id)) {
+                    byId.set(entry.id, entry);
+                    continue;
+                }
+                const prev = byId.get(entry.id);
+                const prevTs = Date.parse(prev?.happenedAt || '') || 0;
+                const nextTs = Date.parse(entry?.happenedAt || '') || 0;
+                if (nextTs >= prevTs) byId.set(entry.id, entry);
+            }
+            return Array.from(byId.values())
+                .sort((a, b) => (Date.parse(b?.happenedAt || '') || 0) - (Date.parse(a?.happenedAt || '') || 0))
+                .slice(0, SCORE_LOGS_LIMIT);
+        };
+        const mergeScoreLogs = (primary = [], secondary = []) =>
+            dedupeAndSortScoreLogs([...(Array.isArray(primary) ? primary : []), ...(Array.isArray(secondary) ? secondary : [])]);
         const setScoreLogs = (nextLogs = []) => {
-            scoreLogs = Array.isArray(nextLogs) ? nextLogs.slice(0, 200) : [];
+            scoreLogs = dedupeAndSortScoreLogs(nextLogs);
+            if (hostMode === 'host') {
+                saveScoreLogsToStorage(gameId, scoreLogs);
+            }
             appRef?.updateScoreLogs?.(scoreLogs);
         };
-        const appendScoreLog = (entry, { broadcast = true } = {}) => {
-            const nextEntry = {
-                id: entry?.id || makeLogId(),
-                playerId: entry?.playerId || null,
-                playerName: entry?.playerName || t('player_fallback'),
-                cellLabel: entry?.cellLabel || '',
-                outcome: entry?.outcome || null,
-                delta: Number(entry?.delta) || 0,
-                happenedAt: entry?.happenedAt || new Date().toISOString(),
-                kind: entry?.kind || 'manual',
-            };
+        const appendScoreLog = (entry, { broadcast = true, persistRemote = false } = {}) => {
+            const nextEntry = normalizeScoreLog(entry);
             setScoreLogs([nextEntry, ...scoreLogs]);
             if (broadcast) {
                 void hostControlChannel.send('score_log_append', nextEntry);
+            }
+            if (persistRemote && hostMode === 'host') {
+                void insertScoreLog(gameId, nextEntry).catch((error) => {
+                    console.warn('[Bootstrap] score log remote insert skipped:', error?.message || error);
+                });
             }
             return nextEntry;
         };
@@ -285,7 +353,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
                 ? ({ target, isPlaying }) => { void hostControlChannel.send('modal_media_state', { target, isPlaying }); }
                 : null,
             onScoreLog: hostMode === 'host'
-                ? (entry) => { appendScoreLog(entry, { broadcast: true }); }
+                ? (entry) => { appendScoreLog(entry, { broadcast: true, persistRemote: true }); }
                 : null,
             onControllerMediaControl: ({ target, action }) => {
                 if (action === 'toggle_answer') {
@@ -309,6 +377,19 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
             || gameName
             || t('new_game')
         );
+
+        try {
+            const remoteScoreLogs = await listScoreLogs(gameId, { limit: SCORE_LOGS_LIMIT });
+            setScoreLogs(mergeScoreLogs(remoteScoreLogs, scoreLogs));
+        } catch (error) {
+            console.warn('[Bootstrap] score logs remote load skipped:', error?.message || error);
+        }
+
+        if (hostMode === 'controller') {
+            stopScoreLogsSubscription = subscribeToScoreLogs(gameId, (entry) => {
+                appendScoreLog(entry, { broadcast: false, persistRemote: false });
+            });
+        }
 
         if (IS_DEV) {
             window.gameService = gameService;
@@ -346,7 +427,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
                     return;
                 }
                 await playersService.adjustPlayerScore(playerId, delta);
-                appendScoreLog(makeManualScoreLog({ playerId, delta }), { broadcast: true });
+                appendScoreLog(makeManualScoreLog({ playerId, delta }), { broadcast: true, persistRemote: true });
             },
             onCurrentPlayerChange: async (playerId) => {
                 if (hostMode === 'controller') {
@@ -461,12 +542,12 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
             }
 
             if (type === 'score_log_append') {
-                appendScoreLog(payload, { broadcast: false });
+                appendScoreLog(payload, { broadcast: false, persistRemote: false });
                 return;
             }
 
             if (type === 'score_log_snapshot') {
-                setScoreLogs(payload?.logs || []);
+                setScoreLogs(mergeScoreLogs(payload?.logs || [], scoreLogs));
                 return;
             }
 
@@ -517,7 +598,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
 
             if (type === 'leaderboard_adjust_score' && hostMode === 'host') {
                 void playersService.adjustPlayerScore(payload?.playerId, payload?.delta).then(() => {
-                    appendScoreLog(makeManualScoreLog({ playerId: payload?.playerId, delta: payload?.delta }), { broadcast: true });
+                    appendScoreLog(makeManualScoreLog({ playerId: payload?.playerId, delta: payload?.delta }), { broadcast: true, persistRemote: true });
                 });
                 return;
             }
@@ -556,6 +637,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
             }
             stopCurrentPlayerBroadcast?.();
             stopRoundBroadcast?.();
+            stopScoreLogsSubscription?.();
             stopHostControlSubscription?.();
             hostControlChannel?.destroy?.();
             playersService?.destroy?.();
