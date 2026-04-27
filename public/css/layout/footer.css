@@ -318,6 +318,17 @@
   overflow: auto;
   padding-right: 8px;
   overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
+.leaderboard-panel__logsList::after {
+  content: "";
+  display: block;
+  flex: 0 0 64px;
+  min-height: 64px;
+  width: 100%;
+  pointer-events: none;
 }
 
 .leaderboard-panel__logItem {
@@ -540,23 +551,35 @@
 }
 
 .leaderboard-panel__scoreBar {
-  width: min(100%, 740px);
+  width: min(100%, 100%);
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: nowrap;
   gap: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 2px 2px 6px;
+  scrollbar-width: thin;
 }
 
-.leaderboard-panel__scoreRow {
-  width: 100%;
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 10px;
+.leaderboard-panel__scoreBar::-webkit-scrollbar {
+  height: 8px;
+}
+
+.leaderboard-panel__scoreBar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.leaderboard-panel__scoreBar::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .leaderboard-panel__scoreBtn {
   font-family: var(--font-label);
-  width: 100%;
-  min-width: 0;
+  flex: 0 0 96px;
+  width: 96px;
+  min-width: 96px;
   min-height: 50px;
   padding: 0 10px;
   border-radius: 999px;
@@ -760,7 +783,10 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
-  overflow: hidden;
+  overflow: visible;
+  align-content: start;
+  padding-top: 6px;
+  padding-bottom: 10px;
 }
 
 .leaderboard--footer .leaderboard__list--cards.is-empty {
@@ -1093,7 +1119,7 @@
 
   .leaderboard-panel__scoreBar {
     width: 100%;
-    max-width: 740px;
+    max-width: 100%;
     gap: 8px;
   }
 
@@ -1137,12 +1163,11 @@
     gap: 6px;
   }
 
-  .leaderboard-panel__scoreRow {
-    gap: 6px;
-  }
-
   .leaderboard-panel__scoreBtn {
     min-height: 44px;
+    flex-basis: 90px;
+    width: 90px;
+    min-width: 90px;
     font-size: 13px;
     letter-spacing: 0.03em;
     padding: 0 6px;
@@ -1194,6 +1219,11 @@
 
   .leaderboard-panel__logMain strong {
     font-size: 17px;
+  }
+
+  .leaderboard-panel__logsList::after {
+    flex-basis: 72px;
+    min-height: 72px;
   }
 }
 

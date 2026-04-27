@@ -384,32 +384,20 @@ export class LeaderboardPanelView {
   }
 
   _buildScoreBar() {
-    const rows = [
-      { className: 'leaderboard-panel__scoreRow--negative', deltas: [-500, -400, -300, -200, -100] },
-      { className: 'leaderboard-panel__scoreRow--positive', deltas: [100, 200, 300, 400, 500] },
-    ];
-
-    for (const { className, deltas } of rows) {
-      const row = document.createElement('div');
-      row.className = `leaderboard-panel__scoreRow ${className}`;
-      row.setAttribute('role', 'presentation');
-
-      for (const delta of deltas) {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'leaderboard-panel__scoreBtn';
-        button.textContent = delta > 0 ? `+${delta}` : String(delta);
-        button.dataset.delta = String(delta);
-        button.disabled = true;
-        this._disposer.addEventListener(button, 'click', () => {
-          if (this._readOnly) return;
-          if (!this._selectedPlayerId) return;
-          this._onAdjustPlayerScore?.(this._selectedPlayerId, delta);
-        });
-        row.appendChild(button);
-      }
-
-      this._scoreBar.appendChild(row);
+    const deltas = [-500, -400, -300, -200, -100, 100, 200, 300, 400, 500];
+    for (const delta of deltas) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'leaderboard-panel__scoreBtn';
+      button.textContent = delta > 0 ? `+${delta}` : String(delta);
+      button.dataset.delta = String(delta);
+      button.disabled = true;
+      this._disposer.addEventListener(button, 'click', () => {
+        if (this._readOnly) return;
+        if (!this._selectedPlayerId) return;
+        this._onAdjustPlayerScore?.(this._selectedPlayerId, delta);
+      });
+      this._scoreBar.appendChild(button);
     }
   }
 
