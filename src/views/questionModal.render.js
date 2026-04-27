@@ -198,7 +198,7 @@ function fitViewText(refs, type) {
   if (maxHeight <= 0) return;
 
   let size = parseFloat(window.getComputedStyle(textEl).fontSize);
-  const minSize = 16;
+  const minSize = 12;
 
   while (textEl.scrollHeight > maxHeight && size > minSize) {
     size -= 1;
@@ -509,10 +509,12 @@ export function renderAll(view, refs) {
   // Post-render: check whether media needs to collapse to a peek button.
   // Must run in a requestAnimationFrame so layout is settled and offsetHeight
   // values reflect the actual rendered dimensions.
-  if (view._mode === 'view' && !isController) {
+  if (view._mode === 'view') {
     requestAnimationFrame(() => {
-      checkMediaCollapse(view, refs, 'question');
-      checkMediaCollapse(view, refs, 'answer');
+      if (!isController) {
+        checkMediaCollapse(view, refs, 'question');
+        checkMediaCollapse(view, refs, 'answer');
+      }
       fitViewText(refs, 'question');
       fitViewText(refs, 'answer');
     });
