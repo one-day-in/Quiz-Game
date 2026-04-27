@@ -246,42 +246,42 @@
 
 :root[data-theme="birthday"] {
     --bg:
-        linear-gradient(145deg, rgba(78, 15, 93, 0.74), rgba(168, 30, 95, 0.62)),
+        linear-gradient(145deg, rgba(20, 34, 62, 0.42), rgba(122, 92, 26, 0.28)),
         url('../../images/themes/birthday-table.jpg') center center / cover no-repeat;
-    --bg-2: #210f2f;
+    --bg-2: #1a2232;
 
-    --surface: #2f1640;
-    --surface-2: #3c1d51;
-    --surface-3: #251235;
+    --surface: #1e2a3f;
+    --surface-2: #243552;
+    --surface-3: #182438;
 
-    --text: #fff8fb;
-    --text-soft: rgba(255, 248, 251, 0.9);
-    --muted: rgba(255, 223, 238, 0.86);
-    --muted-2: rgba(255, 194, 223, 0.78);
+    --text: #f9fcff;
+    --text-soft: rgba(249, 252, 255, 0.9);
+    --muted: rgba(214, 236, 255, 0.84);
+    --muted-2: rgba(185, 223, 255, 0.76);
 
-    --brand: #ff4fa0;
-    --brand-glow: rgba(255, 79, 160, 0.62);
-    --brand-a12: rgba(255, 79, 160, 0.12);
-    --brand-a18: rgba(255, 79, 160, 0.18);
-    --brand-a35: rgba(255, 79, 160, 0.35);
-    --brand-a55: rgba(255, 79, 160, 0.55);
+    --brand: #22c7b8;
+    --brand-glow: rgba(34, 199, 184, 0.56);
+    --brand-a12: rgba(34, 199, 184, 0.12);
+    --brand-a18: rgba(34, 199, 184, 0.18);
+    --brand-a35: rgba(34, 199, 184, 0.35);
+    --brand-a55: rgba(34, 199, 184, 0.55);
 
-    --btn-brand-bg: linear-gradient(180deg, #ff7ec6, #ff4fa0);
-    --btn-brand-text: #ffffff;
-    --btn-bg: linear-gradient(180deg, #4c2466, #2a1538);
-    --btn-bg-hover: linear-gradient(180deg, #5a2c78, #331a45);
-    --btn-outline-hover: rgba(255, 126, 198, 0.62);
-    --btn-glow-hover: 0 0 24px rgba(255, 126, 198, 0.46);
+    --btn-brand-bg: linear-gradient(180deg, #ffd86b, #ff9f43);
+    --btn-brand-text: #2a1b09;
+    --btn-bg: linear-gradient(180deg, #274164, #17263d);
+    --btn-bg-hover: linear-gradient(180deg, #2f4c73, #1b2e48);
+    --btn-outline-hover: rgba(125, 211, 252, 0.58);
+    --btn-glow-hover: 0 0 24px rgba(125, 211, 252, 0.4);
 
-    --cell-bg: linear-gradient(180deg, #ff8f3c, #ff4fa0);
-    --cell-bg-hover: linear-gradient(180deg, #ffd54d, #ff6fb2);
-    --topic-bg: linear-gradient(180deg, #ffcf5f, #ff8f3c);
-    --topic-border: rgba(255, 236, 164, 0.88);
-    --topic-cell-bg: linear-gradient(160deg, rgb(255 197 89 / 95%) 0%, rgb(255 111 178 / 40%) 52%, rgba(38, 13, 53, 0.99) 100%);
-    --topic-cell-border: rgba(255, 236, 164, 0.46);
-    --cell-empty-bg: #46225e;
+    --cell-bg: linear-gradient(180deg, #ffcf5f, #41c6d4);
+    --cell-bg-hover: linear-gradient(180deg, #ffe38a, #7dd3fc);
+    --topic-bg: linear-gradient(180deg, #93c5fd, #38bdf8);
+    --topic-border: rgba(219, 234, 254, 0.9);
+    --topic-cell-bg: linear-gradient(160deg, rgb(255 214 107 / 92%) 0%, rgb(74 222 128 / 28%) 50%, rgba(14, 29, 52, 0.94) 100%);
+    --topic-cell-border: rgba(219, 234, 254, 0.52);
+    --cell-empty-bg: #21324d;
 
-    --cell-border: rgba(255, 111, 178, 0.42);
-    --cell-border-hover: rgba(255, 213, 77, 0.66);
-    --cell-border-strong: rgba(255, 236, 164, 0.9);
+    --cell-border: rgba(125, 211, 252, 0.4);
+    --cell-border-hover: rgba(255, 227, 138, 0.74);
+    --cell-border-strong: rgba(219, 234, 254, 0.9);
 }
