@@ -178,6 +178,8 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
         let scoreLogsOpen = false;
         let hostActivityPingTimer = null;
         let hostActivityStaleTimer = null;
+        let roundSyncRetryTimer = null;
+        let hasRoundStateSynced = false;
         const ensureControllerInactiveBanner = () => {
             let banner = root.querySelector('.app-mainHostBanner');
             if (banner) return banner;
@@ -245,6 +247,31 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
                     ? Number(uiState.pendingRoundId)
                     : null,
             });
+        };
+        const requestControllerStateSync = () => {
+            if (hostMode !== 'controller') return;
+            void hostControlChannel.send('round_sync_request');
+            void hostControlChannel.send('leaderboard_panel_sync_request');
+            void hostControlChannel.send('score_logs_sync_request');
+            void hostControlChannel.send('current_player_sync_request');
+        };
+        const startRoundSyncRetry = () => {
+            if (hostMode !== 'controller') return;
+            if (roundSyncRetryTimer) return;
+            requestControllerStateSync();
+            roundSyncRetryTimer = window.setInterval(() => {
+                if (hasRoundStateSynced) {
+                    window.clearInterval(roundSyncRetryTimer);
+                    roundSyncRetryTimer = null;
+                    return;
+                }
+                requestControllerStateSync();
+            }, 1500);
+        };
+        const stopRoundSyncRetry = () => {
+            if (!roundSyncRetryTimer) return;
+            window.clearInterval(roundSyncRetryTimer);
+            roundSyncRetryTimer = null;
         };
         const modalService = createModalService(gameService, mediaService, pressRuntimeService, playersService, {
             presentationMode: hostMode === 'controller' ? 'controller' : 'host',
@@ -391,6 +418,12 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
 
             if (type === 'host_runtime_state' && hostMode === 'controller') {
                 markMainHostActiveFromPing(payload?.active !== false);
+                if (payload?.active === false) {
+                    hasRoundStateSynced = false;
+                    stopRoundSyncRetry();
+                } else if (!hasRoundStateSynced) {
+                    startRoundSyncRetry();
+                }
                 return;
             }
 
@@ -399,6 +432,10 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
                     active: true,
                     sentAt: new Date().toISOString(),
                 });
+                sendRoundState();
+                void hostControlChannel.send('leaderboard_panel_state', { isExpanded: leaderboardPanelExpanded });
+                void hostControlChannel.send('score_logs_state', { isOpen: !!scoreLogsOpen });
+                void hostControlChannel.send('current_player_state', { playerId: gameService.getCurrentPlayerId?.() ?? null });
                 return;
             }
 
@@ -451,6 +488,11 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
                 return;
             }
 
+            if (type === 'current_player_sync_request' && hostMode === 'host') {
+                void hostControlChannel.send('current_player_state', { playerId: gameService.getCurrentPlayerId?.() ?? null });
+                return;
+            }
+
             if (type === 'round_set' && hostMode === 'host') {
                 void roundNavigationService.setActiveRound(payload?.roundId);
                 return;
@@ -458,6 +500,8 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
 
             if (type === 'round_state') {
                 gameService.setRoundStateLocal(payload || {});
+                hasRoundStateSynced = true;
+                stopRoundSyncRetry();
                 return;
             }
 
@@ -498,6 +542,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
             hostActivityPingTimer = null;
             window.clearTimeout(hostActivityStaleTimer);
             hostActivityStaleTimer = null;
+            stopRoundSyncRetry();
             if (hostMode === 'host') {
                 void hostControlChannel.send('host_runtime_state', {
                     active: false,
@@ -521,11 +566,11 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
 
         app.render();
         if (hostMode === 'controller') {
+            hasRoundStateSynced = false;
             void hostControlChannel.send('host_runtime_state_request');
             void hostControlChannel.send('score_log_sync_request');
-            void hostControlChannel.send('score_logs_sync_request');
-            void hostControlChannel.send('leaderboard_panel_sync_request');
-            void hostControlChannel.send('round_sync_request');
+            requestControllerStateSync();
+            startRoundSyncRetry();
         } else {
             sendRoundState();
         }
