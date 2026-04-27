@@ -83,11 +83,32 @@ export function createAppController({
     };
   }
 
+  function resolveCellPayload(payload) {
+    if (!payload) return null;
+    const roundId = Number(payload.roundId);
+    const rowId = Number(payload.rowId);
+    const cellId = Number(payload.cellId);
+    if (!Number.isFinite(roundId) || !Number.isFinite(rowId) || !Number.isFinite(cellId)) {
+      return payload;
+    }
+
+    const rebuilt = buildCellPayload({
+      roundId,
+      rowId,
+      cellId,
+      value: payload.value,
+    });
+
+    if (!rebuilt) return payload;
+    return rebuilt;
+  }
+
   function openCell(payload, { skipBroadcast = false } = {}) {
-    if (!payload) return;
-    modalService.showQuestionView(payload);
+    const resolvedPayload = resolveCellPayload(payload);
+    if (!resolvedPayload) return;
+    modalService.showQuestionView(resolvedPayload);
     if (!skipBroadcast) {
-      onCellOpen?.(payload);
+      onCellOpen?.(resolvedPayload);
     }
   }
 

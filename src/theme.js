@@ -5,9 +5,13 @@ const listeners = new Set();
 const supportedThemes = Object.freeze(['base', 'skillcore', 'play-listen', 'birthday']);
 
 function canUseStorage() {
-  if (typeof window === 'undefined') return false;
   try {
-    return typeof window.localStorage !== 'undefined';
+    if (typeof window === 'undefined') return false;
+    return (
+      typeof window.localStorage !== 'undefined' &&
+      typeof window.localStorage?.getItem === 'function' &&
+      typeof window.localStorage?.setItem === 'function'
+    );
   } catch {
     return false;
   }

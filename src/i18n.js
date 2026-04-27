@@ -469,7 +469,16 @@ const dictionaries = {
 const listeners = new Set();
 
 function canUseStorage() {
-  return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+  try {
+    return (
+      typeof window !== 'undefined' &&
+      typeof window.localStorage !== 'undefined' &&
+      typeof window.localStorage?.getItem === 'function' &&
+      typeof window.localStorage?.setItem === 'function'
+    );
+  } catch {
+    return false;
+  }
 }
 
 export function getSupportedLanguages() {
@@ -478,14 +487,22 @@ export function getSupportedLanguages() {
 
 export function getLanguage() {
   if (!canUseStorage()) return DEFAULT_LANGUAGE;
-  const stored = window.localStorage.getItem(LANGUAGE_KEY);
-  return getSupportedLanguages().includes(stored) ? stored : DEFAULT_LANGUAGE;
+  try {
+    const stored = window.localStorage.getItem(LANGUAGE_KEY);
+    return getSupportedLanguages().includes(stored) ? stored : DEFAULT_LANGUAGE;
+  } catch {
+    return DEFAULT_LANGUAGE;
+  }
 }
 
 export function setLanguage(nextLanguage) {
   const normalized = getSupportedLanguages().includes(nextLanguage) ? nextLanguage : DEFAULT_LANGUAGE;
   if (canUseStorage()) {
-    window.localStorage.setItem(LANGUAGE_KEY, normalized);
+    try {
+      window.localStorage.setItem(LANGUAGE_KEY, normalized);
+    } catch {
+      // Keep app functional when storage is blocked/unavailable.
+    }
   }
   if (typeof document !== 'undefined') {
     document.documentElement.lang = normalized;
