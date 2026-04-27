@@ -271,11 +271,16 @@ export class LeaderboardPanelView {
         </button>
       </header>
       <div class="leaderboard-panel__logsModalBody">
-        <div class="leaderboard-panel__logsList"></div>
+        <div class="leaderboard-panel__logsList">
+          <div class="leaderboard-panel__logsListTrack">
+            <div class="leaderboard-panel__logsItems"></div>
+            <div class="leaderboard-panel__logsListSpacer" aria-hidden="true"></div>
+          </div>
+        </div>
       </div>
     `;
     this._scoreLogsModal.setContent(content);
-    this._logsList = content.querySelector('.leaderboard-panel__logsList');
+    this._logsList = content.querySelector('.leaderboard-panel__logsItems');
     const closeBtn = content.querySelector('.leaderboard-panel__logsModalClose');
     this._disposer.addEventListener(closeBtn, 'click', () => this.setScoreLogsOpen(false));
   }

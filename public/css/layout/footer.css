@@ -313,9 +313,6 @@
 }
 
 .leaderboard-panel__logsList {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
@@ -323,14 +320,24 @@
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
+  scroll-padding-bottom: max(120px, env(safe-area-inset-bottom, 0px));
 }
 
-.leaderboard-panel__logsList::after {
-  content: "";
-  display: block;
-  flex: 0 0 64px;
-  min-height: 64px;
-  width: 100%;
+.leaderboard-panel__logsListTrack {
+  min-height: calc(100% + max(120px, env(safe-area-inset-bottom, 0px)));
+  display: flex;
+  flex-direction: column;
+}
+
+.leaderboard-panel__logsItems {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.leaderboard-panel__logsListSpacer {
+  flex: 0 0 auto;
+  height: max(120px, env(safe-area-inset-bottom, 0px));
   pointer-events: none;
 }
 
@@ -1224,9 +1231,8 @@
     font-size: 17px;
   }
 
-  .leaderboard-panel__logsList::after {
-    flex-basis: 72px;
-    min-height: 72px;
+  .leaderboard-panel__logsListSpacer {
+    height: max(120px, env(safe-area-inset-bottom, 0px));
   }
 }
 
