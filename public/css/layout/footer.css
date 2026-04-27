@@ -1253,36 +1253,36 @@
 }
 
 :root[data-theme="birthday"] .leaderboard-panel__shell {
-  border-color: rgba(186, 230, 253, 0.46);
+  border-color: rgba(210, 176, 255, 0.46);
   background:
-    linear-gradient(180deg, rgba(20, 37, 60, 0.9), rgba(15, 30, 50, 0.92)),
-    radial-gradient(680px 220px at 50% 0%, rgba(253, 224, 71, 0.12), transparent 72%);
+    linear-gradient(180deg, rgba(54, 38, 82, 0.9), rgba(33, 24, 52, 0.92)),
+    radial-gradient(680px 220px at 50% 0%, rgba(255, 209, 102, 0.12), transparent 72%);
   box-shadow:
-    0 16px 36px rgba(8, 20, 36, 0.42),
-    0 0 0 1px rgba(34, 211, 238, 0.12);
+    0 16px 36px rgba(20, 12, 35, 0.42),
+    0 0 0 1px rgba(255, 209, 102, 0.12);
 }
 
 :root[data-theme="birthday"] .leaderboard-panel__toggle:hover,
 :root[data-theme="birthday"] .leaderboard-panel__toggle:focus-visible {
   background:
-    radial-gradient(420px 90px at 50% 50%, rgba(254, 240, 138, 0.16), transparent 65%),
-    linear-gradient(180deg, rgba(125, 211, 252, 0.08), transparent 82%);
+    radial-gradient(420px 90px at 50% 50%, rgba(255, 209, 102, 0.16), transparent 65%),
+    linear-gradient(180deg, rgba(46, 196, 182, 0.08), transparent 82%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    0 0 24px rgba(125, 211, 252, 0.18);
+    0 0 24px rgba(46, 196, 182, 0.18);
 }
 
 :root[data-theme="birthday"] .leaderboard-panel__qrTrigger,
 :root[data-theme="birthday"] .leaderboard-panel__scoreBtn {
-  background: linear-gradient(180deg, rgba(48, 77, 116, 0.94), rgba(24, 45, 73, 0.94));
-  border-color: rgba(125, 211, 252, 0.42);
+  background: linear-gradient(180deg, rgba(116, 82, 166, 0.94), rgba(74, 52, 112, 0.94));
+  border-color: rgba(210, 176, 255, 0.42);
 }
 
 :root[data-theme="birthday"] .leaderboard-panel__qrTrigger:hover,
 :root[data-theme="birthday"] .leaderboard-panel__scoreBtn:hover:not(:disabled) {
-  border-color: rgba(254, 240, 138, 0.72);
+  border-color: rgba(255, 209, 102, 0.72);
   box-shadow:
-    0 12px 24px rgba(8, 20, 36, 0.38),
-    0 0 0 1px rgba(254, 240, 138, 0.24),
-    0 0 22px rgba(125, 211, 252, 0.24);
+    0 12px 24px rgba(20, 12, 35, 0.38),
+    0 0 0 1px rgba(255, 209, 102, 0.24),
+    0 0 22px rgba(46, 196, 182, 0.24);
 }
