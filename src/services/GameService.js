@@ -127,6 +127,21 @@ class GameService {
         return this.model;
     }
 
+    applyRemoteSnapshot(gameData) {
+        if (!gameData) return false;
+        const nextUpdatedAt = Date.parse(gameData?.meta?.updatedAt || '') || 0;
+        const currentUpdatedAt = Date.parse(this.model?.meta?.updatedAt || '') || 0;
+
+        // Ignore stale snapshots that can occasionally arrive out of order.
+        if (currentUpdatedAt && nextUpdatedAt && nextUpdatedAt < currentUpdatedAt) {
+            return false;
+        }
+
+        this.model = new GameModel(gameData);
+        this._emit();
+        return true;
+    }
+
     async save() {
         if (!this.model) return false;
         await this.repo.saveGame(this.model.toJSON());

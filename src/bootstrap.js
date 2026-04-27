@@ -1,6 +1,6 @@
 // src/bootstrap.js
 import { getSession, signOut, onAuthStateChange } from './api/authApi.js';
-import { createGame } from './api/gameApi.js';
+import { createGame, subscribeToGame } from './api/gameApi.js';
 import { insertScoreLog, listScoreLogs, subscribeToScoreLogs } from './api/scoreLogsApi.js';
 import { syncCurrentUserProfile } from './api/profileApi.js';
 import { escapeHtml } from './utils/utils.js';
@@ -218,6 +218,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
         let hostActivityStaleTimer = null;
         let roundSyncRetryTimer = null;
         let stopScoreLogsSubscription = null;
+        let stopGameSubscription = null;
         let hasRoundStateSynced = false;
         const ensureControllerInactiveBanner = () => {
             let banner = root.querySelector('.app-mainHostBanner');
@@ -371,6 +372,9 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
             gameService.initialize(),
             playersService.initialize(),
         ]);
+        stopGameSubscription = subscribeToGame(gameId, (nextGame) => {
+            gameService.applyRemoteSnapshot?.(nextGame);
+        });
         gameService.restoreUiState();
         const resolvedGameName = String(
             gameService.getModel?.()?.meta?.name
@@ -638,6 +642,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
             stopCurrentPlayerBroadcast?.();
             stopRoundBroadcast?.();
             stopScoreLogsSubscription?.();
+            stopGameSubscription?.();
             stopHostControlSubscription?.();
             hostControlChannel?.destroy?.();
             playersService?.destroy?.();

@@ -371,6 +371,13 @@ export class ModalService {
     this._modifierCloseTimer = null;
     const cell = this.activeCell;
     if (cell) {
+      if (!this.isControllerMode()) {
+        const selectedModifier = this.view?._modifier ?? null;
+        const currentModifier = this._game?.getCell?.(cell.roundId, cell.rowId, cell.cellId)?.modifier ?? null;
+        if ((selectedModifier || null) !== (currentModifier || null)) {
+          void this._game.updateCell(cell.roundId, cell.rowId, cell.cellId, { modifier: selectedModifier || null });
+        }
+      }
       if (this._pendingQuestionText !== null) {
         void this._game.updateCell(cell.roundId, cell.rowId, cell.cellId, { question: { text: this._pendingQuestionText } });
         this._pendingQuestionText = null;
