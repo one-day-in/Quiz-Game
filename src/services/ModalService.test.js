@@ -235,7 +235,7 @@ describe('ModalService press reset', () => {
     expect(updatePlayerMock).not.toHaveBeenCalled();
   });
 
-  it('shows an alert when plus-to-minus opens without an active player', async () => {
+  it('defers plus-to-minus activation when active player is not selected', async () => {
     const service = new ModalService({
       getGameId: () => 'game-1',
       getCurrentPlayerId: () => null,
@@ -246,8 +246,8 @@ describe('ModalService press reset', () => {
     const applied = await service._applyActiveModifierToCurrentPlayer();
 
     expect(applied).toBe(false);
-    expect(globalThis.alert).toHaveBeenCalledTimes(1);
-    expect(service.close).toHaveBeenCalledTimes(1);
+    expect(globalThis.alert).not.toHaveBeenCalled();
+    expect(service.close).not.toHaveBeenCalled();
   });
 
   it('can close the modifier banner early via acknowledge callback', async () => {
@@ -322,7 +322,10 @@ describe('ModalService press reset', () => {
 
   it('auto-applies modifier when at least one player exists', () => {
     const service = new ModalService(
-      { getGameId: () => 'game-1' },
+      {
+        getGameId: () => 'game-1',
+        getCurrentPlayerId: () => 'player-1',
+      },
       {},
       {},
       { getPlayers: () => [{ id: 'player-1', points: 100 }] }

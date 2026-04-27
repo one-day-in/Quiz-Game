@@ -544,7 +544,10 @@ export class ModalService {
   }
 
   _shouldAutoApplyModifier(modifier) {
-    return isAutoCellModifier(modifier) && this._getPlayersSnapshot().length > 0;
+    if (!isAutoCellModifier(modifier)) return false;
+    const currentPlayerId = this._game?.getCurrentPlayerId?.() ?? null;
+    if (!currentPlayerId) return false;
+    return this._getPlayersSnapshot().some((entry) => String(entry?.id || '') === String(currentPlayerId));
   }
 
   _shouldUseDirectedBetModifier(modifier) {
@@ -601,8 +604,8 @@ export class ModalService {
   async _applyActiveModifierToCurrentPlayer() {
     const currentPlayerId = this._game?.getCurrentPlayerId?.() ?? null;
     if (!currentPlayerId) {
-      alert(t('modifier_no_current_player'));
-      this.close();
+      // Configuration remains saved in the cell. Activation is deferred until
+      // there is an active player in runtime.
       return false;
     }
 
