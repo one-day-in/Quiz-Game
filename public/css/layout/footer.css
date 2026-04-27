@@ -293,7 +293,7 @@
   height: 44px;
   min-height: 44px;
   padding: 0;
-  border-radius: 12px;
+  border-radius: 999px;
   font-size: 18px;
   letter-spacing: 0;
   gap: 0;
@@ -306,6 +306,8 @@
 
 .leaderboard-panel__logsModalBody {
   flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
   min-height: 0;
   padding: 16px 20px 20px;
 }

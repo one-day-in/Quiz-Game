@@ -16,8 +16,8 @@ function mapScoreLogRow(row) {
   };
 }
 
-export async function listScoreLogs(gameId, { limit = 500 } = {}) {
-  const safeLimit = Math.min(Math.max(Number(limit) || 0, 1), 1000);
+export async function listScoreLogs(gameId, { limit = 5000 } = {}) {
+  const safeLimit = Math.min(Math.max(Number(limit) || 0, 1), 10000);
   const { data, error } = await supabase
     .from('score_logs')
     .select(SCORE_LOG_COLUMNS)
@@ -75,4 +75,3 @@ export function subscribeToScoreLogs(gameId, onInsert) {
     supabase.removeChannel(channel);
   };
 }
-

@@ -104,7 +104,7 @@ export function createAppController({
   }
 
   function openCell(payload, { skipBroadcast = false } = {}) {
-    const resolvedPayload = resolveCellPayload(payload);
+    const resolvedPayload = skipBroadcast ? payload : resolveCellPayload(payload);
     if (!resolvedPayload) return;
     modalService.showQuestionView(resolvedPayload);
     if (!skipBroadcast) {

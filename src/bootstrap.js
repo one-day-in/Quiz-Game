@@ -30,7 +30,7 @@ const LAST_GAME_NAME_KEY = 'lastGameName';
 const BUZZER_WARMUP_TIMEOUT_MS = 1200;
 const HOST_ACTIVITY_PING_MS = 3000;
 const HOST_ACTIVITY_STALE_MS = 9000;
-const SCORE_LOGS_LIMIT = 500;
+const SCORE_LOGS_LIMIT = 5000;
 const SCORE_LOGS_KEY_PREFIX = 'quiz-game:score-logs:';
 let _buzzerWarmupAttempted = false;
 let _buzzerWarmupSuppressed = false;
@@ -217,6 +217,8 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
         let hostActivityPingTimer = null;
         let hostActivityStaleTimer = null;
         let roundSyncRetryTimer = null;
+        let lastOpenCellPayload = null;
+        let lastModalViewState = null;
         let stopScoreLogsSubscription = null;
         let stopGameSubscription = null;
         let hasRoundStateSynced = false;
@@ -323,6 +325,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
             void hostControlChannel.send('leaderboard_panel_sync_request');
             void hostControlChannel.send('score_logs_sync_request');
             void hostControlChannel.send('current_player_sync_request');
+            void hostControlChannel.send('modal_sync_request');
         };
         const startRoundSyncRetry = () => {
             if (hostMode !== 'controller') return;
@@ -345,10 +348,17 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
         const modalService = createModalService(gameService, mediaService, pressRuntimeService, playersService, {
             presentationMode: hostMode === 'controller' ? 'controller' : 'host',
             onModalClose: hostMode === 'host'
-                ? () => { void hostControlChannel.send('close_modal'); }
+                ? () => {
+                    lastOpenCellPayload = null;
+                    lastModalViewState = null;
+                    void hostControlChannel.send('close_modal');
+                }
                 : null,
             onModalViewStateChange: hostMode === 'host'
-                ? ({ mode, isAnswerShown }) => { void hostControlChannel.send('modal_view_state', { mode, isAnswerShown }); }
+                ? ({ mode, isAnswerShown }) => {
+                    lastModalViewState = { mode, isAnswerShown };
+                    void hostControlChannel.send('modal_view_state', { mode, isAnswerShown });
+                }
                 : null,
             onMediaPlaybackStateChange: hostMode === 'host'
                 ? ({ target, isPlaying }) => { void hostControlChannel.send('modal_media_state', { target, isPlaying }); }
@@ -442,6 +452,8 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
                 await gameService.setCurrentPlayerId(playerId);
             },
             onCellOpen: (payload) => {
+                lastOpenCellPayload = payload || null;
+                lastModalViewState = { mode: 'view', isAnswerShown: false };
                 void hostControlChannel.send('open_cell', payload);
             },
             onLeaderboardExpandedChange: (isExpanded) => {
@@ -527,11 +539,31 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
                 void hostControlChannel.send('leaderboard_panel_state', { isExpanded: leaderboardPanelExpanded });
                 void hostControlChannel.send('score_logs_state', { isOpen: !!scoreLogsOpen });
                 void hostControlChannel.send('current_player_state', { playerId: gameService.getCurrentPlayerId?.() ?? null });
+                if (lastOpenCellPayload) {
+                    void hostControlChannel.send('open_cell', lastOpenCellPayload);
+                    if (lastModalViewState) {
+                        void hostControlChannel.send('modal_view_state', lastModalViewState);
+                    }
+                } else {
+                    void hostControlChannel.send('close_modal');
+                }
                 return;
             }
 
             if (type === 'open_cell') {
                 app.openCell(payload, { skipBroadcast: true });
+                return;
+            }
+
+            if (type === 'modal_sync_request' && hostMode === 'host') {
+                if (lastOpenCellPayload) {
+                    void hostControlChannel.send('open_cell', lastOpenCellPayload);
+                    if (lastModalViewState) {
+                        void hostControlChannel.send('modal_view_state', lastModalViewState);
+                    }
+                } else {
+                    void hostControlChannel.send('close_modal');
+                }
                 return;
             }
 
