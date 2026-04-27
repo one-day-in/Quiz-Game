@@ -262,6 +262,14 @@ export class QuestionModalView {
         this._updateResolutionButtons();
     }
 
+    getSelectedModifier() {
+        return this._modifier || null;
+    }
+
+    setSelectedModifier(modifier) {
+        this._modifier = modifier || null;
+    }
+
     showDirectedBetPanel({ players = [], betOptions = [100, 200, 300, 400, 500], defaultBet = 300, defaultPlayerId = null } = {}) {
         const normalizedPlayers = Array.isArray(players) ? players : [];
         const normalizedDefaultPlayerId = defaultPlayerId ? String(defaultPlayerId) : null;

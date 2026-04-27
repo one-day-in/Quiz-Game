@@ -363,8 +363,8 @@ describe('ModalService press reset', () => {
       answer: { text: 'A', media: null, audioFiles: [] },
     });
 
-    expect(service.view?._modifier).toBe(CELL_MODIFIERS.FLIP_SCORE);
-    service.close();
+    expect(service.view?.getSelectedModifier?.()).toBe(CELL_MODIFIERS.FLIP_SCORE);
+    void service.close();
   });
 
   it('shows directed-bet panel with empty players list when no players are connected', () => {
@@ -397,5 +397,31 @@ describe('ModalService press reset', () => {
     );
     expect(service.close).not.toHaveBeenCalled();
     expect(globalThis.alert).not.toHaveBeenCalled();
+  });
+
+  it('flushes modifier and pending text updates as a single close patch', async () => {
+    const updateCell = vi.fn().mockResolvedValue(true);
+    const gameService = {
+      getGameId: () => 'game-1',
+      updateCell,
+      getCell: () => ({ modifier: null }),
+      touch: vi.fn(),
+    };
+    const service = new ModalService(gameService, {}, { closePress: vi.fn() }, { getPlayers: () => [] });
+    service.activeCell = { roundId: 0, rowId: 1, cellId: 2 };
+    service.view = {
+      getSelectedModifier: () => CELL_MODIFIERS.FLIP_SCORE,
+      destroy: vi.fn(),
+    };
+    service._pendingQuestionText = 'Question draft';
+    service._pendingAnswerText = 'Answer draft';
+
+    await service.close();
+
+    expect(updateCell).toHaveBeenCalledWith(0, 1, 2, {
+      modifier: CELL_MODIFIERS.FLIP_SCORE,
+      question: { text: 'Question draft' },
+      answer: { text: 'Answer draft' },
+    });
   });
 });

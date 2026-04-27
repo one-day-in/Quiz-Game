@@ -52,6 +52,7 @@ export class ModalService {
     this._isResolvingPressResult = false;
     this._activeModifier = null;
     this._modifierCloseTimer = null;
+    this._isClosing = false;
     this._currentResolutionValue = 0;
     this._isDirectedBetTimerMode = false;
     this._directedBetTimerLabel = '';
@@ -200,7 +201,7 @@ export class ModalService {
             modifier,
           });
           this._activeModifier = modifier || null;
-          this.view._modifier = modifier;
+          this.view?.setSelectedModifier?.(modifier);
         } catch (e) {
           console.error('[ModalService] toggle modifier failed:', e);
           alert(`${t('save_failed')}: ` + (e?.message || e));
@@ -359,60 +360,78 @@ export class ModalService {
     }
   }
 
-  close() {
-    const hadOpenModal = !!this.activeCell || !!this.view;
-    // Flush any pending debounced text saves before clearing activeCell
-    clearTimeout(this._questionTimer);
-    clearTimeout(this._answerTimer);
-    clearTimeout(this._modifierCloseTimer);
-    this._clearPressCountdown();
-    this._questionTimer = null;
-    this._answerTimer   = null;
-    this._modifierCloseTimer = null;
-    const cell = this.activeCell;
-    if (cell) {
-      if (!this.isControllerMode()) {
-        const selectedModifier = this.view?._modifier ?? null;
-        const currentModifier = this._game?.getCell?.(cell.roundId, cell.rowId, cell.cellId)?.modifier ?? null;
-        if ((selectedModifier || null) !== (currentModifier || null)) {
-          void this._game.updateCell(cell.roundId, cell.rowId, cell.cellId, { modifier: selectedModifier || null });
+  _buildClosePatch(cell) {
+    if (!cell || this.isControllerMode()) return null;
+
+    const patch = {};
+    const selectedModifier = this.view?.getSelectedModifier?.() ?? null;
+    const currentModifier = this._game?.getCell?.(cell.roundId, cell.rowId, cell.cellId)?.modifier ?? null;
+    if ((selectedModifier || null) !== (currentModifier || null)) {
+      patch.modifier = selectedModifier || null;
+    }
+    if (this._pendingQuestionText !== null) {
+      patch.question = { text: this._pendingQuestionText };
+      this._pendingQuestionText = null;
+    }
+    if (this._pendingAnswerText !== null) {
+      patch.answer = { text: this._pendingAnswerText };
+      this._pendingAnswerText = null;
+    }
+
+    return Object.keys(patch).length ? patch : null;
+  }
+
+  async close() {
+    if (this._isClosing) return;
+    this._isClosing = true;
+    try {
+      const hadOpenModal = !!this.activeCell || !!this.view;
+      // Flush any pending debounced text saves before clearing activeCell
+      clearTimeout(this._questionTimer);
+      clearTimeout(this._answerTimer);
+      clearTimeout(this._modifierCloseTimer);
+      this._clearPressCountdown();
+      this._questionTimer = null;
+      this._answerTimer   = null;
+      this._modifierCloseTimer = null;
+      const cell = this.activeCell;
+      const closePatch = this._buildClosePatch(cell);
+      if (cell && closePatch) {
+        try {
+          await this._updateCell(closePatch, { silent: true });
+        } catch (error) {
+          console.warn('[ModalService] close flush failed:', error);
         }
       }
-      if (this._pendingQuestionText !== null) {
-        void this._game.updateCell(cell.roundId, cell.rowId, cell.cellId, { question: { text: this._pendingQuestionText } });
-        this._pendingQuestionText = null;
+  
+      const lastCell = this.activeCell; // capture before clearing
+  
+      if (this.view) {
+        this.view.destroy();
+        this.view = null;
       }
-      if (this._pendingAnswerText !== null) {
-        void this._game.updateCell(cell.roundId, cell.rowId, cell.cellId, { answer: { text: this._pendingAnswerText } });
-        this._pendingAnswerText = null;
+      this._stopRuntimeSubscription?.();
+      this._stopRuntimeSubscription = null;
+      this.activeCell = null;
+      this._pressWinnerId = null;
+      this._cellValue = 0;
+      this._pressTimerPaused = false;
+      this._isResolvingPressResult = false;
+      this._activeModifier = null;
+      this._currentResolutionValue = 0;
+      this._isDirectedBetTimerMode = false;
+      this._directedBetTimerLabel = '';
+      void this._pressRuntime?.closePress?.();
+      if (this.container?.isConnected) this.container.innerHTML = '';
+      if (hadOpenModal) {
+        this._onModalClose?.();
       }
+  
+      // Targeted patch — only the closed cell's is-answered state updates
+      this._game.touch(lastCell);
+    } finally {
+      this._isClosing = false;
     }
-
-    const lastCell = this.activeCell; // capture before clearing
-
-    if (this.view) {
-      this.view.destroy();
-      this.view = null;
-    }
-    this._stopRuntimeSubscription?.();
-    this._stopRuntimeSubscription = null;
-    this.activeCell = null;
-    this._pressWinnerId = null;
-    this._cellValue = 0;
-    this._pressTimerPaused = false;
-    this._isResolvingPressResult = false;
-    this._activeModifier = null;
-    this._currentResolutionValue = 0;
-    this._isDirectedBetTimerMode = false;
-    this._directedBetTimerLabel = '';
-    void this._pressRuntime?.closePress?.();
-    if (this.container?.isConnected) this.container.innerHTML = '';
-    if (hadOpenModal) {
-      this._onModalClose?.();
-    }
-
-    // Targeted patch — only the closed cell's is-answered state updates
-    this._game.touch(lastCell);
   }
 
   async _handleIncorrect() {
