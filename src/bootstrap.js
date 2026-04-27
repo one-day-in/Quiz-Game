@@ -28,8 +28,8 @@ const IS_DEV = window.location.hostname === 'localhost' || window.location.hostn
 const LAST_GAME_ID_KEY   = 'lastGameId';
 const LAST_GAME_NAME_KEY = 'lastGameName';
 const BUZZER_WARMUP_TIMEOUT_MS = 1200;
-const HOST_ACTIVITY_PING_MS = 3000;
-const HOST_ACTIVITY_STALE_MS = 9000;
+const HOST_ACTIVITY_PING_MS = 2000;
+const HOST_ACTIVITY_STALE_MS = 4500;
 const SCORE_LOGS_LIMIT = 5000;
 const SCORE_LOGS_KEY_PREFIX = 'quiz-game:score-logs:';
 let _buzzerWarmupAttempted = false;
@@ -430,6 +430,20 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
                 void hostControlChannel.send(type, payload);
             },
         });
+        const leaveGameToLobby = async () => {
+            if (hostMode === 'host') {
+                try {
+                    await hostControlChannel.send('host_runtime_state', {
+                        active: false,
+                        sentAt: new Date().toISOString(),
+                    });
+                    await new Promise((resolve) => window.setTimeout(resolve, 80));
+                } catch {
+                    // Ignore transport failures and continue navigation.
+                }
+            }
+            renderLobby(user, { hostMode });
+        };
 
         await Promise.all([
             gameService.initialize(),
@@ -483,7 +497,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
             gameId,
             gameName: resolvedGameName,
             showGameTitle: hostMode !== 'controller',
-            onBackToLobby: hostMode === 'controller' ? null : () => renderLobby(user, { hostMode }),
+            onBackToLobby: hostMode === 'controller' ? null : () => { void leaveGameToLobby(); },
             isReadOnly: hostMode === 'controller',
             allowCurrentPlayerControl: hostMode === 'controller',
             allowLeaderboardControls: hostMode === 'controller',
