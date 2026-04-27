@@ -162,7 +162,7 @@ export function createAppController({
     if (_cellHint) {
       const cell = model.getCell(_cellHint.roundId, _cellHint.rowId, _cellHint.cellId);
       appViewRef.updatePlayers?.(players);
-      appViewRef.patchCell(_cellHint.rowId, _cellHint.cellId, cell || null);
+      appViewRef.patchCell(_cellHint.rowId, _cellHint.cellId, !!cell?.isAnswered);
       return;
     }
 

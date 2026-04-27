@@ -333,4 +333,37 @@ describe('ModalService press reset', () => {
 
     expect(service._shouldAutoApplyModifier(CELL_MODIFIERS.FLIP_SCORE)).toBe(true);
   });
+
+  it('keeps selected modifier visible in modal when there are no players yet', () => {
+    const mediaService = {
+      toViewMedia: (value) => value,
+      toViewAudioFiles: (files) => files || [],
+    };
+    const pressRuntime = {
+      subscribe: vi.fn(() => vi.fn()),
+      openPress: vi.fn().mockResolvedValue(undefined),
+      closePress: vi.fn(),
+    };
+    const service = new ModalService({
+      getGameId: () => 'game-1',
+      getCurrentPlayerId: () => null,
+      updateCell: vi.fn().mockResolvedValue(true),
+      getCell: vi.fn(() => ({ modifier: CELL_MODIFIERS.FLIP_SCORE })),
+      touch: vi.fn(),
+    }, mediaService, pressRuntime, { getPlayers: () => [] });
+
+    service.showQuestionView({
+      roundId: 0,
+      rowId: 0,
+      cellId: 0,
+      value: 300,
+      isAnswered: true,
+      modifier: CELL_MODIFIERS.FLIP_SCORE,
+      question: { text: 'Q', media: null, audioFiles: [] },
+      answer: { text: 'A', media: null, audioFiles: [] },
+    });
+
+    expect(service.view?._modifier).toBe(CELL_MODIFIERS.FLIP_SCORE);
+    service.close();
+  });
 });

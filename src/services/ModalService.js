@@ -165,7 +165,7 @@ export class ModalService {
       headerTitle,
 
       isAnswered: shouldMarkAsAnswered ? true : cellData.isAnswered,
-      modifier: shouldAutoApplyModifier ? this._activeModifier : null,
+      modifier: this._activeModifier,
       question,
       answer,
 
