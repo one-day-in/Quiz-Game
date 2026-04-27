@@ -53,12 +53,17 @@ export class LeaderboardPanelView {
   }
 
   updatePlayers(players = []) {
+    const scoreChanges = this._collectScoreChanges(this._players, players);
     this._players = Array.isArray(players) ? players : [];
     this._syncSelectedPlayer();
     this._previewView?.update?.(this._players);
     this._fullView?.update?.(this._players);
     this._fullView?.setSelectedPlayerId?.(this._selectedPlayerId);
     this._renderSelectionState();
+    for (const change of scoreChanges) {
+      this._previewView?.pulseScoreChange?.(change.playerId, change.delta);
+      this._fullView?.pulseScoreChange?.(change.playerId, change.delta);
+    }
   }
 
   updateScoreLogs(logs = []) {
@@ -396,10 +401,16 @@ export class LeaderboardPanelView {
       button.textContent = delta > 0 ? `+${delta}` : String(delta);
       button.dataset.delta = String(delta);
       button.disabled = true;
-      this._disposer.addEventListener(button, 'click', () => {
+      this._disposer.addEventListener(button, 'click', async () => {
+        this._animateScoreButton(button, 'is-hit');
         if (this._readOnly) return;
         if (!this._selectedPlayerId) return;
-        this._onAdjustPlayerScore?.(this._selectedPlayerId, delta);
+        button.classList.add('is-pending');
+        try {
+          await this._onAdjustPlayerScore?.(this._selectedPlayerId, delta);
+        } finally {
+          button.classList.remove('is-pending');
+        }
       });
       this._scoreBar.appendChild(button);
     }
@@ -440,6 +451,35 @@ export class LeaderboardPanelView {
         button.disabled = this._readOnly || !selectedPlayer;
       }
     }
+  }
+
+  _collectScoreChanges(prevPlayers = [], nextPlayers = []) {
+    const prevById = new Map();
+    for (const player of (Array.isArray(prevPlayers) ? prevPlayers : [])) {
+      const id = String(player?.id ?? '');
+      if (!id) continue;
+      prevById.set(id, Number(player?.points ?? player?.score) || 0);
+    }
+
+    const changes = [];
+    for (const player of (Array.isArray(nextPlayers) ? nextPlayers : [])) {
+      const id = String(player?.id ?? '');
+      if (!id || !prevById.has(id)) continue;
+      const prevScore = Number(prevById.get(id)) || 0;
+      const nextScore = Number(player?.points ?? player?.score) || 0;
+      const delta = nextScore - prevScore;
+      if (!delta) continue;
+      changes.push({ playerId: id, delta });
+    }
+    return changes;
+  }
+
+  _animateScoreButton(button, className) {
+    if (!button || !className) return;
+    button.classList.remove(className);
+    // Force reflow so fast consecutive clicks still replay the animation.
+    void button.offsetWidth;
+    button.classList.add(className);
   }
 
 }

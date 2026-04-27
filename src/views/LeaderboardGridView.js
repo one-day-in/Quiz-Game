@@ -194,6 +194,22 @@ export function LeaderboardGridView({
   update(players);
 
   el.update = update;
+  el.pulseScoreChange = (playerId, delta) => {
+    const id = String(playerId ?? '');
+    if (!id || !Number.isFinite(Number(delta)) || Number(delta) === 0) return;
+    const directionClass = Number(delta) > 0 ? 'is-score-up' : 'is-score-down';
+
+    for (const node of itemNodes.values()) {
+      const row = node._row || node;
+      const rowId = String(row?.dataset?.playerId ?? node?.dataset?.playerId ?? '');
+      if (!rowId || rowId !== id) continue;
+
+      restartAnimation(row, directionClass);
+      restartAnimation(row?._parts?.points, directionClass);
+      restartAnimation(node, directionClass);
+      restartAnimation(node?._parts?.points, directionClass);
+    }
+  };
   el.setSelectedPlayerId = (nextSelectedPlayerId) => {
     currentSelectedPlayerId = nextSelectedPlayerId;
     update(renderedPlayers);
@@ -225,6 +241,7 @@ function createFooterCard() {
 }
 
 function patchFooterCard(card, player, rank = 0) {
+  card.dataset.playerId = String(player?.id ?? '');
   card.classList.toggle('is-leading', rank === 0);
   card._parts.name.textContent = player?.name || t('player_fallback');
   card._parts.points.textContent = formatPoints(player?.points);
@@ -308,6 +325,14 @@ function patchRow(node, player, rank = 0, { variant = 'page', selectedPlayerId =
 
 function getPlayerKey(player) {
   return String(player?.id ?? player?.controllerId ?? player?.joinedAt ?? player?.name ?? 'unknown-player');
+}
+
+function restartAnimation(element, className) {
+  if (!element || !className) return;
+  element.classList.remove(className);
+  // Force reflow so the next add reliably replays CSS animation.
+  void element.offsetWidth;
+  element.classList.add(className);
 }
 
 function bindSwipeDelete(wrap, row) {
