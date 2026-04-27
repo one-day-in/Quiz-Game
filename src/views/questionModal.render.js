@@ -1,5 +1,6 @@
 // src/views/questionModal.render.js
 import { t } from '../i18n.js';
+import { fitTextToBox } from '../utils/fitText.js';
 
 // ─── Media collapse threshold ────────────────────────────────────────────────
 // If the space available for media (after text + audio fill their natural height)
@@ -193,17 +194,16 @@ function fitViewText(refs, type) {
   if (!textEl || textEl.hidden) return;
 
   textEl.style.fontSize = '';
-
-  const maxHeight = textEl.clientHeight || textEl.parentElement?.clientHeight || 0;
-  if (maxHeight <= 0) return;
-
-  let size = parseFloat(window.getComputedStyle(textEl).fontSize);
-  const minSize = 12;
-
-  while (textEl.scrollHeight > maxHeight && size > minSize) {
-    size -= 1;
-    textEl.style.fontSize = `${size}px`;
-  }
+  const box = textEl.parentElement || textEl;
+  fitTextToBox(box, textEl, {
+    widthRatio: 1,
+    heightRatio: 1,
+    noWrap: false,
+    minSize: 12,
+    step: 1,
+    startFromComputedSize: true,
+    respectMinSizeOnStart: true,
+  });
 }
 
 /* ------------------------ Mode UI ------------------------ */
