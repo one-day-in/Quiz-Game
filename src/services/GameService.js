@@ -197,6 +197,18 @@ class GameService {
         return this.model?.getCell(roundId, rowId, cellId) ?? null;
     }
 
+    setCellAnsweredLocal(roundId, rowId, cellId, isAnswered = true) {
+        if (!this.model) return false;
+        const cell = this.model.getCell(roundId, rowId, cellId);
+        if (!cell) return false;
+        const nextAnswered = !!isAnswered;
+        if (cell.isAnswered === nextAnswered) return true;
+        cell.isAnswered = nextAnswered;
+        this.model.meta.updatedAt = new Date().toISOString();
+        this._emit();
+        return true;
+    }
+
     async updateTopic(roundId, rowId, topic) {
         if (!this.model) throw new Error('GameService not initialized');
 

@@ -108,7 +108,10 @@ export function createAppController({
     if (!resolvedPayload) return;
     modalService.showQuestionView(resolvedPayload);
     if (!skipBroadcast) {
-      onCellOpen?.(resolvedPayload);
+      onCellOpen?.({
+        ...resolvedPayload,
+        isAnswered: true,
+      });
     }
   }
 

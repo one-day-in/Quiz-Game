@@ -551,6 +551,14 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
             }
 
             if (type === 'open_cell') {
+                if (hostMode === 'controller') {
+                    const roundId = Number(payload?.roundId);
+                    const rowId = Number(payload?.rowId);
+                    const cellId = Number(payload?.cellId);
+                    if (Number.isFinite(roundId) && Number.isFinite(rowId) && Number.isFinite(cellId)) {
+                        gameService.setCellAnsweredLocal(roundId, rowId, cellId, true);
+                    }
+                }
                 app.openCell(payload, { skipBroadcast: true });
                 return;
             }

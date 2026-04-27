@@ -114,7 +114,7 @@ describe('AppController openCell sync payload', () => {
     );
     expect(onCellOpen).toHaveBeenCalledWith(
       expect.objectContaining({
-        isAnswered: false,
+        isAnswered: true,
       })
     );
 

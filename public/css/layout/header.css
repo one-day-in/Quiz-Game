@@ -510,3 +510,177 @@
   stroke-linejoin: round;
   fill: none;
 }
+
+/* Logs modal (opened from header logs button) */
+.qmodal--scoreLogs {
+  z-index: 4200;
+}
+
+.qmodal--scoreLogs .qmodal__overlay {
+  background: rgba(2, 6, 23, 0.74);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+.qmodal__dialog--scoreLogs {
+  width: clamp(360px, 72vw, 980px);
+  height: clamp(420px, 78vh, 880px);
+  max-width: 980px;
+  max-height: calc(88dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  border-radius: 22px;
+  border: 1px solid rgba(148, 163, 184, 0.32);
+  background:
+    radial-gradient(120% 120% at 50% -20%, rgba(59, 130, 246, 0.16), transparent 58%),
+    linear-gradient(180deg, rgba(15, 23, 42, 0.995), rgba(2, 6, 23, 0.995));
+  box-shadow:
+    0 28px 56px rgba(2, 6, 23, 0.62),
+    var(--shadow-lg);
+  overflow: hidden;
+}
+
+.leaderboard-panel__logsModalContent {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.leaderboard-panel__logsModalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-2);
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.94), rgba(15, 23, 42, 0.96));
+}
+
+.leaderboard-panel__logsModalTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(20px, 1.8vw, 24px);
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  color: var(--text);
+  text-transform: uppercase;
+}
+
+.leaderboard-panel__logsModalClose {
+  flex: 0 0 auto;
+}
+
+.leaderboard-panel__logsModalClose span[aria-hidden="true"] {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.leaderboard-panel__logsModalBody {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 16px 20px 20px;
+}
+
+.leaderboard-panel__logsList {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 8px;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-padding-bottom: max(120px, env(safe-area-inset-bottom, 0px));
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.26) transparent;
+}
+
+.leaderboard-panel__logsListTrack {
+  min-height: calc(100% + max(120px, env(safe-area-inset-bottom, 0px)));
+  display: flex;
+  flex-direction: column;
+}
+
+.leaderboard-panel__logsItems {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.leaderboard-panel__logsListSpacer {
+  flex: 0 0 auto;
+  height: max(120px, env(safe-area-inset-bottom, 0px));
+  pointer-events: none;
+}
+
+.leaderboard-panel__logItem {
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.82), rgba(15, 23, 42, 0.9));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.leaderboard-panel__logMain {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1.4;
+  font-family: var(--font-ui);
+}
+
+.leaderboard-panel__logMain strong {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+.leaderboard-panel__logTime {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-family: var(--font-label);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+@media (max-width: 1200px) {
+  .qmodal__dialog--scoreLogs {
+    width: min(88vw, 860px);
+    height: min(84vh, 760px);
+  }
+}
+
+@media (max-width: 640px), (max-height: 760px) {
+  .qmodal__dialog--scoreLogs {
+    width: min(94vw, 700px);
+    height: min(88vh, 760px);
+    max-height: calc(88dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    border-radius: 18px;
+  }
+
+  .leaderboard-panel__logsModalHeader {
+    padding: 9px 12px;
+  }
+
+  .leaderboard-panel__logsModalBody {
+    padding: 14px 16px 16px;
+  }
+
+  .leaderboard-panel__logMain {
+    font-size: 15px;
+  }
+
+  .leaderboard-panel__logMain strong {
+    font-size: 17px;
+  }
+
+  .leaderboard-panel__logsListSpacer {
+    height: max(120px, env(safe-area-inset-bottom, 0px));
+  }
+}
