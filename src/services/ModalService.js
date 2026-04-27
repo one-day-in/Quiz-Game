@@ -551,7 +551,7 @@ export class ModalService {
   }
 
   _shouldUseDirectedBetModifier(modifier) {
-    return isDirectedBetModifier(modifier) && this._getPlayersSnapshot().length > 0;
+    return isDirectedBetModifier(modifier);
   }
 
   _getCurrentModifierPlayer(playerId) {
