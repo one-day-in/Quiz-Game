@@ -267,15 +267,6 @@
         0 16px 28px rgba(30, 18, 45, 0.24);
 }
 
-:root[data-theme="birthday"] .game-grid .cell.cell-topic > span {
-    display: inline;
-    padding: 4px 10px;
-    border-radius: 12px;
-    background: rgba(255, 248, 232, 0.44);
-    box-decoration-break: clone;
-    -webkit-box-decoration-break: clone;
-}
-
 :root[data-theme="birthday"] .game-grid .cell.cell-topic .topic-editor {
     color: #1f1230;
     text-shadow: 0 1px 0 rgba(255, 250, 240, 0.45);
