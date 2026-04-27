@@ -103,8 +103,8 @@ export function createAppController({
     return rebuilt;
   }
 
-  function openCell(payload, { skipBroadcast = false } = {}) {
-    const resolvedPayload = skipBroadcast ? payload : resolveCellPayload(payload);
+  function openCell(payload, { skipBroadcast = false, resolvePayload = true } = {}) {
+    const resolvedPayload = (skipBroadcast || !resolvePayload) ? payload : resolveCellPayload(payload);
     if (!resolvedPayload) return;
     modalService.showQuestionView(resolvedPayload);
     if (!skipBroadcast) {
@@ -113,9 +113,16 @@ export function createAppController({
   }
 
   function handleCellClick({ roundId, rowId, cellId, value }) {
-    gameService.setCellAnsweredLocal?.(roundId, rowId, cellId, true);
     const payload = buildCellPayload({ roundId, rowId, cellId, value });
-    openCell(payload);
+    if (!payload) return;
+
+    // Controller should reflect the opened cell immediately, but host must
+    // persist answered state from ModalService without pre-flipping payload.
+    if (isReadOnly) {
+      gameService.setCellAnsweredLocal?.(roundId, rowId, cellId, true);
+    }
+
+    openCell(payload, { resolvePayload: false });
   }
 
   function render(state) {
