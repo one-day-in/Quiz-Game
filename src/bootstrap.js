@@ -304,6 +304,11 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
             playersService.initialize(),
         ]);
         gameService.restoreUiState();
+        const resolvedGameName = String(
+            gameService.getModel?.()?.meta?.name
+            || gameName
+            || t('new_game')
+        );
 
         if (IS_DEV) {
             window.gameService = gameService;
@@ -328,7 +333,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
             modalService,
             roundNavigationService,
             gameId,
-            gameName,
+            gameName: resolvedGameName,
             onBackToLobby: hostMode === 'controller' ? null : () => renderLobby(user, { hostMode }),
             isReadOnly: hostMode === 'controller',
             allowCurrentPlayerControl: hostMode === 'controller',

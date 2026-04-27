@@ -245,10 +245,10 @@
 }
 
 .qmodal__dialog--scoreLogs {
-  width: min(80vw, 980px);
-  height: min(80vh, 880px);
+  width: clamp(360px, 72vw, 980px);
+  height: clamp(420px, 78vh, 880px);
   max-width: 980px;
-  max-height: 88dvh;
+  max-height: calc(88dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
   border-radius: 22px;
   border: 1px solid rgba(148, 163, 184, 0.32);
   background:
@@ -289,6 +289,18 @@
 
 .leaderboard-panel__logsModalClose {
   flex: 0 0 auto;
+  height: 44px;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 12px;
+  font-size: var(--fs-1);
+  letter-spacing: 0.04em;
+  gap: 8px;
+}
+
+.leaderboard-panel__logsModalClose span[aria-hidden="true"] {
+  font-size: 16px;
+  line-height: 1;
 }
 
 .leaderboard-panel__logsModalBody {
@@ -1137,6 +1149,13 @@
   }
 }
 
+@media (max-width: 1200px) {
+  .qmodal__dialog--scoreLogs {
+    width: min(88vw, 860px);
+    height: min(84vh, 760px);
+  }
+}
+
 @media (max-width: 640px), (max-height: 760px) {
   .leaderboard-panel__qrPopover {
     width: min(clamp(220px, 76vw, 320px), calc(100vw - 16px));
@@ -1155,9 +1174,9 @@
   }
 
   .qmodal__dialog--scoreLogs {
-    width: min(92vw, 700px);
-    height: min(86vh, 760px);
-    max-height: 86dvh;
+    width: min(94vw, 700px);
+    height: min(88vh, 760px);
+    max-height: calc(88dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
     border-radius: 18px;
   }
 
