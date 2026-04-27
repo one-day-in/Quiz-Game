@@ -124,6 +124,26 @@
   border-color: var(--btn-outline-hover);
 }
 
+/* Reusable button size/shape modifiers */
+.qmodal__btn--compact {
+  height: 40px;
+  min-height: 40px;
+  padding: 0 14px;
+  font-size: var(--fs-2);
+  letter-spacing: 0.02em;
+}
+
+.qmodal__btn--icon {
+  width: 40px;
+  min-width: 40px;
+  padding: 0;
+  gap: 0;
+}
+
+.qmodal__btn--circle {
+  border-radius: 999px;
+}
+
 .qmodal__controllerMediaControls {
   display: flex;
   align-items: center;

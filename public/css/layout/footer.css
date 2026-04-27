@@ -271,8 +271,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
-  padding: 16px 20px;
+  gap: 10px;
+  padding: 10px 14px;
   border-bottom: 1px solid var(--border-2);
   background: linear-gradient(180deg, rgba(30, 41, 59, 0.94), rgba(15, 23, 42, 0.96));
 }
@@ -280,7 +280,7 @@
 .leaderboard-panel__logsModalTitle {
   margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(24px, 2.2vw, 30px);
+  font-size: clamp(20px, 1.8vw, 24px);
   font-weight: 400;
   letter-spacing: 0.03em;
   color: var(--text);
@@ -289,18 +289,10 @@
 
 .leaderboard-panel__logsModalClose {
   flex: 0 0 auto;
-  width: 44px;
-  height: 44px;
-  min-height: 44px;
-  padding: 0;
-  border-radius: 999px;
-  font-size: 18px;
-  letter-spacing: 0;
-  gap: 0;
 }
 
 .leaderboard-panel__logsModalClose span[aria-hidden="true"] {
-  font-size: 16px;
+  font-size: 15px;
   line-height: 1;
 }
 
@@ -315,12 +307,14 @@
 .leaderboard-panel__logsList {
   flex: 1 1 auto;
   min-height: 0;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   padding-right: 8px;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-  touch-action: pan-y;
   scroll-padding-bottom: max(120px, env(safe-area-inset-bottom, 0px));
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.26) transparent;
 }
 
 .leaderboard-panel__logsListTrack {
@@ -1216,7 +1210,7 @@
   }
 
   .leaderboard-panel__logsModalHeader {
-    padding: 14px 16px;
+    padding: 9px 12px;
   }
 
   .leaderboard-panel__logsModalBody {

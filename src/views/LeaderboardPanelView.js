@@ -266,7 +266,7 @@ export class LeaderboardPanelView {
     content.innerHTML = `
       <header class="leaderboard-panel__logsModalHeader">
         <h2 class="leaderboard-panel__logsModalTitle">${t('score_logs')}</h2>
-        <button class="qmodal__btn qmodal__btn--secondary leaderboard-panel__logsModalClose" type="button" aria-label="${t('close')}" title="${t('close')}">
+        <button class="qmodal__btn qmodal__btn--secondary qmodal__btn--compact qmodal__btn--icon qmodal__btn--circle leaderboard-panel__logsModalClose" type="button" aria-label="${t('close')}" title="${t('close')}">
           <span aria-hidden="true">✕</span>
         </button>
       </header>
