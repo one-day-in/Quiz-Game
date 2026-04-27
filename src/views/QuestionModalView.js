@@ -350,12 +350,22 @@ export class QuestionModalView {
             const action = button.dataset.action || 'play';
             this._cb.onControllerMediaControl?.({
                 action,
-                target: this.getMediaControlTarget(),
+                // Let host resolve the active target from its own modal state.
+                // Controller view can be one message behind while answer toggle syncs.
+                target: this._displayMode === 'controller' ? '' : this.getMediaControlTarget(),
             });
             if (action === 'play') this.setControllerMediaPlaying(true);
             if (action === 'pause' || action === 'stop') this.setControllerMediaPlaying(false);
         });
         this._disposer.addEventListener(r.controllerAnswerToggleBtn, 'click', () => {
+            if (this._displayMode === 'controller' && this._mode === 'view') {
+                // Optimistic local update for instant target switch while host sync arrives.
+                this._isAnswerShown = !this._isAnswerShown;
+                this.setControllerMediaTarget(this._isAnswerShown ? 'answer' : 'question');
+                applyModeUI(this, this._refs);
+                renderAll(this, this._refs);
+                this.syncPressBannerVisibility();
+            }
             this._cb.onControllerMediaControl?.({
                 action: 'toggle_answer',
                 target: this.getMediaControlTarget(),
