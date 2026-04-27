@@ -27,14 +27,6 @@ export function HeaderView({
 
   el.innerHTML = `
     <div class="hdr-left">
-      ${canOpenScoreLogs ? `
-      <button class="hdr-logs-btn" type="button" title="${escapeHtml(t('score_logs'))}" aria-label="${escapeHtml(t('score_logs'))}">
-        <svg class="hdr-logs-btn-icon" viewBox="0 0 24 24" focusable="false" aria-hidden="true">
-          <path d="M5 4h11l3 3v13H5z" />
-          <path d="M8 9h8M8 13h8M8 17h6" />
-        </svg>
-      </button>
-      ` : ''}
       ${canBackToLobby ? `<button class="hdr-lobby-btn" type="button" title="${escapeHtml(t('back_to_lobby'))}">← ${escapeHtml(t('lobby'))}</button>` : ''}
       <button class="round-indicator" type="button" title="${escapeHtml(t('switch_round'))}">
         ${escapeHtml(t('round'))}: <b class="js-round-value"></b>
@@ -44,6 +36,14 @@ export function HeaderView({
       <h1 class="app-title">${escapeHtml(title)}</h1>
     </div>
     <div class="hdr-right">
+      ${canOpenScoreLogs ? `
+      <button class="hdr-logs-btn" type="button" title="${escapeHtml(t('score_logs'))}" aria-label="${escapeHtml(t('score_logs'))}">
+        <svg class="hdr-logs-btn-icon" viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+          <path d="M5 4h11l3 3v13H5z" />
+          <path d="M8 9h8M8 13h8M8 17h6" />
+        </svg>
+      </button>
+      ` : ''}
       <div class="hdr-current-player">
         <button
           class="hdr-current-player-btn"
