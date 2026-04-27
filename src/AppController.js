@@ -108,14 +108,12 @@ export function createAppController({
     if (!resolvedPayload) return;
     modalService.showQuestionView(resolvedPayload);
     if (!skipBroadcast) {
-      onCellOpen?.({
-        ...resolvedPayload,
-        isAnswered: true,
-      });
+      onCellOpen?.(resolvedPayload);
     }
   }
 
   function handleCellClick({ roundId, rowId, cellId, value }) {
+    gameService.setCellAnsweredLocal?.(roundId, rowId, cellId, true);
     const payload = buildCellPayload({ roundId, rowId, cellId, value });
     openCell(payload);
   }
