@@ -1,9 +1,11 @@
 // src/views/AppView.js
 import { HeaderView } from './HeaderView.js';
-import { GameGridView } from './GameGridView.js';
+import { applyQuestionCellState, GameGridView } from './GameGridView.js';
 import { LeaderboardPanelView } from './LeaderboardPanelView.js';
 import { ViewDisposer } from '../utils/disposer.js';
 import { fitAllCells } from '../utils/fitText.js';
+import { getCellModifierOptions } from '../constants/cellModifiers.js';
+import { t } from '../i18n.js';
 
 export function AppView({
   model,
@@ -33,6 +35,11 @@ export function AppView({
   let leaderboardPanel = null;
   let leaderboardPlayers = Array.isArray(players) ? players : [];
   let leaderboardScoreLogs = Array.isArray(scoreLogs) ? scoreLogs : [];
+  const modifierLabelMap = new Map(
+    getCellModifierOptions(t)
+      .filter((option) => option.value)
+      .map((option) => [option.value, option.label])
+  );
 
   // ResizeObserver — recalculate fitText on resize
   const ro = new ResizeObserver(() => {
@@ -162,9 +169,10 @@ export function AppView({
   }
 
   // Targeted patch for a single cell (avoids full grid rebuild)
-  function patchCell(rowId, cellId, isAnswered) {
+  function patchCell(rowId, cellId, cell = null) {
     const el = gridEl?.querySelector(`[data-cell="r${rowId}c${cellId}"]`);
-    if (el) el.classList.toggle('is-answered', isAnswered);
+    if (!el) return;
+    applyQuestionCellState(el, cell, modifierLabelMap);
   }
 
   renderGrid(model, uiState);

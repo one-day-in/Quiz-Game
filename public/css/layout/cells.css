@@ -160,6 +160,33 @@
     color: var(--cell-text);
 }
 
+.cell-question.has-modifier {
+    border-color: color-mix(in srgb, var(--cell-border-strong) 75%, #facc15 25%);
+}
+
+.cell-question__modifier {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    height: 22px;
+    padding: 0 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: linear-gradient(180deg, rgba(250, 204, 21, 0.95), rgba(234, 88, 12, 0.92));
+    color: #111827;
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+    z-index: 2;
+    pointer-events: none;
+}
+
 .game-grid .cell.cell-question:hover {
     transform: translateY(calc(-1 * var(--lift-y)));
     box-shadow: var(--shadow-cell-hover);

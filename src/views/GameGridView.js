@@ -1,5 +1,6 @@
 import { GRID_CONFIG, getCellValueByCol } from '../utils/utils.js';
 import { t } from '../i18n.js';
+import { CELL_MODIFIERS, getCellModifierOptions } from '../constants/cellModifiers.js';
 
 // ---------- helpers ----------
 
@@ -31,6 +32,42 @@ function resetTopicCellContent(el) {
   el.querySelector(':scope > span')?.remove();
 }
 
+function getModifierBadgeText(modifier) {
+  if (modifier === CELL_MODIFIERS.FLIP_SCORE) return '+/-';
+  if (modifier === CELL_MODIFIERS.STEAL_LEADER_POINTS) return '1000';
+  if (modifier === CELL_MODIFIERS.DIRECTED_BET) return 'BET';
+  return '';
+}
+
+export function applyQuestionCellState(el, cell, modifierLabelMap = new Map()) {
+  const isAnswered = !!cell?.isAnswered;
+  el.classList.toggle('is-answered', isAnswered);
+
+  const modifier = String(cell?.modifier || '').trim();
+  const modifierLabel = modifierLabelMap.get(modifier) || '';
+  const hasModifier = Boolean(modifier && modifierLabel);
+
+  el.classList.toggle('has-modifier', hasModifier);
+  if (!hasModifier) {
+    el.removeAttribute('data-modifier');
+    el.removeAttribute('title');
+    el.querySelector('.cell-question__modifier')?.remove();
+    return;
+  }
+
+  el.dataset.modifier = modifier;
+  el.title = `${t('cell_modifier_banner_title')}: ${modifierLabel}`;
+
+  let badge = el.querySelector('.cell-question__modifier');
+  if (!badge) {
+    badge = document.createElement('span');
+    badge.className = 'cell-question__modifier';
+    badge.setAttribute('aria-hidden', 'true');
+    el.appendChild(badge);
+  }
+  badge.textContent = getModifierBadgeText(modifier);
+}
+
 // ---------- view ----------
 
 export function GameGridView({ model, uiState, roundId, onCellClick, onTopicChange, isReadOnly = false }) {
@@ -44,6 +81,11 @@ export function GameGridView({ model, uiState, roundId, onCellClick, onTopicChan
   if (!model) return root;
 
   const { ROWS, COLS } = GRID_CONFIG;
+  const modifierLabelMap = new Map(
+    getCellModifierOptions(t)
+      .filter((option) => option.value)
+      .map((option) => [option.value, option.label])
+  );
 
   const grid = document.createElement('div');
   grid.className = 'grid';
@@ -153,9 +195,7 @@ export function GameGridView({ model, uiState, roundId, onCellClick, onTopicChan
         cellEl.classList.add('question-empty');
       }
 
-      if (cell?.isAnswered) {
-        cellEl.classList.add('is-answered');
-      }
+      applyQuestionCellState(cellEl, cell, modifierLabelMap);
 
       cellEl.addEventListener('click', (e) => {
         e.stopPropagation();
