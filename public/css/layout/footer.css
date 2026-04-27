@@ -289,13 +289,14 @@
 
 .leaderboard-panel__logsModalClose {
   flex: 0 0 auto;
+  width: 44px;
   height: 44px;
   min-height: 44px;
-  padding: 0 14px;
+  padding: 0;
   border-radius: 12px;
-  font-size: var(--fs-1);
-  letter-spacing: 0.04em;
-  gap: 8px;
+  font-size: 18px;
+  letter-spacing: 0;
+  gap: 0;
 }
 
 .leaderboard-panel__logsModalClose span[aria-hidden="true"] {

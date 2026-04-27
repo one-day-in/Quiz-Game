@@ -419,6 +419,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
             roundNavigationService,
             gameId,
             gameName: resolvedGameName,
+            showGameTitle: hostMode !== 'controller',
             onBackToLobby: hostMode === 'controller' ? null : () => renderLobby(user, { hostMode }),
             isReadOnly: hostMode === 'controller',
             allowCurrentPlayerControl: hostMode === 'controller',

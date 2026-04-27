@@ -12,6 +12,7 @@ export function AppView({
   actions,
   gameId,
   gameName,
+  showGameTitle = true,
   onCellClick,
   onBackToLobby,
   onRoundClick,
@@ -49,6 +50,7 @@ export function AppView({
   const header = HeaderView({
     uiState,
     gameName,
+    showGameTitle,
     players: leaderboardPlayers,
     currentPlayerId: model?.getCurrentPlayerId?.() ?? null,
     onBackToLobby: isReadOnly ? null : onBackToLobby,

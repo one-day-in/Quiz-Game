@@ -8,6 +8,7 @@ function resolveCurrentPlayer(players = [], currentPlayerId = null) {
 export function HeaderView({
   uiState,
   gameName,
+  showGameTitle = true,
   players = [],
   currentPlayerId = null,
   onBackToLobby,
@@ -33,7 +34,7 @@ export function HeaderView({
       </button>
     </div>
     <div class="hdr-center">
-      <h1 class="app-title">${escapeHtml(title)}</h1>
+      ${showGameTitle ? `<h1 class="app-title">${escapeHtml(title)}</h1>` : ''}
     </div>
     <div class="hdr-right">
       ${canOpenScoreLogs ? `
