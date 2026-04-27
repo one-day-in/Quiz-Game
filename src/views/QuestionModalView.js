@@ -274,6 +274,12 @@ export class QuestionModalView {
         const bannerEl = this._refs.pressBanner;
         if (!bannerEl) return;
 
+        if (this._displayMode === 'controller') {
+            bannerEl.hidden = true;
+            bannerEl.classList.remove('is-visible');
+            return;
+        }
+
         const shouldShow = !this._isPressBannerSuppressed && !!this._winnerName && !(this._mode === 'view' && this._isAnswerShown);
         if (!shouldShow) {
             bannerEl.hidden = true;

@@ -111,4 +111,15 @@ describe('QuestionModalView winner state', () => {
     view.destroy();
   });
 
+  it('does not show press banner in controller mode', () => {
+    const view = createView({ displayMode: 'controller' });
+
+    view.updateWinnerName('Maria');
+    view.updatePressTimer(30);
+
+    expect(view._refs.pressBanner.hidden).toBe(true);
+
+    view.destroy();
+  });
+
 });
