@@ -222,9 +222,12 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
         let stopScoreLogsSubscription = null;
         let stopGameSubscription = null;
         let stopGameSnapshotBroadcast = null;
+        let stopPlayersSnapshotBroadcast = null;
         let hasRoundStateSynced = false;
         let gameSnapshotBroadcastTimer = null;
+        let playersSnapshotBroadcastTimer = null;
         let lastGameSnapshotSignature = '';
+        let lastPlayersSnapshotSignature = '';
         const ensureControllerInactiveBanner = () => {
             let banner = root.querySelector('.app-mainHostBanner');
             if (banner) return banner;
@@ -371,9 +374,41 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
                 sendGameSnapshot({ force });
             }, 120);
         };
+        const buildPlayersSnapshotPayload = () => ({
+            players: playersService.getPlayers?.() || [],
+        });
+        const getPlayersSnapshotSignature = (payload) => JSON.stringify(
+            (payload?.players || []).map((player) => ({
+                id: String(player?.id || ''),
+                name: String(player?.name || ''),
+                score: Number(player?.score) || 0,
+            }))
+        );
+        const sendPlayersSnapshot = ({ force = false } = {}) => {
+            if (hostMode !== 'host') return;
+            const snapshotPayload = buildPlayersSnapshotPayload();
+            const nextSignature = getPlayersSnapshotSignature(snapshotPayload);
+            if (!force && nextSignature === lastPlayersSnapshotSignature) return;
+            lastPlayersSnapshotSignature = nextSignature;
+            void hostControlChannel.send('players_snapshot', snapshotPayload);
+        };
+        const schedulePlayersSnapshotBroadcast = ({ immediate = false, force = false } = {}) => {
+            if (hostMode !== 'host') return;
+            window.clearTimeout(playersSnapshotBroadcastTimer);
+            playersSnapshotBroadcastTimer = null;
+            if (immediate) {
+                sendPlayersSnapshot({ force });
+                return;
+            }
+            playersSnapshotBroadcastTimer = window.setTimeout(() => {
+                playersSnapshotBroadcastTimer = null;
+                sendPlayersSnapshot({ force });
+            }, 120);
+        };
         const requestControllerStateSync = () => {
             if (hostMode !== 'controller') return;
             void hostControlChannel.send('game_snapshot_request');
+            void hostControlChannel.send('players_snapshot_request');
             void hostControlChannel.send('round_sync_request');
             void hostControlChannel.send('leaderboard_panel_sync_request');
             void hostControlChannel.send('score_logs_sync_request');
@@ -569,6 +604,9 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
             stopGameSnapshotBroadcast = gameService.subscribe(() => {
                 scheduleGameSnapshotBroadcast();
             });
+            stopPlayersSnapshotBroadcast = playersService.subscribe(() => {
+                schedulePlayersSnapshotBroadcast();
+            });
         }
 
         await hostControlChannel.connect();
@@ -607,6 +645,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
                 });
                 sendRoundState();
                 sendGameSnapshot({ force: true });
+                sendPlayersSnapshot({ force: true });
                 void hostControlChannel.send('leaderboard_panel_state', { isExpanded: leaderboardPanelExpanded });
                 void hostControlChannel.send('score_logs_state', { isOpen: !!scoreLogsOpen });
                 void hostControlChannel.send('current_player_state', { playerId: gameService.getCurrentPlayerId?.() ?? null });
@@ -635,6 +674,16 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
                 }
                 hasRoundStateSynced = true;
                 stopRoundSyncRetry();
+                return;
+            }
+
+            if (type === 'players_snapshot_request' && hostMode === 'host') {
+                sendPlayersSnapshot({ force: true });
+                return;
+            }
+
+            if (type === 'players_snapshot' && hostMode === 'controller') {
+                playersService.setPlayersLocal?.(payload?.players || []);
                 return;
             }
 
@@ -763,6 +812,8 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
             hostActivityStaleTimer = null;
             window.clearTimeout(gameSnapshotBroadcastTimer);
             gameSnapshotBroadcastTimer = null;
+            window.clearTimeout(playersSnapshotBroadcastTimer);
+            playersSnapshotBroadcastTimer = null;
             stopRoundSyncRetry();
             if (hostMode === 'host') {
                 void hostControlChannel.send('host_runtime_state', {
@@ -773,6 +824,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
             stopCurrentPlayerBroadcast?.();
             stopRoundBroadcast?.();
             stopGameSnapshotBroadcast?.();
+            stopPlayersSnapshotBroadcast?.();
             stopScoreLogsSubscription?.();
             stopGameSubscription?.();
             stopHostControlSubscription?.();
@@ -798,6 +850,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
         } else {
             sendRoundState();
             sendGameSnapshot({ force: true });
+            sendPlayersSnapshot({ force: true });
         }
 
         // Keep game boot fast: connect press runtime in background.

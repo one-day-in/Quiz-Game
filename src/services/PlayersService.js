@@ -37,6 +37,15 @@ export function createPlayersService(gameId) {
       return () => subs.delete(fn);
     },
 
+    setPlayersLocal(nextPlayers = []) {
+      const normalized = Array.isArray(nextPlayers)
+        ? nextPlayers.map((player) => ({ ...(player || {}) }))
+        : [];
+      players = normalized;
+      emit();
+      return this.getPlayers();
+    },
+
     async initialize() {
       await syncPlayers();
       stopSubscription?.();
