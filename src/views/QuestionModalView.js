@@ -284,13 +284,11 @@ export class QuestionModalView {
             selectedBet: Number(defaultBet) || 300,
         };
         this.setResolutionButtonsEnabled(false);
-        if (this._refs.btnToggleMode) this._refs.btnToggleMode.disabled = true;
         this._renderDirectedBetPanel();
     }
 
     hideDirectedBetPanel() {
         this._directedBetState.visible = false;
-        if (this._refs.btnToggleMode) this._refs.btnToggleMode.disabled = false;
         this._renderDirectedBetPanel();
     }
 
@@ -564,7 +562,7 @@ export class QuestionModalView {
         if (!refs.directedBetPanel) return;
 
         const state = this._directedBetState;
-        refs.directedBetPanel.hidden = !state.visible;
+        refs.directedBetPanel.hidden = !state.visible || this._mode === 'edit';
         if (!state.visible) return;
 
         if (refs.directedBetPlayers) {
