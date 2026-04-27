@@ -236,21 +236,27 @@
 
 .leaderboard-panel__logsPopover {
   position: fixed;
-  left: 50%;
-  top: 50%;
+  left: 50vw;
+  top: 50vh;
   right: auto;
-  width: min(50vw, 920px);
+  width: min(50vw, 900px);
   min-width: 360px;
-  height: 90vh;
+  height: min(90vh, 940px);
   max-height: 90dvh;
-  padding: 18px;
-  z-index: 1200;
+  padding: 20px;
+  border-radius: 22px;
+  border: 1px solid rgba(148, 163, 184, 0.32);
+  background:
+    radial-gradient(120% 120% at 50% -20%, rgba(59, 130, 246, 0.18), transparent 58%),
+    linear-gradient(180deg, rgba(15, 23, 42, 0.995), rgba(2, 6, 23, 0.995));
+  z-index: 4200;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   overflow: hidden;
   box-shadow:
-    0 0 0 100vmax rgba(2, 6, 23, 0.58),
+    0 0 0 100vmax rgba(2, 6, 23, 0.74),
+    0 28px 56px rgba(2, 6, 23, 0.62),
     var(--shadow-lg);
   transform: translate(-50%, calc(-50% - 8px)) scale(0.98);
   opacity: 0;
@@ -267,38 +273,54 @@
 .leaderboard-panel__logsList {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
-  padding-right: 4px;
+  padding-right: 8px;
+  overscroll-behavior: contain;
 }
 
 .leaderboard-panel__logItem {
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid var(--border-2);
-  background: rgba(15, 23, 42, 0.72);
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.82), rgba(15, 23, 42, 0.9));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .leaderboard-panel__logMain {
   margin: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  align-items: baseline;
+  gap: 10px;
   color: var(--text);
-  font-size: 14px;
+  font-size: 16px;
+  line-height: 1.4;
+  font-family: var(--font-ui);
 }
 
 .leaderboard-panel__logMain strong {
+  font-family: var(--font-display);
+  font-size: 18px;
   font-weight: 900;
+  letter-spacing: 0.02em;
 }
 
 .leaderboard-panel__logTime {
-  margin: 6px 0 0;
+  margin: 8px 0 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 13px;
+  font-family: var(--font-label);
+  font-weight: 700;
   letter-spacing: 0.04em;
+}
+
+.leaderboard-panel__logsPopover .leaderboard-panel__eyebrow {
+  text-align: left;
+  font-size: 13px;
+  letter-spacing: 0.2em;
 }
 
 .leaderboard-panel__qrDock:hover .leaderboard-panel__qrPopover,
@@ -1116,7 +1138,16 @@
     min-width: 0;
     height: 90vh;
     max-height: 90dvh;
-    padding: 14px;
+    padding: 16px;
+    border-radius: 18px;
+  }
+
+  .leaderboard-panel__logMain {
+    font-size: 15px;
+  }
+
+  .leaderboard-panel__logMain strong {
+    font-size: 17px;
   }
 }
 
