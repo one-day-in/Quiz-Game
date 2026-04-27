@@ -176,7 +176,20 @@ export class QuestionModalView {
 
         if (video) {
             if (normalizedAction === 'play') {
-                try { await video.play(); } catch {}
+                try {
+                    await video.play();
+                } catch (error) {
+                    // Remote control from another device may hit autoplay policy.
+                    // Retry muted for video as a best-effort fallback.
+                    try {
+                        const prevMuted = !!video.muted;
+                        video.muted = true;
+                        await video.play();
+                        if (video.paused) video.muted = prevMuted;
+                    } catch {
+                        console.warn('[QuestionModal] video playback failed:', error);
+                    }
+                }
                 return !video.paused;
             }
             try {
@@ -188,7 +201,9 @@ export class QuestionModalView {
 
         if (!firstAudio) return false;
         if (normalizedAction === 'play') {
-            try { await firstAudio.play(); } catch {}
+            try { await firstAudio.play(); } catch (error) {
+                console.warn('[QuestionModal] audio playback failed:', error);
+            }
             return !firstAudio.paused;
         }
         try {

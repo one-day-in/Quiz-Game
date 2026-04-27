@@ -55,6 +55,25 @@ export class ModalService {
     this._currentResolutionValue = 0;
     this._isDirectedBetTimerMode = false;
     this._directedBetTimerLabel = '';
+    this._mediaInteractionUnlocked = this.isControllerMode();
+    this._pendingMediaControl = null;
+
+    if (!this.isControllerMode() && typeof document !== 'undefined') {
+      const unlock = () => this._unlockMediaInteraction();
+      this._disposer.addEventListener(document, 'pointerdown', unlock, { passive: true });
+      this._disposer.addEventListener(document, 'keydown', unlock);
+      this._disposer.addEventListener(document, 'touchstart', unlock, { passive: true });
+    }
+  }
+
+  _unlockMediaInteraction() {
+    if (this._mediaInteractionUnlocked) return;
+    this._mediaInteractionUnlocked = true;
+    if (!this._pendingMediaControl) return;
+
+    const pending = this._pendingMediaControl;
+    this._pendingMediaControl = null;
+    void this.controlMedia(pending.target, pending.action);
   }
 
   _ensureContainer() {
@@ -818,6 +837,15 @@ export class ModalService {
 
   async controlMedia(target = '', action = 'play') {
     const resolvedTarget = target || this.view?.getMediaControlTarget?.() || 'question';
+    if (!this.isControllerMode() && action === 'play' && !this._mediaInteractionUnlocked) {
+      this._pendingMediaControl = { target: resolvedTarget, action };
+      this._onMediaPlaybackStateChange?.({
+        target: resolvedTarget,
+        isPlaying: false,
+      });
+      return { target: resolvedTarget, isPlaying: false };
+    }
+
     const isPlaying = await this.view?.controlMedia?.(resolvedTarget, action);
     this._onMediaPlaybackStateChange?.({
       target: resolvedTarget,
