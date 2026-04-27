@@ -234,40 +234,67 @@
   left: auto;
 }
 
-.leaderboard-panel__logsPopover {
-  position: fixed;
-  left: 50vw;
-  top: 50vh;
-  right: auto;
-  width: min(50vw, 900px);
-  min-width: 360px;
-  height: min(90vh, 940px);
-  max-height: 90dvh;
-  padding: 20px;
+.qmodal--scoreLogs {
+  z-index: 4200;
+}
+
+.qmodal--scoreLogs .qmodal__overlay {
+  background: rgba(2, 6, 23, 0.74);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+.qmodal__dialog--scoreLogs {
+  width: min(80vw, 980px);
+  height: min(80vh, 880px);
+  max-width: 980px;
+  max-height: 88dvh;
   border-radius: 22px;
   border: 1px solid rgba(148, 163, 184, 0.32);
   background:
-    radial-gradient(120% 120% at 50% -20%, rgba(59, 130, 246, 0.18), transparent 58%),
+    radial-gradient(120% 120% at 50% -20%, rgba(59, 130, 246, 0.16), transparent 58%),
     linear-gradient(180deg, rgba(15, 23, 42, 0.995), rgba(2, 6, 23, 0.995));
-  z-index: 4200;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  overflow: hidden;
   box-shadow:
-    0 0 0 100vmax rgba(2, 6, 23, 0.74),
     0 28px 56px rgba(2, 6, 23, 0.62),
     var(--shadow-lg);
-  transform: translate(-50%, calc(-50% - 8px)) scale(0.98);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 160ms var(--ease), transform 160ms var(--ease);
+  overflow: hidden;
 }
 
-.leaderboard-panel__logsPopover.is-open {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translate(-50%, -50%) scale(1);
+.leaderboard-panel__logsModalContent {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.leaderboard-panel__logsModalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-2);
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.94), rgba(15, 23, 42, 0.96));
+}
+
+.leaderboard-panel__logsModalTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(24px, 2.2vw, 30px);
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  color: var(--text);
+  text-transform: uppercase;
+}
+
+.leaderboard-panel__logsModalClose {
+  flex: 0 0 auto;
+}
+
+.leaderboard-panel__logsModalBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 16px 20px 20px;
 }
 
 .leaderboard-panel__logsList {
@@ -315,12 +342,6 @@
   font-family: var(--font-label);
   font-weight: 700;
   letter-spacing: 0.04em;
-}
-
-.leaderboard-panel__logsPopover .leaderboard-panel__eyebrow {
-  text-align: left;
-  font-size: 13px;
-  letter-spacing: 0.2em;
 }
 
 .leaderboard-panel__qrDock:hover .leaderboard-panel__qrPopover,
@@ -1133,13 +1154,19 @@
     font-size: 14px;
   }
 
-  .leaderboard-panel__logsPopover {
-    width: min(92vw, 640px);
-    min-width: 0;
-    height: 90vh;
-    max-height: 90dvh;
-    padding: 16px;
+  .qmodal__dialog--scoreLogs {
+    width: min(92vw, 700px);
+    height: min(86vh, 760px);
+    max-height: 86dvh;
     border-radius: 18px;
+  }
+
+  .leaderboard-panel__logsModalHeader {
+    padding: 14px 16px;
+  }
+
+  .leaderboard-panel__logsModalBody {
+    padding: 14px 16px 16px;
   }
 
   .leaderboard-panel__logMain {

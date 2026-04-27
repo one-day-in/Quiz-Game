@@ -2,6 +2,7 @@ import QRCode from 'qrcode';
 import { LeaderboardGridView } from './LeaderboardGridView.js';
 import { ViewDisposer } from '../utils/disposer.js';
 import { bindOverlayDismiss } from '../utils/overlayDismiss.js';
+import { createModalController } from '../utils/ModalController.js';
 import { t, withLanguageParam } from '../i18n.js';
 import { getActiveBuzzerUrl } from '../utils/localBuzzerUrl.js';
 import { escapeHtml } from '../utils/utils.js';
@@ -41,6 +42,7 @@ export class LeaderboardPanelView {
     this._build();
     this._disposer = new ViewDisposer(this._root);
     this._disposer.autoDestroy();
+    this._buildScoreLogsModal();
     this._buildScoreBar();
     this._wire();
     this.updatePlayers(this._players);
@@ -95,13 +97,18 @@ export class LeaderboardPanelView {
     const isOpen = !!nextOpen;
     if (this._isScoreLogsOpen === isOpen) return;
     this._isScoreLogsOpen = isOpen;
-    this._logsPopover?.setAttribute('aria-hidden', String(!isOpen));
-    this._logsPopover?.classList.toggle('is-open', isOpen);
+    if (isOpen) {
+      this._scoreLogsModal?.open?.();
+    } else {
+      this._scoreLogsModal?.close?.();
+    }
     this._root?.classList.toggle('is-score-logs-open', isOpen);
     if (!silent) this._onScoreLogsOpenChange?.(isOpen);
   }
 
   destroy() {
+    this._scoreLogsModal?.destroy?.();
+    this._scoreLogsModal = null;
     this._previewView?.destroy?.();
     this._fullView?.destroy?.();
     this._previewView = null;
@@ -189,11 +196,6 @@ export class LeaderboardPanelView {
           ` : ''}
         </div>
 
-        <div class="leaderboard-panel__logsPopover" role="dialog" aria-label="${t('score_logs')}" aria-hidden="true">
-          <p class="leaderboard-panel__eyebrow">${t('score_logs')}</p>
-          <div class="leaderboard-panel__logsList"></div>
-        </div>
-
         <div class="leaderboard-panel__preview">
           <div class="leaderboard-panel__previewMount"></div>
         </div>
@@ -227,8 +229,6 @@ export class LeaderboardPanelView {
     this._boardMount = root.querySelector('.leaderboard-panel__boardMount');
     this._selectionText = root.querySelector('.leaderboard-panel__selectionText');
     this._scoreBar = root.querySelector('.leaderboard-panel__scoreBar');
-    this._logsList = root.querySelector('.leaderboard-panel__logsList');
-    this._logsPopover = root.querySelector('.leaderboard-panel__logsPopover');
     this._playerQrImg = root.querySelector('.leaderboard-panel__playerQrImg');
     this._hostQrImg = root.querySelector('.leaderboard-panel__hostQrImg');
 
@@ -251,6 +251,33 @@ export class LeaderboardPanelView {
 
     void this._generateQr();
     this._renderScoreLogs();
+  }
+
+  _buildScoreLogsModal() {
+    this._scoreLogsModal = createModalController({
+      modalClassName: 'qmodal--scoreLogs',
+      dialogClassName: 'qmodal__dialog--scoreLogs',
+      ariaLabel: t('score_logs'),
+      onRequestClose: () => this.setScoreLogsOpen(false),
+    });
+
+    const content = document.createElement('section');
+    content.className = 'leaderboard-panel__logsModalContent';
+    content.innerHTML = `
+      <header class="leaderboard-panel__logsModalHeader">
+        <h2 class="leaderboard-panel__logsModalTitle">${t('score_logs')}</h2>
+        <button class="qmodal__btn qmodal__btn--ghost leaderboard-panel__logsModalClose" type="button" aria-label="${t('close')}" title="${t('close')}">
+          ✕ ${t('close')}
+        </button>
+      </header>
+      <div class="leaderboard-panel__logsModalBody">
+        <div class="leaderboard-panel__logsList"></div>
+      </div>
+    `;
+    this._scoreLogsModal.setContent(content);
+    this._logsList = content.querySelector('.leaderboard-panel__logsList');
+    const closeBtn = content.querySelector('.leaderboard-panel__logsModalClose');
+    this._disposer.addEventListener(closeBtn, 'click', () => this.setScoreLogsOpen(false));
   }
 
   async _generateQr() {
@@ -306,20 +333,12 @@ export class LeaderboardPanelView {
       if (this._isExpanded && this._openQrDock && !target.closest('.leaderboard-panel__qrDock')) {
         this._setQrOpen(null);
       }
-      if (this._isScoreLogsOpen && !target.closest('.leaderboard-panel__logsPopover') && !target.closest('.hdr-logs-btn')) {
-        this.setScoreLogsOpen(false);
-      }
       if (!this._isExpanded || !this._selectedPlayerId) return;
       if (target.closest('.leaderboard__rowWrap, .leaderboard__row')) return;
-      if (target.closest('.leaderboard-panel__scoreBar, .leaderboard-panel__qrDock, .leaderboard-panel__toggle, .leaderboard-panel__logsPopover, .hdr-logs-btn')) return;
+      if (target.closest('.leaderboard-panel__scoreBar, .leaderboard-panel__qrDock, .leaderboard-panel__toggle, .leaderboard-panel__logsModalContent, .hdr-logs-btn')) return;
 
       this._clearSelectedPlayer();
     }, true);
-
-    this._disposer.addEventListener(document, 'keydown', (event) => {
-      if (event.key !== 'Escape') return;
-      if (this._isScoreLogsOpen) this.setScoreLogsOpen(false);
-    });
 
     bindOverlayDismiss({
       disposer: this._disposer,
