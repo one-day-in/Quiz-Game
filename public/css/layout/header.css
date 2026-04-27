@@ -684,3 +684,46 @@
     height: max(120px, env(safe-area-inset-bottom, 0px));
   }
 }
+
+:root[data-theme="birthday"] .app-header {
+  border-color: rgba(186, 230, 253, 0.48);
+  background:
+    linear-gradient(180deg, rgba(21, 39, 64, 0.84), rgba(16, 32, 53, 0.84)),
+    radial-gradient(520px 180px at 50% -20%, rgba(253, 224, 71, 0.2), transparent 68%);
+  box-shadow:
+    0 14px 34px rgba(8, 20, 36, 0.42),
+    0 0 0 1px rgba(34, 211, 238, 0.12);
+}
+
+:root[data-theme="birthday"] .hdr-left {
+  background: linear-gradient(180deg, rgba(40, 66, 102, 0.9), rgba(23, 44, 72, 0.9));
+  border-color: rgba(125, 211, 252, 0.42);
+}
+
+:root[data-theme="birthday"] .round-indicator,
+:root[data-theme="birthday"] .hdr-current-player-btn,
+:root[data-theme="birthday"] .hdr-lobby-btn,
+:root[data-theme="birthday"] .hdr-logout-btn,
+:root[data-theme="birthday"] .hdr-logs-btn {
+  background: linear-gradient(180deg, rgba(48, 77, 116, 0.92), rgba(25, 45, 73, 0.92));
+  border-color: rgba(125, 211, 252, 0.44);
+  color: var(--text);
+}
+
+:root[data-theme="birthday"] .round-indicator:hover,
+:root[data-theme="birthday"] .hdr-current-player-btn:hover,
+:root[data-theme="birthday"] .hdr-lobby-btn:hover,
+:root[data-theme="birthday"] .hdr-logout-btn:hover,
+:root[data-theme="birthday"] .hdr-logs-btn:hover {
+  border-color: rgba(254, 240, 138, 0.72);
+  box-shadow:
+    0 12px 24px rgba(8, 20, 36, 0.38),
+    0 0 0 1px rgba(254, 240, 138, 0.24),
+    0 0 22px rgba(125, 211, 252, 0.26);
+  filter: brightness(1.04);
+}
+
+:root[data-theme="birthday"] .hdr-current-player-menu {
+  background: linear-gradient(180deg, rgba(23, 44, 72, 0.96), rgba(17, 35, 60, 0.96));
+  border-color: rgba(125, 211, 252, 0.42);
+}
