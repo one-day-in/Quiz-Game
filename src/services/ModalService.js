@@ -616,9 +616,10 @@ export class ModalService {
     this.container = null;
   }
 
-  async controlMedia(target = '', action = 'play') {
+  async controlMedia(target = '', action = 'play', options = {}) {
+    const fromRemote = !!options?.fromRemote;
     const resolvedTarget = target || this.view?.getMediaControlTarget?.() || 'question';
-    if (!this.isControllerMode() && action === 'play' && !this._mediaInteractionUnlocked) {
+    if (!this.isControllerMode() && !fromRemote && action === 'play' && !this._mediaInteractionUnlocked) {
       this._pendingMediaControl = { target: resolvedTarget, action };
       this._onMediaPlaybackStateChange?.({
         target: resolvedTarget,
@@ -650,7 +651,7 @@ export class ModalService {
       return;
     }
     if (type === 'modal_media_control') {
-      return this.controlMedia(payload?.target, payload?.action);
+      return this.controlMedia(payload?.target, payload?.action, { fromRemote: true });
     }
     if (type === 'modal_toggle_answer') {
       this.view?.toggleAnswerVisibility?.();
