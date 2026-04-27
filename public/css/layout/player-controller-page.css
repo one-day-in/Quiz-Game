@@ -37,6 +37,32 @@ body {
   position: relative;
 }
 
+.player-controller__mainGameBanner {
+  position: absolute;
+  z-index: 5;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(92%, 520px);
+  padding: 14px 18px;
+  border-radius: 14px;
+  border: 1px solid var(--btn-outline);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(2, 6, 23, 0.98));
+  box-shadow: var(--shadow-lg);
+  color: var(--text);
+  text-align: center;
+  font-family: var(--font-label);
+  font-size: clamp(14px, 2.6vw, 20px);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.player-controller--mainGameInactive .player-controller__card {
+  opacity: 0.54;
+  filter: saturate(0.7) blur(1px);
+}
+
 .player-controller__card {
   width: 100%;
   border-radius: var(--radius-lg);

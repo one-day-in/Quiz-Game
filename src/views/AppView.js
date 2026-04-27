@@ -19,6 +19,8 @@ export function AppView({
   allowCurrentPlayerControl = false,
   allowLeaderboardControls = false,
   showLeaderboardQr = true,
+  scoreLogs = [],
+  onLeaderboardExpandedChange = null,
 }) {
   const container = document.createElement('div');
   container.className = 'app-shell';
@@ -29,6 +31,7 @@ export function AppView({
   let gridEl = null;
   let leaderboardPanel = null;
   let leaderboardPlayers = Array.isArray(players) ? players : [];
+  let leaderboardScoreLogs = Array.isArray(scoreLogs) ? scoreLogs : [];
 
   // ResizeObserver — recalculate fitText on resize
   const ro = new ResizeObserver(() => {
@@ -81,8 +84,10 @@ export function AppView({
       leaderboardPanel = new LeaderboardPanelView({
         gameId,
         players: leaderboardPlayers,
+        scoreLogs: leaderboardScoreLogs,
         onAdjustPlayerScore: (playerId, delta) => actions.adjustPlayerScore?.(playerId, delta),
         onDeletePlayer: (isReadOnly && !allowLeaderboardControls) ? null : (playerId) => actions.removePlayer?.(playerId),
+        onExpandedChange: (expanded) => onLeaderboardExpandedChange?.(expanded),
         readOnly: isReadOnly && !allowLeaderboardControls,
         showQr: showLeaderboardQr,
       });
@@ -90,6 +95,7 @@ export function AppView({
       fit();
     } else {
       leaderboardPanel.updatePlayers?.(leaderboardPlayers);
+      leaderboardPanel.updateScoreLogs?.(leaderboardScoreLogs);
     }
   }
 
@@ -139,6 +145,15 @@ export function AppView({
     renderLeaderboard(nextPlayers);
   }
 
+  function updateScoreLogs(nextLogs = []) {
+    leaderboardScoreLogs = Array.isArray(nextLogs) ? nextLogs : [];
+    leaderboardPanel?.updateScoreLogs?.(leaderboardScoreLogs);
+  }
+
+  function setLeaderboardExpanded(expanded, options = {}) {
+    leaderboardPanel?.setExpanded?.(!!expanded, options);
+  }
+
   // Targeted patch for a single cell (avoids full grid rebuild)
   function patchCell(rowId, cellId, isAnswered) {
     const el = gridEl?.querySelector(`[data-cell="r${rowId}c${cellId}"]`);
@@ -149,5 +164,5 @@ export function AppView({
   renderLeaderboard(leaderboardPlayers);
   disposer.add(() => leaderboardPanel?.destroy?.());
 
-  return { el: container, update, updatePlayers, patchCell, syncLive, setRoundTransition };
+  return { el: container, update, updatePlayers, updateScoreLogs, setLeaderboardExpanded, patchCell, syncLive, setRoundTransition };
 }

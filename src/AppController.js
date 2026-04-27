@@ -18,6 +18,9 @@ export function createAppController({
   allowCurrentPlayerControl = false,
   allowLeaderboardControls = false,
   showLeaderboardQr = true,
+  scoreLogs = [],
+  onAdjustPlayerScore = null,
+  onLeaderboardExpandedChange = null,
 }) {
   let appViewRef = null; // { el, update } — kept alive across state changes
   const disposer = new Disposer();
@@ -28,6 +31,9 @@ export function createAppController({
       return gameService.updateTopic(roundId, rowId, topic);
     },
     adjustPlayerScore: (playerId, delta) => {
+      if (typeof onAdjustPlayerScore === 'function') {
+        return onAdjustPlayerScore(playerId, delta);
+      }
       if (isReadOnly && !allowLeaderboardControls) return;
       return playersService.adjustPlayerScore(playerId, delta);
     },
@@ -110,6 +116,8 @@ export function createAppController({
         allowCurrentPlayerControl,
         allowLeaderboardControls,
         showLeaderboardQr,
+        scoreLogs,
+        onLeaderboardExpandedChange,
       });
       root.appendChild(appViewRef.el);
       return;
@@ -149,6 +157,8 @@ export function createAppController({
   return {
     render,
     openCell: (payload, options) => openCell(payload, options),
+    updateScoreLogs: (nextLogs) => appViewRef?.updateScoreLogs?.(nextLogs),
+    setLeaderboardExpanded: (expanded, options = {}) => appViewRef?.setLeaderboardExpanded?.(expanded, options),
     destroy: () => disposer.destroy()
   };
 }

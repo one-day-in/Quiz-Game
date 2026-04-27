@@ -10,6 +10,7 @@ import {
 import { initLanguageFromUrl, t } from './i18n.js';
 import { initThemeFromStorage } from './theme.js';
 import { createPressRuntimeService } from './services/PressRuntimeService.js';
+import { createHostControlChannelService } from './services/HostControlChannelService.js';
 import { normalizeBuzzerUrl } from './utils/localBuzzerUrl.js';
 import {
   createPlayerPressAudio,
@@ -25,6 +26,7 @@ const gameId = params.get('gameId');
 const buzzerUrl = normalizeBuzzerUrl(params.get('buzzer') || '');
 const STORAGE_PREFIX = 'quiz-game:player-controller';
 const STATUS_AUTO_HIDE_MS = 10000;
+const HOST_ACTIVITY_STALE_MS = 9000;
 
 let player = null;
 let controllerId = null;
@@ -38,9 +40,13 @@ let pressRuntime = null;
 let hasSeenRuntimeState = false;
 let lastPlayedWinnerToneKey = null;
 let statusHideTimer = null;
+let hostControlChannel = null;
+let hostActivityStaleTimer = null;
+let isMainGameActive = false;
 const playerPressAudio = createPlayerPressAudio();
 
 const CONTROLLER_DISABLED_SELECTOR = '.player-controller__input, .player-controller__leaveBtn';
+const MAIN_GAME_LOCK_SELECTOR = '[data-main-game-lock]';
 
 async function startPlayerController() {
   if (!gameId) {
@@ -53,6 +59,9 @@ async function startPlayerController() {
 
   try {
     player = await getPlayerByController(gameId, controllerId);
+    hostControlChannel = createHostControlChannelService({ gameId, role: 'player' });
+    await hostControlChannel.connect();
+    bindMainGameActivity();
     pressRuntime = createPressRuntimeService({ gameId, role: 'player', controllerId, wsUrl: buzzerUrl });
     await pressRuntime.connect();
     bindRealtimePlayers();
@@ -94,6 +103,7 @@ function renderError(title, detail) {
 function renderJoin() {
   root.innerHTML = `
     <main class="player-controller">
+      <div id="mainGameInactiveBanner" class="player-controller__mainGameBanner" hidden>${t('start_main_game_prompt')}</div>
       <section class="player-controller__card">
         <p class="player-controller__eyebrow">${t('join_game')}</p>
         <form class="player-controller__joinForm" id="playerJoinForm">
@@ -108,7 +118,7 @@ function renderJoin() {
               required
             >
           </label>
-          <button class="player-controller__primary" type="submit">${t('join_controller')}</button>
+          <button class="player-controller__primary" data-main-game-lock type="submit">${t('join_controller')}</button>
           <p class="player-controller__copy">${t('players_can_connect', { count: MAX_PLAYERS })}</p>
         </form>
         <p id="playerJoinError" class="player-controller__error" hidden></p>
@@ -120,11 +130,17 @@ function renderJoin() {
   const input = document.getElementById('playerNameInput');
   const errorEl = document.getElementById('playerJoinError');
   input?.focus();
+  syncMainGameAvailability();
 
   form?.addEventListener('submit', async (event) => {
     event.preventDefault();
     const name = input?.value?.trim();
     if (!name) return;
+    if (!isMainGameActive) {
+      errorEl.textContent = t('start_main_game_prompt');
+      errorEl.hidden = false;
+      return;
+    }
 
     toggleJoinPending(true);
     errorEl.hidden = true;
@@ -148,13 +164,14 @@ function renderController(currentPlayer) {
 
   root.innerHTML = `
     <main class="player-controller">
+      <div id="mainGameInactiveBanner" class="player-controller__mainGameBanner" hidden>${t('start_main_game_prompt')}</div>
       <div class="player-controller__toastHost" aria-live="polite" aria-atomic="true">
         <p id="playerControllerStatus" class="player-controller__status" hidden></p>
       </div>
       <section class="player-controller__card player-controller__card--controller">
         <div class="player-controller__topBar">
           <p class="player-controller__eyebrow">${t('player_controller')}</p>
-          <button id="playerDeleteBtn" class="player-controller__leaveBtn" type="button" aria-label="${t('leave_game')}" title="${t('leave_game')}">
+          <button id="playerDeleteBtn" class="player-controller__leaveBtn" data-main-game-lock type="button" aria-label="${t('leave_game')}" title="${t('leave_game')}">
             <svg class="player-controller__leaveIcon" viewBox="0 0 24 24" focusable="false" aria-hidden="true">
               <path d="M12 3v8" />
               <path d="M7.05 5.05a9 9 0 1 0 9.9 0" />
@@ -166,6 +183,7 @@ function renderController(currentPlayer) {
           <input
             id="playerControllerName"
             class="player-controller__input"
+            data-main-game-lock
             type="text"
             maxlength="24"
             value="${escapeHtml(currentPlayer.name)}"
@@ -174,7 +192,7 @@ function renderController(currentPlayer) {
         <div class="player-controller__scoreCard">
           <strong id="playerScoreValue" class="player-controller__scoreValue">${formatPoints(currentPlayer.points)}</strong>
         </div>
-        <button id="playerPressBtn" class="player-controller__pressBtn" type="button">PRESS</button>
+        <button id="playerPressBtn" class="player-controller__pressBtn" data-main-game-lock type="button">PRESS</button>
       </section>
     </main>
   `;
@@ -184,9 +202,14 @@ function renderController(currentPlayer) {
   const nameInput = document.getElementById('playerControllerName');
   const pressBtn = document.getElementById('playerPressBtn');
   const deleteBtn = document.getElementById('playerDeleteBtn');
+  syncMainGameAvailability();
 
   pressBtn?.addEventListener('click', () => {
     if (isClaimingPress) return;
+    if (!isMainGameActive) {
+      showStatus(statusEl, t('start_main_game_prompt'), 'info');
+      return;
+    }
 
     // Always give tactile feedback so the button feels alive
     pressBtn.classList.remove('is-pressed');
@@ -213,6 +236,7 @@ function renderController(currentPlayer) {
   });
 
   nameInput?.addEventListener('change', async () => {
+    if (!isMainGameActive) return;
     const nextName = nameInput.value.trim();
     if (!nextName || nextName === player.name) {
       nameInput.value = player.name;
@@ -233,6 +257,7 @@ function renderController(currentPlayer) {
   });
 
   deleteBtn?.addEventListener('click', async () => {
+    if (!isMainGameActive) return;
     if (!player || !window.confirm(t('remove_player_confirm', { name: player.name }))) return;
 
     setControllerPending(true);
@@ -367,9 +392,45 @@ async function claimPress(statusEl) {
 function syncPressButtonState() {
   const pressBtn = document.getElementById('playerPressBtn');
   if (!pressBtn) return;
-  const isAvailable = !!isPressEnabled && !pressWinnerPlayerId && !isClaimingPress;
+  const isAvailable = isMainGameActive && !!isPressEnabled && !pressWinnerPlayerId && !isClaimingPress;
   pressBtn.classList.toggle('is-enabled', isAvailable);
   pressBtn.disabled = !isAvailable;
+}
+
+function bindMainGameActivity() {
+  hostControlChannel?.subscribe((message) => {
+    const type = message?.type;
+    const payload = message?.payload || {};
+    if (!type) return;
+
+    if (type === 'host_runtime_state') {
+      markMainGameActive(payload?.active !== false);
+      return;
+    }
+  });
+  void hostControlChannel?.send('host_runtime_state_request');
+}
+
+function markMainGameActive(active) {
+  isMainGameActive = !!active;
+  syncMainGameAvailability();
+  window.clearTimeout(hostActivityStaleTimer);
+  if (!active) return;
+  hostActivityStaleTimer = window.setTimeout(() => {
+    isMainGameActive = false;
+    syncMainGameAvailability();
+  }, HOST_ACTIVITY_STALE_MS);
+}
+
+function syncMainGameAvailability() {
+  const banner = document.getElementById('mainGameInactiveBanner');
+  if (banner) banner.hidden = isMainGameActive;
+  root.classList.toggle('player-controller--mainGameInactive', !isMainGameActive);
+
+  root.querySelectorAll(MAIN_GAME_LOCK_SELECTOR).forEach((element) => {
+    element.disabled = !isMainGameActive;
+  });
+  syncPressButtonState();
 }
 
 function toggleJoinPending(isPending) {
@@ -475,7 +536,9 @@ startPlayerController().catch((error) => {
 
 window.addEventListener('beforeunload', () => {
   stopPlayersSubscription?.();
+  hostControlChannel?.destroy?.();
   pressRuntime?.destroy?.();
+  window.clearTimeout(hostActivityStaleTimer);
   window.clearTimeout(statusHideTimer);
   playerPressAudio?.destroy?.();
 });

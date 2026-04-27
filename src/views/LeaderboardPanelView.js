@@ -4,13 +4,31 @@ import { ViewDisposer } from '../utils/disposer.js';
 import { bindOverlayDismiss } from '../utils/overlayDismiss.js';
 import { t, withLanguageParam } from '../i18n.js';
 import { getActiveBuzzerUrl } from '../utils/localBuzzerUrl.js';
+import { escapeHtml } from '../utils/utils.js';
+
+function formatLogTime(iso) {
+  const date = iso ? new Date(iso) : new Date();
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
 
 export class LeaderboardPanelView {
-  constructor({ gameId, players = [], onAdjustPlayerScore = null, onDeletePlayer = null, readOnly = false, showQr = true } = {}) {
+  constructor({
+    gameId,
+    players = [],
+    scoreLogs = [],
+    onAdjustPlayerScore = null,
+    onDeletePlayer = null,
+    onExpandedChange = null,
+    readOnly = false,
+    showQr = true
+  } = {}) {
     this._gameId = gameId;
     this._players = Array.isArray(players) ? players : [];
+    this._scoreLogs = Array.isArray(scoreLogs) ? scoreLogs : [];
     this._onAdjustPlayerScore = onAdjustPlayerScore;
     this._onDeletePlayer = onDeletePlayer;
+    this._onExpandedChange = onExpandedChange;
     this._readOnly = !!readOnly;
     this._showQr = !!showQr;
     this._isExpanded = false;
@@ -38,11 +56,16 @@ export class LeaderboardPanelView {
     this._renderSelectionState();
   }
 
+  updateScoreLogs(logs = []) {
+    this._scoreLogs = Array.isArray(logs) ? logs : [];
+    this._renderScoreLogs();
+  }
+
   toggleExpanded() {
     this.setExpanded(!this._isExpanded);
   }
 
-  setExpanded(nextExpanded) {
+  setExpanded(nextExpanded, { silent = false } = {}) {
     const isExpanded = !!nextExpanded;
     if (this._isExpanded === isExpanded) return;
 
@@ -53,6 +76,9 @@ export class LeaderboardPanelView {
     this._toggleBtn.setAttribute('aria-label', isExpanded ? t('close') : t('show_all_players'));
     this._toggleBtn.setAttribute('title', isExpanded ? t('close') : t('show_all_players'));
     if (!isExpanded) this._setQrOpen(null);
+    if (!silent) {
+      this._onExpandedChange?.(isExpanded);
+    }
   }
 
   destroy() {
@@ -68,6 +94,9 @@ export class LeaderboardPanelView {
   _build() {
     const root = document.createElement('footer');
     root.className = 'app-footer leaderboard-panel';
+    if (!this._showQr) {
+      root.classList.add('leaderboard-panel--noQr');
+    }
 
     root.innerHTML = `
       <div class="leaderboard-panel__backdrop"></div>
@@ -88,6 +117,26 @@ export class LeaderboardPanelView {
               </svg>
             </span>
           </button>
+
+          <div class="leaderboard-panel__qrDock leaderboard-panel__qrDock--logs" data-qr-dock="logs">
+            <button
+              class="leaderboard-panel__qrTrigger"
+              type="button"
+              aria-label="${t('score_logs')}"
+              aria-expanded="false"
+              title="${t('score_logs')}"
+            >
+              <svg class="leaderboard-panel__qrTriggerIcon" viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                <path d="M5 4h11l3 3v13H5z" />
+                <path d="M8 9h8M8 13h8M8 17h6" />
+              </svg>
+            </button>
+
+            <div class="leaderboard-panel__qrPopover leaderboard-panel__logsPopover" role="dialog" aria-label="${t('score_logs')}" aria-hidden="true">
+              <p class="leaderboard-panel__eyebrow">${t('score_logs')}</p>
+              <div class="leaderboard-panel__logsList"></div>
+            </div>
+          </div>
 
           ${this._showQr ? `
           <div class="leaderboard-panel__qrDock leaderboard-panel__qrDock--left" data-qr-dock="host">
@@ -173,6 +222,7 @@ export class LeaderboardPanelView {
     this._boardMount = root.querySelector('.leaderboard-panel__boardMount');
     this._selectionText = root.querySelector('.leaderboard-panel__selectionText');
     this._scoreBar = root.querySelector('.leaderboard-panel__scoreBar');
+    this._logsList = root.querySelector('.leaderboard-panel__logsList');
     this._playerQrImg = root.querySelector('.leaderboard-panel__playerQrImg');
     this._hostQrImg = root.querySelector('.leaderboard-panel__hostQrImg');
 
@@ -194,6 +244,7 @@ export class LeaderboardPanelView {
     this._boardMount.appendChild(this._fullView);
 
     void this._generateQr();
+    this._renderScoreLogs();
   }
 
   async _generateQr() {
@@ -265,6 +316,24 @@ export class LeaderboardPanelView {
       },
       shouldDismissOnEscape: () => this._isExpanded,
     });
+  }
+
+  _renderScoreLogs() {
+    if (!this._logsList) return;
+    if (!this._scoreLogs.length) {
+      this._logsList.innerHTML = `<p class="leaderboard-panel__copy">${t('score_logs_empty')}</p>`;
+      return;
+    }
+
+    this._logsList.innerHTML = this._scoreLogs.map((entry) => `
+      <article class="leaderboard-panel__logItem">
+        <p class="leaderboard-panel__logMain">
+          <strong>${escapeHtml(entry.playerName || t('player_fallback'))}</strong>
+          <span>${escapeHtml(`${entry.cellLabel || ''}${entry.outcome ? `, ${entry.outcome === 'correct' ? t('correct') : t('not_correct')}` : ''}`)}</span>
+        </p>
+        <p class="leaderboard-panel__logTime">${escapeHtml(formatLogTime(entry.happenedAt))}</p>
+      </article>
+    `).join('');
   }
 
   _setQrOpen(kind) {

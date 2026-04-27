@@ -29,6 +29,7 @@ export class ModalService {
     this._onControllerCommand = options.onControllerCommand || null;
     this._onModalViewStateChange = options.onModalViewStateChange || null;
     this._onMediaPlaybackStateChange = options.onMediaPlaybackStateChange || null;
+    this._onScoreLog = options.onScoreLog || null;
 
     this._disposer = new Disposer();
     this.view = null;
@@ -404,6 +405,11 @@ export class ModalService {
     }
     try {
       await adjustPlayerScore(this._game.getGameId(), winnerId, -resolutionValue);
+      this._emitScoreLog({
+        playerId: winnerId,
+        delta: -resolutionValue,
+        outcome: 'incorrect',
+      });
     } catch (e) {
       console.error('[ModalService] adjustPlayerScore (incorrect) failed:', e);
     }
@@ -433,6 +439,11 @@ export class ModalService {
     try {
       await adjustPlayerScore(this._game.getGameId(), winnerId, resolutionValue);
       await this._game?.setCurrentPlayerId?.(winnerId);
+      this._emitScoreLog({
+        playerId: winnerId,
+        delta: resolutionValue,
+        outcome: 'correct',
+      });
     } catch (e) {
       console.error('[ModalService] correct resolution failed:', e);
     }
@@ -726,6 +737,27 @@ export class ModalService {
     const directValue = Number(this._currentResolutionValue);
     if (Number.isFinite(directValue) && directValue !== 0) return directValue;
     return Number(this._cellValue) || 0;
+  }
+
+  _emitScoreLog({ playerId, delta, outcome }) {
+    if (!this._onScoreLog) return;
+    const player = this._getPlayersSnapshot().find((entry) => String(entry?.id || '') === String(playerId || ''));
+    const activeCell = this.activeCell || null;
+    const topic = activeCell
+      ? this._game?.getModel?.()?.getTopic?.(activeCell.roundId, activeCell.rowId) || t('no_topic')
+      : t('no_topic');
+    const absoluteValue = Math.abs(Number(delta) || 0);
+    const cellLabel = `${topic} / ${delta >= 0 ? '+' : '-'}${absoluteValue}`;
+
+    this._onScoreLog({
+      kind: 'cell_resolution',
+      playerId: playerId || null,
+      playerName: player?.name || t('player_fallback'),
+      cellLabel,
+      outcome,
+      delta: Number(delta) || 0,
+      happenedAt: new Date().toISOString(),
+    });
   }
 
   _startDirectedBetSelection() {

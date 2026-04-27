@@ -146,6 +146,14 @@
   left: 14px;
 }
 
+.leaderboard-panel__qrDock--logs {
+  left: 84px;
+}
+
+.leaderboard-panel--noQr .leaderboard-panel__qrDock--logs {
+  left: 14px;
+}
+
 .leaderboard-panel__qrDock--right {
   right: 14px;
 }
@@ -224,6 +232,44 @@
 .leaderboard-panel__qrDock--right .leaderboard-panel__qrPopover {
   right: 0;
   left: auto;
+}
+
+.leaderboard-panel__logsPopover {
+  width: min(clamp(280px, 42vw, 560px), calc(100vw - 24px));
+  max-height: min(calc(var(--leaderboard-panel-expanded-h) - 120px), calc(100dvh - 120px));
+}
+
+.leaderboard-panel__logsList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.leaderboard-panel__logItem {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border-2);
+  background: rgba(15, 23, 42, 0.72);
+}
+
+.leaderboard-panel__logMain {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.leaderboard-panel__logMain strong {
+  font-weight: 900;
+}
+
+.leaderboard-panel__logTime {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.04em;
 }
 
 .leaderboard-panel__qrDock:hover .leaderboard-panel__qrPopover,
@@ -972,6 +1018,14 @@
   }
 
   .leaderboard-panel__qrDock--left {
+    left: 12px;
+  }
+
+  .leaderboard-panel__qrDock--logs {
+    left: 82px;
+  }
+
+  .leaderboard-panel--noQr .leaderboard-panel__qrDock--logs {
     left: 12px;
   }
 

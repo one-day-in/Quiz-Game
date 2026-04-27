@@ -90,3 +90,34 @@
   position: relative;
   overflow: visible;
 }
+
+.app--mainHostInactive {
+  position: relative;
+}
+
+.app-mainHostBanner {
+  position: fixed;
+  z-index: 1200;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(92vw, 560px);
+  padding: 18px 22px;
+  border-radius: 16px;
+  border: 1px solid var(--btn-outline);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(2, 6, 23, 0.98));
+  box-shadow: var(--shadow-lg);
+  color: var(--text);
+  text-align: center;
+  font-family: var(--font-label);
+  font-size: clamp(16px, 2.2vw, 22px);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.app--mainHostInactive .app-shell {
+  pointer-events: none;
+  opacity: 0.52;
+  filter: saturate(0.7) blur(1.4px);
+}

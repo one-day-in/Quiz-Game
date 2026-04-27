@@ -27,6 +27,8 @@ const IS_DEV = window.location.hostname === 'localhost' || window.location.hostn
 const LAST_GAME_ID_KEY   = 'lastGameId';
 const LAST_GAME_NAME_KEY = 'lastGameName';
 const BUZZER_WARMUP_TIMEOUT_MS = 1200;
+const HOST_ACTIVITY_PING_MS = 3000;
+const HOST_ACTIVITY_STALE_MS = 9000;
 let _buzzerWarmupAttempted = false;
 let _buzzerWarmupSuppressed = false;
 
@@ -93,6 +95,7 @@ function clearRoot() {
         _currentCleanup();
         _currentCleanup = null;
     }
+    root.classList.remove('app--mainHostInactive');
     root.innerHTML = '';
 }
 
@@ -168,6 +171,70 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
             role: hostMode === 'controller' ? 'controller' : 'host',
         });
         const roundNavigationService = createRoundNavigationService(gameService);
+        let scoreLogs = [];
+        const makeLogId = () => `log-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        let appRef = null;
+        let leaderboardPanelExpanded = false;
+        let hostActivityPingTimer = null;
+        let hostActivityStaleTimer = null;
+        const ensureControllerInactiveBanner = () => {
+            let banner = root.querySelector('.app-mainHostBanner');
+            if (banner) return banner;
+            banner = document.createElement('div');
+            banner.className = 'app-mainHostBanner';
+            banner.textContent = t('start_main_game_prompt');
+            root.appendChild(banner);
+            return banner;
+        };
+        const setControllerAvailability = (active) => {
+            if (hostMode !== 'controller') return;
+            root.classList.toggle('app--mainHostInactive', !active);
+            const banner = ensureControllerInactiveBanner();
+            banner.hidden = !!active;
+        };
+        const markMainHostActiveFromPing = (active) => {
+            setControllerAvailability(!!active);
+            window.clearTimeout(hostActivityStaleTimer);
+            if (!active) return;
+            hostActivityStaleTimer = window.setTimeout(() => {
+                setControllerAvailability(false);
+            }, HOST_ACTIVITY_STALE_MS);
+        };
+        const setScoreLogs = (nextLogs = []) => {
+            scoreLogs = Array.isArray(nextLogs) ? nextLogs.slice(0, 200) : [];
+            appRef?.updateScoreLogs?.(scoreLogs);
+        };
+        const appendScoreLog = (entry, { broadcast = true } = {}) => {
+            const nextEntry = {
+                id: entry?.id || makeLogId(),
+                playerId: entry?.playerId || null,
+                playerName: entry?.playerName || t('player_fallback'),
+                cellLabel: entry?.cellLabel || '',
+                outcome: entry?.outcome || null,
+                delta: Number(entry?.delta) || 0,
+                happenedAt: entry?.happenedAt || new Date().toISOString(),
+                kind: entry?.kind || 'manual',
+            };
+            setScoreLogs([nextEntry, ...scoreLogs]);
+            if (broadcast) {
+                void hostControlChannel.send('score_log_append', nextEntry);
+            }
+            return nextEntry;
+        };
+        const makeManualScoreLog = ({ playerId, delta }) => {
+            const players = playersService.getPlayers?.() || [];
+            const player = players.find((entry) => String(entry?.id || '') === String(playerId || ''));
+            const amount = Math.abs(Number(delta) || 0);
+            return {
+                kind: 'manual',
+                playerId: playerId || null,
+                playerName: player?.name || t('player_fallback'),
+                cellLabel: `${t('leaderboard')} / ${delta >= 0 ? '+' : '-'}${amount}`,
+                outcome: null,
+                delta: Number(delta) || 0,
+                happenedAt: new Date().toISOString(),
+            };
+        };
         const modalService = createModalService(gameService, mediaService, pressRuntimeService, playersService, {
             presentationMode: hostMode === 'controller' ? 'controller' : 'host',
             onModalClose: hostMode === 'host'
@@ -178,6 +245,9 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
                 : null,
             onMediaPlaybackStateChange: hostMode === 'host'
                 ? ({ target, isPlaying }) => { void hostControlChannel.send('modal_media_state', { target, isPlaying }); }
+                : null,
+            onScoreLog: hostMode === 'host'
+                ? (entry) => { appendScoreLog(entry, { broadcast: true }); }
                 : null,
             onControllerMediaControl: ({ target, action }) => {
                 if (action === 'toggle_answer') {
@@ -226,6 +296,15 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
             allowCurrentPlayerControl: hostMode === 'controller',
             allowLeaderboardControls: hostMode === 'controller',
             showLeaderboardQr: hostMode !== 'controller',
+            scoreLogs,
+            onAdjustPlayerScore: async (playerId, delta) => {
+                if (hostMode === 'controller') {
+                    void hostControlChannel.send('leaderboard_adjust_score', { playerId, delta });
+                    return;
+                }
+                await playersService.adjustPlayerScore(playerId, delta);
+                appendScoreLog(makeManualScoreLog({ playerId, delta }), { broadcast: true });
+            },
             onCurrentPlayerChange: async (playerId) => {
                 if (hostMode === 'controller') {
                     void hostControlChannel.send('current_player_set', { playerId: playerId || null });
@@ -236,7 +315,12 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
             onCellOpen: (payload) => {
                 void hostControlChannel.send('open_cell', payload);
             },
+            onLeaderboardExpandedChange: (isExpanded) => {
+                leaderboardPanelExpanded = !!isExpanded;
+                void hostControlChannel.send('leaderboard_panel_state', { isExpanded: !!isExpanded });
+            },
         });
+        appRef = app;
 
         let stopCurrentPlayerBroadcast = null;
         if (hostMode === 'host') {
@@ -250,19 +334,77 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
         }
 
         await hostControlChannel.connect();
+        if (hostMode === 'host') {
+            const sendHostActivity = () => {
+                void hostControlChannel.send('host_runtime_state', {
+                    active: true,
+                    sentAt: new Date().toISOString(),
+                });
+            };
+            sendHostActivity();
+            hostActivityPingTimer = window.setInterval(sendHostActivity, HOST_ACTIVITY_PING_MS);
+        } else {
+            setControllerAvailability(false);
+        }
         const stopHostControlSubscription = hostControlChannel.subscribe((message) => {
             const type = message?.type;
             const payload = message?.payload || {};
             if (!type) return;
+
+            if (type === 'host_runtime_state' && hostMode === 'controller') {
+                markMainHostActiveFromPing(payload?.active !== false);
+                return;
+            }
+
+            if (type === 'host_runtime_state_request' && hostMode === 'host') {
+                void hostControlChannel.send('host_runtime_state', {
+                    active: true,
+                    sentAt: new Date().toISOString(),
+                });
+                return;
+            }
 
             if (type === 'open_cell') {
                 app.openCell(payload, { skipBroadcast: true });
                 return;
             }
 
+            if (type === 'leaderboard_panel_state') {
+                leaderboardPanelExpanded = !!payload?.isExpanded;
+                app.setLeaderboardExpanded?.(!!payload?.isExpanded, { silent: true });
+                return;
+            }
+
+            if (type === 'leaderboard_panel_sync_request' && hostMode === 'host') {
+                void hostControlChannel.send('leaderboard_panel_state', { isExpanded: leaderboardPanelExpanded });
+                return;
+            }
+
+            if (type === 'score_log_append') {
+                appendScoreLog(payload, { broadcast: false });
+                return;
+            }
+
+            if (type === 'score_log_snapshot') {
+                setScoreLogs(payload?.logs || []);
+                return;
+            }
+
+            if (type === 'score_log_sync_request' && hostMode === 'host') {
+                void hostControlChannel.send('score_log_snapshot', { logs: scoreLogs });
+                return;
+            }
+
             if (type === 'current_player_set' && hostMode === 'host') {
                 void gameService.setCurrentPlayerId(payload?.playerId || null).then(() => {
                     void hostControlChannel.send('current_player_state', { playerId: payload?.playerId || null });
+                });
+                return;
+            }
+
+            if (type === 'leaderboard_adjust_score' && hostMode === 'host') {
+                void playersService.adjustPlayerScore(payload?.playerId, payload?.delta).then(() => {
+                    appendScoreLog(makeManualScoreLog({ playerId: payload?.playerId, delta: payload?.delta }), { broadcast: true });
                 });
                 return;
             }
@@ -288,6 +430,16 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
         });
 
         _currentCleanup = () => {
+            window.clearInterval(hostActivityPingTimer);
+            hostActivityPingTimer = null;
+            window.clearTimeout(hostActivityStaleTimer);
+            hostActivityStaleTimer = null;
+            if (hostMode === 'host') {
+                void hostControlChannel.send('host_runtime_state', {
+                    active: false,
+                    sentAt: new Date().toISOString(),
+                });
+            }
             stopCurrentPlayerBroadcast?.();
             stopHostControlSubscription?.();
             hostControlChannel?.destroy?.();
@@ -303,6 +455,11 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
         };
 
         app.render();
+        if (hostMode === 'controller') {
+            void hostControlChannel.send('host_runtime_state_request');
+            void hostControlChannel.send('score_log_sync_request');
+            void hostControlChannel.send('leaderboard_panel_sync_request');
+        }
 
         // Keep game boot fast: connect press runtime in background.
         void warmBuzzerServer();
