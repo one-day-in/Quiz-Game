@@ -11,14 +11,12 @@ export class QuestionModalView {
         displayMode = 'host',
         headerTitle,
         isAnswered,
-        modifier,
         question,
         answer,
         onClose,
         onIncorrect,
         onCorrect,
         onToggleAnswered,
-        onSelectModifier,
         onQuestionChange,
         onAnswerChange,
         onUploadMedia,
@@ -26,8 +24,6 @@ export class QuestionModalView {
         onAddAudio,
         onDeleteAudio,
         onViewStateChange,
-        onModifierAcknowledge,
-        onDirectedBetStart,
         onControllerMediaControl,
     }) {
         this._mode          = mode;
@@ -35,26 +31,18 @@ export class QuestionModalView {
         this._headerTitle   = (headerTitle || '').trim();
         this._winnerName    = '';
         this._isAnswered    = !!isAnswered;
-        this._modifier      = modifier || null;
         this._question      = { ...(question || {}), audioFiles: question?.audioFiles || [] };
         this._answer        = { ...(answer   || {}), audioFiles: answer?.audioFiles   || [] };
         this._isAnswerShown = mode === 'edit';
         this._isPressBannerSuppressed = false;
         this._manualResolutionButtons = null;
-        this._directedBetState = {
-            visible: false,
-            players: [],
-            selectedPlayerId: null,
-            betOptions: [100, 200, 300, 400, 500],
-            selectedBet: 300,
-        };
         this._controllerMediaTarget = 'question';
         this._controllerMediaPlaying = false;
 
         this._cb = {
             onClose, onIncorrect, onCorrect,
-            onToggleAnswered, onSelectModifier, onQuestionChange, onAnswerChange,
-            onUploadMedia, onDeleteMedia, onAddAudio, onDeleteAudio, onViewStateChange, onModifierAcknowledge, onDirectedBetStart, onControllerMediaControl,
+            onToggleAnswered, onQuestionChange, onAnswerChange,
+            onUploadMedia, onDeleteMedia, onAddAudio, onDeleteAudio, onViewStateChange, onControllerMediaControl,
         };
 
         const { root, refs } = buildModalDom();
@@ -262,56 +250,6 @@ export class QuestionModalView {
         this._updateResolutionButtons();
     }
 
-    getSelectedModifier() {
-        return this._modifier || null;
-    }
-
-    setSelectedModifier(modifier) {
-        this._modifier = modifier || null;
-    }
-
-    showDirectedBetPanel({ players = [], betOptions = [100, 200, 300, 400, 500], defaultBet = 300, defaultPlayerId = null } = {}) {
-        const normalizedPlayers = Array.isArray(players) ? players : [];
-        const normalizedDefaultPlayerId = defaultPlayerId ? String(defaultPlayerId) : null;
-        const hasDefaultPlayer = normalizedDefaultPlayerId
-            && normalizedPlayers.some((player) => String(player?.id || '') === normalizedDefaultPlayerId);
-
-        this._directedBetState = {
-            visible: true,
-            players: normalizedPlayers,
-            selectedPlayerId: hasDefaultPlayer ? normalizedDefaultPlayerId : null,
-            betOptions: Array.isArray(betOptions) && betOptions.length ? betOptions : [100, 200, 300, 400, 500],
-            selectedBet: Number(defaultBet) || 300,
-        };
-        this.setResolutionButtonsEnabled(false);
-        this._renderDirectedBetPanel();
-    }
-
-    hideDirectedBetPanel() {
-        this._directedBetState.visible = false;
-        this._renderDirectedBetPanel();
-    }
-
-    updateDirectedBetTimer(secondsRemaining, { label = '' } = {}) {
-        const timerWrap = this._refs.directedTimer;
-        const timerValue = this._refs.directedTimerValue;
-        const timerLabel = this._refs.directedTimerLabel;
-        if (!timerWrap || !timerValue) return;
-
-        if (label && timerLabel) timerLabel.textContent = label;
-
-        if (!Number.isFinite(secondsRemaining)) {
-            timerWrap.hidden = true;
-            return;
-        }
-
-        const total = Math.max(0, Math.ceil(secondsRemaining));
-        const mins = Math.floor(total / 60);
-        const secs = total % 60;
-        timerValue.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-        timerWrap.hidden = false;
-    }
-
     updatePressTimer(secondsRemaining) {
         const timerEl = this._refs.pressBannerTimer;
         if (!timerEl) return;
@@ -399,47 +337,6 @@ export class QuestionModalView {
         // ── Answered toggle ────────────────────────────────────────────────────
         this._disposer.addEventListener(r.answeredCheckbox, 'change', (e) => {
             this._cb.onToggleAnswered?.(e.target.checked);
-        });
-        this._disposer.addEventListener(r.headerModifier, 'click', async (e) => {
-            const optionBtn = e.target.closest('.qmodal__modifierOption');
-            if (!optionBtn) return;
-
-            const nextModifier = optionBtn.dataset.modifier || null;
-            const prevModifier = this._modifier;
-            this._modifier = nextModifier;
-
-            try {
-                await this._cb.onSelectModifier?.(nextModifier);
-                renderAll(this, this._refs);
-            } catch {
-                this._modifier = prevModifier;
-                renderAll(this, this._refs);
-            }
-        });
-        this._disposer.addEventListener(r.modifierPanel, 'click', () => {
-            if (!r.modifierPanel.hidden) {
-                this._cb.onModifierAcknowledge?.();
-            }
-        });
-        this._disposer.addEventListener(r.directedBetPlayers, 'click', (e) => {
-            const button = e.target.closest('.qmodal__directedBetPlayerBtn');
-            if (!button) return;
-            this._directedBetState.selectedPlayerId = button.dataset.playerId || null;
-            this._renderDirectedBetPanel();
-        });
-        this._disposer.addEventListener(r.directedBetStake, 'click', (e) => {
-            const button = e.target.closest('.qmodal__directedBetStakeBtn');
-            if (!button) return;
-            this._directedBetState.selectedBet = Number(button.dataset.bet) || this._directedBetState.selectedBet;
-            this._renderDirectedBetPanel();
-        });
-        this._disposer.addEventListener(r.directedBetStartBtn, 'click', () => {
-            const selectedPlayerId = this._directedBetState.selectedPlayerId;
-            if (!selectedPlayerId) return;
-            this._cb.onDirectedBetStart?.({
-                playerId: selectedPlayerId,
-                betValue: Number(this._directedBetState.selectedBet) || 300,
-            });
         });
         this._disposer.addEventListener(this._root, 'click', (e) => {
             const button = e.target.closest('.qmodal__controllerMediaBtn');
@@ -555,52 +452,6 @@ export class QuestionModalView {
             if (!btn) return;
             this._cb.onDeleteAudio?.(btn.dataset.filename, btn.dataset.target);
         });
-    }
-
-    _renderDirectedBetPanel() {
-        const refs = this._refs;
-        if (!refs.directedBetPanel) return;
-
-        const state = this._directedBetState;
-        refs.directedBetPanel.hidden = !state.visible || this._mode === 'edit';
-        if (!state.visible) return;
-
-        if (refs.directedBetPlayers) {
-            refs.directedBetPlayers.innerHTML = '';
-            state.players.forEach((player) => {
-                const id = String(player?.id || '');
-                const name = String(player?.name || '');
-                const isSelected = id && state.selectedPlayerId === id;
-                const button = document.createElement('button');
-                button.type = 'button';
-                button.className = `qmodal__directedBetPlayerBtn${isSelected ? ' is-active' : ''}`;
-                button.dataset.playerId = id;
-                button.textContent = name;
-                refs.directedBetPlayers.append(button);
-            });
-        }
-        if (refs.directedBetEmpty) {
-            refs.directedBetEmpty.hidden = state.players.length > 0;
-        }
-
-        if (refs.directedBetStake) {
-            refs.directedBetStake.innerHTML = '';
-            state.betOptions.forEach((bet) => {
-                const value = Number(bet) || 0;
-                const isSelected = value === Number(state.selectedBet);
-                const button = document.createElement('button');
-                button.type = 'button';
-                button.className = `qmodal__directedBetStakeBtn${isSelected ? ' is-active' : ''}`;
-                button.dataset.bet = String(value);
-                button.textContent = String(value);
-                button.disabled = state.players.length === 0;
-                refs.directedBetStake.append(button);
-            });
-        }
-
-        if (refs.directedBetStartBtn) {
-            refs.directedBetStartBtn.disabled = !state.selectedPlayerId;
-        }
     }
 
     _updateResolutionButtons() {

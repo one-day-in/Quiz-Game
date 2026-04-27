@@ -76,7 +76,6 @@ export function createAppController({
       rowId,
       cellId,
       value,
-      modifier: cell.modifier ?? null,
       question: { ...(cell.question || {}) },
       answer: { ...(cell.answer || {}) },
       isAnswered: !!cell.isAnswered

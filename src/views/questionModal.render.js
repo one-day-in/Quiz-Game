@@ -1,5 +1,4 @@
 // src/views/questionModal.render.js
-import { getCellModifierBanner, isAutoCellModifier } from '../constants/cellModifiers.js';
 import { t } from '../i18n.js';
 
 // ─── Media collapse threshold ────────────────────────────────────────────────
@@ -189,10 +188,6 @@ function hasText(v) {
   return !!(v && v.trim().length);
 }
 
-function isModifierSelectionMode(view) {
-  return view._mode === 'view' && isAutoCellModifier(view._modifier);
-}
-
 function fitViewText(refs, type) {
   const textEl = refs[`${type}TextView`];
   if (!textEl || textEl.hidden) return;
@@ -216,13 +211,11 @@ function fitViewText(refs, type) {
 export function applyModeUI(view, refs) {
   const isController = view._displayMode === 'controller';
   const isEdit = view._mode === 'edit';
-  const isModifierMode = isModifierSelectionMode(view);
 
   refs.root?.classList.toggle('qmodal--edit', isEdit);
   refs.root?.classList.toggle('qmodal--controller', isController);
 
   if (refs.title) refs.title.textContent = view._headerTitle || t('question');
-  setHidden(refs.headerModifier, !isEdit || isController);
 
   // Toggle mode button: shows current mode and what clicking will do
   if (refs.btnToggleMode) {
@@ -240,8 +233,8 @@ export function applyModeUI(view, refs) {
   setHidden(refs.answeredToggle, isController);
   setHidden(refs.footerLeft, false);
   setHidden(refs.controllerSharedMediaControls, !isController);
-  setHidden(refs.btnIncorrect,   isEdit || isModifierMode);
-  setHidden(refs.btnCorrect,     isEdit || isModifierMode);
+  setHidden(refs.btnIncorrect,   isEdit);
+  setHidden(refs.btnCorrect,     isEdit);
 }
 
 export function applyAnswerVisibility(view, refs) {
@@ -392,31 +385,6 @@ function applyAudioLayoutState(refs, type, { isHero = false, trackCount = 0 } = 
   listEl.classList.toggle('qmodal__audioList--multi', trackCount > 1);
 }
 
-function renderModifierPanel(view, refs) {
-  const panelEl = refs.modifierPanel;
-  if (!panelEl) return;
-
-  const banner = getCellModifierBanner(view._modifier, t);
-  const isVisible = !!banner && isModifierSelectionMode(view);
-  setHidden(panelEl, !isVisible);
-  if (!isVisible) return;
-
-  if (refs.modifierBadge) refs.modifierBadge.textContent = banner.badge || '';
-  if (refs.modifierTitle) refs.modifierTitle.textContent = banner.title || '';
-  if (refs.modifierSubtitle) refs.modifierSubtitle.textContent = banner.subtitle || '';
-  if (refs.modifierDetail) refs.modifierDetail.textContent = banner.detail || '';
-}
-
-function renderModifierPicker(view, refs) {
-  const optionButtons = refs.headerModifier?.querySelectorAll('.qmodal__modifierOption') || [];
-  optionButtons.forEach((button) => {
-    const buttonModifier = button.dataset.modifier || null;
-    const isActive = (view._modifier || null) === buttonModifier;
-    button.classList.toggle('is-active', isActive);
-    button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
-  });
-}
-
 /* ------------------------ Render ------------------------ */
 
 export function renderAll(view, refs) {
@@ -425,7 +393,6 @@ export function renderAll(view, refs) {
   }
 
   view.syncPressBannerVisibility?.();
-  renderModifierPicker(view, refs);
 
   // Gather content state for both sections
   const sections = {
@@ -455,7 +422,6 @@ export function renderAll(view, refs) {
   const qHasPlayableMedia = (qHasMedia && (qMediaMime.startsWith('video/') || qMediaMime.startsWith('audio/'))) || qHasAudio;
   const aHasPlayableMedia = (aHasMedia && (aMediaMime.startsWith('video/') || aMediaMime.startsWith('audio/'))) || aHasAudio;
   const hasAnyPlayableMedia = qHasPlayableMedia || aHasPlayableMedia;
-  const hasModifierOverlay = isModifierSelectionMode(view);
   const qHeroAudio = view._mode === 'view' && !qHasText && !qHasMedia && qHasAudio;
   const aHeroAudio = view._mode === 'view' && !aHasText && !aHasMedia && aHasAudio;
 
@@ -465,7 +431,7 @@ export function renderAll(view, refs) {
   }
 
   // Empty state (view mode only)
-  const showEmpty = view._mode === 'view' && !(qHasAny || aHasAny) && !hasModifierOverlay;
+  const showEmpty = view._mode === 'view' && !(qHasAny || aHasAny);
   setHidden(refs.emptyState, !showEmpty);
 
   if (showEmpty) {
@@ -499,7 +465,6 @@ export function renderAll(view, refs) {
   renderMedia(view, refs, 'answer');
   renderAudioList(view, refs, 'question');
   renderAudioList(view, refs, 'answer');
-  renderModifierPanel(view, refs);
   applyAudioLayoutState(refs, 'question', {
     isHero: qHeroAudio,
     trackCount: sections.question.audio.length,

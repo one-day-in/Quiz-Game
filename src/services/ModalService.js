@@ -1,19 +1,10 @@
-import { updatePlayer } from '../api/playersApi.js';
 import { QuestionModalView } from '../views/QuestionModalView.js';
 import { Disposer } from '../utils/disposer.js';
 import { showConfirm } from '../utils/confirm.js';
 import { adjustPlayerScore, resolveGamePress } from '../api/gameApi.js';
-import {
-  isAutoCellModifier,
-  isDirectedBetModifier,
-  isFlipScoreModifier,
-  isStealLeaderPointsModifier,
-} from '../constants/cellModifiers.js';
 import { t } from '../i18n.js';
 
 const PRESS_RESPONSE_SECONDS = 30;
-const DIRECTED_BET_RESPONSE_SECONDS = 40;
-const MODIFIER_BANNER_SECONDS = 10;
 const PRESS_OPEN_RETRY_ATTEMPTS = 3;
 const PRESS_OPEN_RETRY_DELAY_MS = 220;
 
@@ -50,12 +41,8 @@ export class ModalService {
     this._pressTimerPaused = false;
     this._isResettingPressRuntime = false;
     this._isResolvingPressResult = false;
-    this._activeModifier = null;
-    this._modifierCloseTimer = null;
     this._isClosing = false;
     this._currentResolutionValue = 0;
-    this._isDirectedBetTimerMode = false;
-    this._directedBetTimerLabel = '';
     this._mediaInteractionUnlocked = this.isControllerMode();
     this._pendingMediaControl = null;
 
@@ -135,11 +122,7 @@ export class ModalService {
     };
     this._cellValue = Number(cellData.value) || 0;
     this._currentResolutionValue = this._cellValue;
-    this._activeModifier = cellData.modifier || null;
-    const shouldAutoApplyModifier = !this.isControllerMode() && this._shouldAutoApplyModifier(this._activeModifier);
-    const shouldUseDirectedBetModifier = this._shouldUseDirectedBetModifier(this._activeModifier);
-
-    if (!this.isControllerMode() && !shouldAutoApplyModifier && !shouldUseDirectedBetModifier) {
+    if (!this.isControllerMode()) {
       void this._resetPressRuntime();
     }
 
@@ -166,7 +149,6 @@ export class ModalService {
       headerTitle,
 
       isAnswered: shouldMarkAsAnswered ? true : cellData.isAnswered,
-      modifier: this._activeModifier,
       question,
       answer,
 
@@ -193,20 +175,6 @@ export class ModalService {
 
       onToggleAnswered: (checked) => {
         void this._updateCell({ isAnswered: checked });
-      },
-
-      onSelectModifier: async (modifier) => {
-        try {
-          await this._updateCell({
-            modifier,
-          });
-          this._activeModifier = modifier || null;
-          this.view?.setSelectedModifier?.(modifier);
-        } catch (e) {
-          console.error('[ModalService] toggle modifier failed:', e);
-          alert(`${t('save_failed')}: ` + (e?.message || e));
-          throw e;
-        }
       },
 
       onQuestionChange: (text) => {
@@ -307,15 +275,6 @@ export class ModalService {
         this._resumePressCountdown();
       },
 
-      onModifierAcknowledge: () => this.close(),
-      onDirectedBetStart: ({ playerId, betValue }) => {
-        if (this.isControllerMode()) {
-          this.view?.hideDirectedBetPanel?.();
-          this._onControllerCommand?.('modal_directed_bet_start', { playerId, betValue });
-          return;
-        }
-        void this._startDirectedBetRound(playerId, betValue);
-      },
       onControllerMediaControl: ({ target, action }) => {
         if (this.isControllerMode()) {
           this._onControllerMediaControl?.({ target, action });
@@ -333,13 +292,7 @@ export class ModalService {
 
     this._onModalViewStateChange?.({ mode: this.view?._mode || 'view', isAnswerShown: !!this.view?._isAnswerShown });
 
-    if (shouldAutoApplyModifier) {
-      void this._applyActiveModifierToCurrentPlayer();
-    } else if (shouldUseDirectedBetModifier) {
-      this._startDirectedBetSelection();
-    } else {
-      this._bindPressRuntime();
-    }
+    this._bindPressRuntime();
     // ESC is handled inside QuestionModalView (properly cleaned up on destroy).
     // Do NOT add a document keydown listener here — ModalService._disposer is
     // long-lived and never destroyed between openings, so listeners would
@@ -364,11 +317,6 @@ export class ModalService {
     if (!cell || this.isControllerMode()) return null;
 
     const patch = {};
-    const selectedModifier = this.view?.getSelectedModifier?.() ?? null;
-    const currentModifier = this._game?.getCell?.(cell.roundId, cell.rowId, cell.cellId)?.modifier ?? null;
-    if ((selectedModifier || null) !== (currentModifier || null)) {
-      patch.modifier = selectedModifier || null;
-    }
     if (this._pendingQuestionText !== null) {
       patch.question = { text: this._pendingQuestionText };
       this._pendingQuestionText = null;
@@ -389,11 +337,9 @@ export class ModalService {
       // Flush any pending debounced text saves before clearing activeCell
       clearTimeout(this._questionTimer);
       clearTimeout(this._answerTimer);
-      clearTimeout(this._modifierCloseTimer);
       this._clearPressCountdown();
       this._questionTimer = null;
       this._answerTimer   = null;
-      this._modifierCloseTimer = null;
       const cell = this.activeCell;
       const closePatch = this._buildClosePatch(cell);
       if (cell && closePatch) {
@@ -417,10 +363,7 @@ export class ModalService {
       this._cellValue = 0;
       this._pressTimerPaused = false;
       this._isResolvingPressResult = false;
-      this._activeModifier = null;
       this._currentResolutionValue = 0;
-      this._isDirectedBetTimerMode = false;
-      this._directedBetTimerLabel = '';
       void this._pressRuntime?.closePress?.();
       if (this.container?.isConnected) this.container.innerHTML = '';
       if (hadOpenModal) {
@@ -440,13 +383,10 @@ export class ModalService {
     this._clearPressCountdown();
     const resolutionValue = this._getEffectiveResolutionValue();
     const winnerId = this._pressWinnerId;
-    const shouldUseRuntimeLock = !this._isDirectedBetTimerMode;
-    if (shouldUseRuntimeLock) {
-      const lockAcquired = await this._acquirePressResolutionLock(winnerId, { pressEnabled: true });
-      if (!lockAcquired) {
-        this._isResolvingPressResult = false;
-        return;
-      }
+    const lockAcquired = await this._acquirePressResolutionLock(winnerId, { pressEnabled: true });
+    if (!lockAcquired) {
+      this._isResolvingPressResult = false;
+      return;
     }
     try {
       await adjustPlayerScore(this._game.getGameId(), winnerId, -resolutionValue);
@@ -458,12 +398,8 @@ export class ModalService {
     } catch (e) {
       console.error('[ModalService] adjustPlayerScore (incorrect) failed:', e);
     }
-    if (this._isDirectedBetTimerMode) {
-      await this._openPressForRemainingPlayers();
-    } else {
-      // Reset press — modal stays open, another player can press
-      await this._resetPressRuntime();
-    }
+    // Reset press — modal stays open, another player can press.
+    await this._resetPressRuntime();
     this._isResolvingPressResult = false;
   }
 
@@ -472,14 +408,11 @@ export class ModalService {
     this._isResolvingPressResult = true;
     const resolutionValue = this._getEffectiveResolutionValue();
     const winnerId = this._pressWinnerId;
-    const shouldUseRuntimeLock = !this._isDirectedBetTimerMode;
-    if (shouldUseRuntimeLock) {
-      const lockAcquired = await this._acquirePressResolutionLock(winnerId, { pressEnabled: false });
-      if (!lockAcquired) {
-        this._isResolvingPressResult = false;
-        this.close();
-        return;
-      }
+    const lockAcquired = await this._acquirePressResolutionLock(winnerId, { pressEnabled: false });
+    if (!lockAcquired) {
+      this._isResolvingPressResult = false;
+      this.close();
+      return;
     }
     try {
       await adjustPlayerScore(this._game.getGameId(), winnerId, resolutionValue);
@@ -545,122 +478,8 @@ export class ModalService {
     this.view?.updateWinnerName?.(winnerName || '');
   }
 
-  async _applyFlipScoreModifier(playerId) {
-    if (!playerId) return false;
-
-    const player = this._players?.getPlayers?.().find((entry) => String(entry?.id) === String(playerId));
-    if (!player) {
-      console.warn('[ModalService] could not find player for flip-score modifier:', playerId);
-      return false;
-    }
-
-    await updatePlayer(this._game.getGameId(), playerId, { points: -(Number(player.points) || 0) });
-    return true;
-  }
-
   _getPlayersSnapshot() {
     return Array.isArray(this._players?.getPlayers?.()) ? this._players.getPlayers() : [];
-  }
-
-  _shouldAutoApplyModifier(modifier) {
-    if (!isAutoCellModifier(modifier)) return false;
-    const currentPlayerId = this._game?.getCurrentPlayerId?.() ?? null;
-    if (!currentPlayerId) return false;
-    return this._getPlayersSnapshot().some((entry) => String(entry?.id || '') === String(currentPlayerId));
-  }
-
-  _shouldUseDirectedBetModifier(modifier) {
-    return isDirectedBetModifier(modifier);
-  }
-
-  _getCurrentModifierPlayer(playerId) {
-    return this._getPlayersSnapshot().find((entry) => String(entry?.id) === String(playerId)) || null;
-  }
-
-  _resolveStealLeaderPointsTransfer(currentPlayerId) {
-    const currentPlayer = this._getCurrentModifierPlayer(currentPlayerId);
-    if (!currentPlayer) return null;
-
-    const otherPlayers = this._getPlayersSnapshot().filter((entry) => String(entry?.id) !== String(currentPlayerId));
-    if (!otherPlayers.length) return null;
-
-    const currentPoints = Number(currentPlayer.points) || 0;
-    const highestOtherPlayer = otherPlayers.reduce((best, entry) => (
-      !best || (Number(entry.points) || 0) > (Number(best.points) || 0) ? entry : best
-    ), null);
-
-    const chooserIsHighest = currentPoints >= (Number(highestOtherPlayer?.points) || 0);
-    if (chooserIsHighest) {
-      const lowestOtherPlayer = otherPlayers.reduce((best, entry) => (
-        !best || (Number(entry.points) || 0) < (Number(best.points) || 0) ? entry : best
-      ), null);
-      if (!lowestOtherPlayer) return null;
-
-      return [
-        { id: currentPlayer.id, points: currentPoints - 1000 },
-        { id: lowestOtherPlayer.id, points: (Number(lowestOtherPlayer.points) || 0) + 1000 },
-      ];
-    }
-
-    if (!highestOtherPlayer) return null;
-
-    return [
-      { id: currentPlayer.id, points: currentPoints + 1000 },
-      { id: highestOtherPlayer.id, points: (Number(highestOtherPlayer.points) || 0) - 1000 },
-    ];
-  }
-
-  async _applyStealLeaderPointsModifier(playerId) {
-    const transfer = this._resolveStealLeaderPointsTransfer(playerId);
-    if (!transfer) return false;
-
-    await Promise.all(
-      transfer.map(({ id, points }) => updatePlayer(this._game.getGameId(), id, { points }))
-    );
-    return true;
-  }
-
-  async _applyActiveModifierToCurrentPlayer() {
-    const currentPlayerId = this._game?.getCurrentPlayerId?.() ?? null;
-    if (!currentPlayerId) {
-      // Configuration remains saved in the cell. Activation is deferred until
-      // there is an active player in runtime.
-      return false;
-    }
-
-    try {
-      const applied = await this._applyModifierToPlayer(this._activeModifier, currentPlayerId);
-      if (!applied) {
-        alert(t('modifier_not_available'));
-        this.close();
-        return false;
-      }
-      this._scheduleModifierClose();
-      return applied;
-    } catch (e) {
-      console.error('[ModalService] auto-apply modifier failed:', e);
-      alert(`${t('could_not_update_score')}: ` + (e?.message || e));
-      this.close();
-      throw e;
-    }
-  }
-
-  async _applyModifierToPlayer(modifier, playerId) {
-    if (isFlipScoreModifier(modifier)) {
-      return this._applyFlipScoreModifier(playerId);
-    }
-    if (isStealLeaderPointsModifier(modifier)) {
-      return this._applyStealLeaderPointsModifier(playerId);
-    }
-    return false;
-  }
-
-  _scheduleModifierClose(durationMs = MODIFIER_BANNER_SECONDS * 1000) {
-    clearTimeout(this._modifierCloseTimer);
-    this._modifierCloseTimer = setTimeout(() => {
-      this._modifierCloseTimer = null;
-      this.close();
-    }, durationMs);
   }
 
   _clearPressCountdown() {
@@ -668,11 +487,7 @@ export class ModalService {
     this._pressCountdownTimer = null;
     this._pressCountdownDeadline = null;
     this._pressCountdownRemainingMs = null;
-    if (this._isDirectedBetTimerMode) {
-      this.view?.updateDirectedBetTimer?.(null);
-    } else {
-      this.view?.updatePressTimer?.(null);
-    }
+    this.view?.updatePressTimer?.(null);
   }
 
   _pausePressCountdown() {
@@ -693,20 +508,12 @@ export class ModalService {
 
   _syncPressCountdownView() {
     if (!this._pressCountdownDeadline) {
-      if (this._isDirectedBetTimerMode) {
-        this.view?.updateDirectedBetTimer?.(null);
-      } else {
-        this.view?.updatePressTimer?.(null);
-      }
+      this.view?.updatePressTimer?.(null);
       return;
     }
 
     const secondsRemaining = Math.max(0, (this._pressCountdownDeadline - Date.now()) / 1000);
-    if (this._isDirectedBetTimerMode) {
-      this.view?.updateDirectedBetTimer?.(secondsRemaining, { label: this._directedBetTimerLabel });
-    } else {
-      this.view?.updatePressTimer?.(secondsRemaining);
-    }
+    this.view?.updatePressTimer?.(secondsRemaining);
   }
 
   _startPressCountdown(durationMs = PRESS_RESPONSE_SECONDS * 1000) {
@@ -776,11 +583,6 @@ export class ModalService {
     };
   }
 
-  _normalizeDirectedBetValue(rawValue) {
-    const rounded = Math.round((Number(rawValue) || 0) / 100) * 100;
-    return Math.max(100, Math.min(500, rounded));
-  }
-
   _getEffectiveResolutionValue() {
     const directValue = Number(this._currentResolutionValue);
     if (Number.isFinite(directValue) && directValue !== 0) return directValue;
@@ -806,51 +608,6 @@ export class ModalService {
       delta: Number(delta) || 0,
       happenedAt: new Date().toISOString(),
     });
-  }
-
-  _startDirectedBetSelection() {
-    const activePlayerId = this._game?.getCurrentPlayerId?.() ?? null;
-    const players = this._getPlayersSnapshot()
-      .filter((entry) => String(entry?.id || '') !== String(activePlayerId || ''));
-
-    const defaultBet = this._normalizeDirectedBetValue(this._cellValue || 300);
-    this._isDirectedBetTimerMode = false;
-    this._directedBetTimerLabel = '';
-    this.view?.setPressBannerSuppressed?.(true);
-    this.view?.updateDirectedBetTimer?.(null);
-    this.view?.showDirectedBetPanel?.({
-      players,
-      betOptions: [100, 200, 300, 400, 500],
-      defaultBet,
-    });
-    this.view?.setResolutionButtonsEnabled?.(false);
-  }
-
-  async _startDirectedBetRound(playerId, betValue) {
-    const player = this._getPlayersSnapshot().find((entry) => String(entry?.id) === String(playerId));
-    if (!player) return;
-
-    this._isDirectedBetTimerMode = true;
-    this._currentResolutionValue = this._normalizeDirectedBetValue(betValue);
-    this._directedBetTimerLabel = `${t('directed_bet_timer_label')} • ${player.name} • ${this._currentResolutionValue}`;
-    this._setPressWinner(player.id, player.name);
-    this.view?.hideDirectedBetPanel?.();
-    this.view?.setPressBannerSuppressed?.(true);
-    this.view?.setResolutionButtonsEnabled?.(true);
-    this._clearPressCountdown();
-    this._pressTimerPaused = false;
-    this._startPressCountdown(DIRECTED_BET_RESPONSE_SECONDS * 1000);
-  }
-
-  async _openPressForRemainingPlayers() {
-    this._isDirectedBetTimerMode = false;
-    this._directedBetTimerLabel = '';
-    this._currentResolutionValue = this._cellValue;
-    this.view?.setPressBannerSuppressed?.(false);
-    this.view?.updateDirectedBetTimer?.(null);
-    this.view?.setResolutionButtonsEnabled?.(null);
-    this._bindPressRuntime();
-    await this._resetPressRuntime();
   }
 
   destroy() {
@@ -890,10 +647,6 @@ export class ModalService {
     }
     if (type === 'modal_correct') {
       void this._handleCorrect();
-      return;
-    }
-    if (type === 'modal_directed_bet_start') {
-      void this._startDirectedBetRound(payload?.playerId, payload?.betValue);
       return;
     }
     if (type === 'modal_media_control') {

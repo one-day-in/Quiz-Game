@@ -1,18 +1,7 @@
 // src/views/questionModal.template.js
 import { t } from '../i18n.js';
-import { getCellModifierOptions } from '../constants/cellModifiers.js';
 
 export function buildModalDom() {
-  const modifierOptionsMarkup = getCellModifierOptions(t)
-    .map(({ value, label }) => `
-      <button
-        type="button"
-        class="qmodal__modifierOption"
-        data-modifier="${value}"
-      >${label}</button>
-    `)
-    .join('');
-
   const root = document.createElement('div');
   root.className = 'qmodal';
 
@@ -26,17 +15,9 @@ export function buildModalDom() {
         <!-- Center: title -->
         <div class="qmodal__headerMain">
           <div class="qmodal__headerTitle"></div>
-          <div class="qmodal__directedTimer" hidden>
-            <span class="qmodal__directedTimerLabel">${t('directed_bet_timer_label')}</span>
-            <span class="qmodal__directedTimerValue">00:40</span>
-          </div>
         </div>
 
         <div class="qmodal__headerActions">
-          <div class="qmodal__modifierPicker" role="group" aria-label="${t('cell_modifier_banner_title')}">
-            ${modifierOptionsMarkup}
-          </div>
-
           <!-- Right: toggle view/edit mode -->
           <button
             class="qmodal__btn qmodal__btn--ghost qmodal__btnToggleMode"
@@ -51,23 +32,6 @@ export function buildModalDom() {
         <div class="qmodal__pressBanner" hidden aria-live="polite">
           <div class="qmodal__pressBannerMain"></div>
           <div class="qmodal__pressBannerTimer" hidden>00:30</div>
-        </div>
-        <div class="qmodal__modifierPanel" hidden aria-live="polite">
-          <div class="qmodal__modifierBadge"></div>
-          <div class="qmodal__modifierTitle"></div>
-          <div class="qmodal__modifierSubtitle"></div>
-          <div class="qmodal__modifierDetail"></div>
-        </div>
-        <div class="qmodal__directedBetPanel" hidden>
-          <div class="qmodal__directedBetTitle">${t('directed_bet_pick_player')}</div>
-          <div class="qmodal__directedBetSubtitle">${t('directed_bet_pick_subtitle')}</div>
-          <div class="qmodal__directedBetPlayers"></div>
-          <div class="qmodal__directedBetEmpty" hidden>${t('directed_bet_no_active_players')}</div>
-          <div class="qmodal__directedBetStakeLabel">${t('directed_bet_choose_stake')}</div>
-          <div class="qmodal__directedBetStake"></div>
-          <button type="button" class="qmodal__btn qmodal__btn--primary qmodal__directedBetStartBtn" disabled>
-            ${t('directed_bet_start')}
-          </button>
         </div>
         <div class="qmodal__emptyState">✏️ is empty</div>
 
@@ -245,20 +209,6 @@ export function buildModalDom() {
       pressBanner:        qs('.qmodal__pressBanner'),
       pressBannerMain:    qs('.qmodal__pressBannerMain'),
       pressBannerTimer:   qs('.qmodal__pressBannerTimer'),
-      directedTimer:      qs('.qmodal__directedTimer'),
-      directedTimerLabel: qs('.qmodal__directedTimerLabel'),
-      directedTimerValue: qs('.qmodal__directedTimerValue'),
-      modifierPanel:      qs('.qmodal__modifierPanel'),
-      modifierBadge:      qs('.qmodal__modifierBadge'),
-      modifierTitle:      qs('.qmodal__modifierTitle'),
-      modifierSubtitle:   qs('.qmodal__modifierSubtitle'),
-      modifierDetail:     qs('.qmodal__modifierDetail'),
-      directedBetPanel:       qs('.qmodal__directedBetPanel'),
-      directedBetPlayers:     qs('.qmodal__directedBetPlayers'),
-      directedBetEmpty:       qs('.qmodal__directedBetEmpty'),
-      directedBetStake:       qs('.qmodal__directedBetStake'),
-      directedBetStartBtn:    qs('.qmodal__directedBetStartBtn'),
-      headerModifier:     qs('.qmodal__modifierPicker'),
       btnToggleMode:      qs('.qmodal__btnToggleMode'),
       btnIncorrect:       qs('.qmodal__btnIncorrect'),
       btnCorrect:         qs('.qmodal__btnCorrect'),

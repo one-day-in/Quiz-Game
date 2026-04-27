@@ -50,7 +50,6 @@ describe('AppController openCell sync payload', () => {
       getState: () => ({
         model: {
           getCell: () => ({
-            modifier: 'directed-bet',
             question: { text: 'Q' },
             answer: { text: 'A' },
             isAnswered: false,
@@ -79,7 +78,7 @@ describe('AppController openCell sync payload', () => {
     document.body.appendChild(root);
   });
 
-  it('rebuilds payload from current model and keeps latest modifier', () => {
+  it('rebuilds payload from current model and keeps latest cell content', () => {
     const onCellOpen = vi.fn();
     const controller = createAppController({
       root,
@@ -98,7 +97,6 @@ describe('AppController openCell sync payload', () => {
       rowId: 0,
       cellId: 0,
       value: 100,
-      modifier: null,
       question: { text: 'stale' },
       answer: { text: 'stale' },
       isAnswered: true,
@@ -111,13 +109,11 @@ describe('AppController openCell sync payload', () => {
         rowId: 0,
         cellId: 0,
         value: 100,
-        modifier: 'directed-bet',
         isAnswered: false,
       })
     );
     expect(onCellOpen).toHaveBeenCalledWith(
       expect.objectContaining({
-        modifier: 'directed-bet',
         isAnswered: false,
       })
     );
