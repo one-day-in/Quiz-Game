@@ -366,4 +366,36 @@ describe('ModalService press reset', () => {
     expect(service.view?._modifier).toBe(CELL_MODIFIERS.FLIP_SCORE);
     service.close();
   });
+
+  it('shows directed-bet panel with empty players list when no players are connected', () => {
+    const service = new ModalService(
+      {
+        getGameId: () => 'game-1',
+        getCurrentPlayerId: () => null,
+      },
+      {},
+      {},
+      { getPlayers: () => [] }
+    );
+
+    service.view = {
+      setPressBannerSuppressed: vi.fn(),
+      updateDirectedBetTimer: vi.fn(),
+      showDirectedBetPanel: vi.fn(),
+      setResolutionButtonsEnabled: vi.fn(),
+    };
+    service.close = vi.fn();
+    service._activeModifier = CELL_MODIFIERS.DIRECTED_BET;
+    service._cellValue = 300;
+
+    service._startDirectedBetSelection();
+
+    expect(service.view.showDirectedBetPanel).toHaveBeenCalledWith(
+      expect.objectContaining({
+        players: [],
+      })
+    );
+    expect(service.close).not.toHaveBeenCalled();
+    expect(globalThis.alert).not.toHaveBeenCalled();
+  });
 });

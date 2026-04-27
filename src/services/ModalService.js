@@ -793,11 +793,6 @@ export class ModalService {
     const activePlayerId = this._game?.getCurrentPlayerId?.() ?? null;
     const players = this._getPlayersSnapshot()
       .filter((entry) => String(entry?.id || '') !== String(activePlayerId || ''));
-    if (!players.length) {
-      alert(t('modifier_not_available'));
-      this.close();
-      return;
-    }
 
     const defaultBet = this._normalizeDirectedBetValue(this._cellValue || 300);
     this._isDirectedBetTimerMode = false;

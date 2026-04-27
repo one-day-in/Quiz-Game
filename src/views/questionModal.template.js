@@ -62,6 +62,7 @@ export function buildModalDom() {
           <div class="qmodal__directedBetTitle">${t('directed_bet_pick_player')}</div>
           <div class="qmodal__directedBetSubtitle">${t('directed_bet_pick_subtitle')}</div>
           <div class="qmodal__directedBetPlayers"></div>
+          <div class="qmodal__directedBetEmpty" hidden>${t('directed_bet_no_active_players')}</div>
           <div class="qmodal__directedBetStakeLabel">${t('directed_bet_choose_stake')}</div>
           <div class="qmodal__directedBetStake"></div>
           <button type="button" class="qmodal__btn qmodal__btn--primary qmodal__directedBetStartBtn" disabled>
@@ -254,6 +255,7 @@ export function buildModalDom() {
       modifierDetail:     qs('.qmodal__modifierDetail'),
       directedBetPanel:       qs('.qmodal__directedBetPanel'),
       directedBetPlayers:     qs('.qmodal__directedBetPlayers'),
+      directedBetEmpty:       qs('.qmodal__directedBetEmpty'),
       directedBetStake:       qs('.qmodal__directedBetStake'),
       directedBetStartBtn:    qs('.qmodal__directedBetStartBtn'),
       headerModifier:     qs('.qmodal__modifierPicker'),

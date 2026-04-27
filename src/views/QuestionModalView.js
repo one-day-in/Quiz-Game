@@ -573,6 +573,9 @@ export class QuestionModalView {
                 refs.directedBetPlayers.append(button);
             });
         }
+        if (refs.directedBetEmpty) {
+            refs.directedBetEmpty.hidden = state.players.length > 0;
+        }
 
         if (refs.directedBetStake) {
             refs.directedBetStake.innerHTML = '';
@@ -584,6 +587,7 @@ export class QuestionModalView {
                 button.className = `qmodal__directedBetStakeBtn${isSelected ? ' is-active' : ''}`;
                 button.dataset.bet = String(value);
                 button.textContent = String(value);
+                button.disabled = state.players.length === 0;
                 refs.directedBetStake.append(button);
             });
         }
