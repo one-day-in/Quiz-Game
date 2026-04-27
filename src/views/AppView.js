@@ -5,7 +5,21 @@ import { LeaderboardPanelView } from './LeaderboardPanelView.js';
 import { ViewDisposer } from '../utils/disposer.js';
 import { fitAllCells } from '../utils/fitText.js';
 
-export function AppView({ model, uiState, players = [], actions, gameId, gameName, onCellClick, onBackToLobby, onRoundClick, isReadOnly = false }) {
+export function AppView({
+  model,
+  uiState,
+  players = [],
+  actions,
+  gameId,
+  gameName,
+  onCellClick,
+  onBackToLobby,
+  onRoundClick,
+  isReadOnly = false,
+  allowCurrentPlayerControl = false,
+  allowLeaderboardControls = false,
+  showLeaderboardQr = true,
+}) {
   const container = document.createElement('div');
   container.className = 'app-shell';
 
@@ -35,7 +49,7 @@ export function AppView({ model, uiState, players = [], actions, gameId, gameNam
     currentPlayerId: model?.getCurrentPlayerId?.() ?? null,
     onBackToLobby: isReadOnly ? null : onBackToLobby,
     onRoundClick,
-    onCurrentPlayerChange: isReadOnly ? null : (playerId) => actions.setCurrentPlayer?.(playerId),
+    onCurrentPlayerChange: (isReadOnly && !allowCurrentPlayerControl) ? null : (playerId) => actions.setCurrentPlayer?.(playerId),
   });
   container.appendChild(header.el);
   disposer.add(() => header.destroy?.());
@@ -68,8 +82,9 @@ export function AppView({ model, uiState, players = [], actions, gameId, gameNam
         gameId,
         players: leaderboardPlayers,
         onAdjustPlayerScore: (playerId, delta) => actions.adjustPlayerScore?.(playerId, delta),
-        onDeletePlayer: isReadOnly ? null : (playerId) => actions.removePlayer?.(playerId),
-        readOnly: isReadOnly,
+        onDeletePlayer: (isReadOnly && !allowLeaderboardControls) ? null : (playerId) => actions.removePlayer?.(playerId),
+        readOnly: isReadOnly && !allowLeaderboardControls,
+        showQr: showLeaderboardQr,
       });
       container.appendChild(leaderboardPanel.el);
       fit();

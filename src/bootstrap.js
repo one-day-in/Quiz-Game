@@ -223,10 +223,31 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
             gameName,
             onBackToLobby: hostMode === 'controller' ? null : () => renderLobby(user, { hostMode }),
             isReadOnly: hostMode === 'controller',
+            allowCurrentPlayerControl: hostMode === 'controller',
+            allowLeaderboardControls: hostMode === 'controller',
+            showLeaderboardQr: hostMode !== 'controller',
+            onCurrentPlayerChange: async (playerId) => {
+                if (hostMode === 'controller') {
+                    void hostControlChannel.send('current_player_set', { playerId: playerId || null });
+                    return;
+                }
+                await gameService.setCurrentPlayerId(playerId);
+            },
             onCellOpen: (payload) => {
                 void hostControlChannel.send('open_cell', payload);
             },
         });
+
+        let stopCurrentPlayerBroadcast = null;
+        if (hostMode === 'host') {
+            let lastCurrentPlayerId = gameService.getCurrentPlayerId();
+            stopCurrentPlayerBroadcast = gameService.subscribe((state) => {
+                const nextPlayerId = state?.model?.getCurrentPlayerId?.() ?? null;
+                if (nextPlayerId === lastCurrentPlayerId) return;
+                lastCurrentPlayerId = nextPlayerId;
+                void hostControlChannel.send('current_player_state', { playerId: nextPlayerId });
+            });
+        }
 
         await hostControlChannel.connect();
         const stopHostControlSubscription = hostControlChannel.subscribe((message) => {
@@ -236,6 +257,18 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
 
             if (type === 'open_cell') {
                 app.openCell(payload, { skipBroadcast: true });
+                return;
+            }
+
+            if (type === 'current_player_set' && hostMode === 'host') {
+                void gameService.setCurrentPlayerId(payload?.playerId || null).then(() => {
+                    void hostControlChannel.send('current_player_state', { playerId: payload?.playerId || null });
+                });
+                return;
+            }
+
+            if (type === 'current_player_state') {
+                gameService.setCurrentPlayerIdLocal(payload?.playerId || null);
                 return;
             }
 
@@ -255,6 +288,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
         });
 
         _currentCleanup = () => {
+            stopCurrentPlayerBroadcast?.();
             stopHostControlSubscription?.();
             hostControlChannel?.destroy?.();
             playersService?.destroy?.();

@@ -154,6 +154,13 @@ class GameService {
         }
     }
 
+    setCurrentPlayerIdLocal(playerId) {
+        if (!this.model) return;
+        const nextPlayerId = playerId ? String(playerId) : null;
+        this.model.setCurrentPlayerId?.(nextPlayerId);
+        this._emit();
+    }
+
     getCell(roundId, rowId, cellId) {
         return this.model?.getCell(roundId, rowId, cellId) ?? null;
     }

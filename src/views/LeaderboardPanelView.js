@@ -6,12 +6,13 @@ import { t, withLanguageParam } from '../i18n.js';
 import { getActiveBuzzerUrl } from '../utils/localBuzzerUrl.js';
 
 export class LeaderboardPanelView {
-  constructor({ gameId, players = [], onAdjustPlayerScore = null, onDeletePlayer = null, readOnly = false } = {}) {
+  constructor({ gameId, players = [], onAdjustPlayerScore = null, onDeletePlayer = null, readOnly = false, showQr = true } = {}) {
     this._gameId = gameId;
     this._players = Array.isArray(players) ? players : [];
     this._onAdjustPlayerScore = onAdjustPlayerScore;
     this._onDeletePlayer = onDeletePlayer;
     this._readOnly = !!readOnly;
+    this._showQr = !!showQr;
     this._isExpanded = false;
     this._openQrDock = null;
     this._selectedPlayerId = null;
@@ -88,6 +89,7 @@ export class LeaderboardPanelView {
             </span>
           </button>
 
+          ${this._showQr ? `
           <div class="leaderboard-panel__qrDock leaderboard-panel__qrDock--left" data-qr-dock="host">
             <button
               class="leaderboard-panel__qrTrigger"
@@ -135,6 +137,7 @@ export class LeaderboardPanelView {
               <p class="leaderboard-panel__copy">${t('scan_player_qr')}</p>
             </div>
           </div>
+          ` : ''}
         </div>
 
         <div class="leaderboard-panel__preview">
@@ -194,7 +197,7 @@ export class LeaderboardPanelView {
   }
 
   async _generateQr() {
-    if (!this._gameId || !this._playerQrImg) return;
+    if (!this._showQr || !this._gameId || !this._playerQrImg) return;
 
     const playerUrl = new URL(withLanguageParam(`${import.meta.env.BASE_URL}player.html?gameId=${this._gameId}`));
     const hostControllerUrl = new URL(withLanguageParam(`${import.meta.env.BASE_URL}host-controller.html?gameId=${this._gameId}`));
@@ -227,15 +230,17 @@ export class LeaderboardPanelView {
 
   _wire() {
     this._disposer.addEventListener(this._toggleBtn, 'click', () => this.toggleExpanded());
-    for (const dock of this._qrDocks) {
-      const trigger = dock.querySelector('.leaderboard-panel__qrTrigger');
-      const kind = dock.dataset.qrDock || '';
-      this._disposer.addEventListener(trigger, 'click', (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        if (!this._isExpanded || !kind) return;
-        this._setQrOpen(this._openQrDock === kind ? null : kind);
-      });
+    if (this._showQr) {
+      for (const dock of this._qrDocks) {
+        const trigger = dock.querySelector('.leaderboard-panel__qrTrigger');
+        const kind = dock.dataset.qrDock || '';
+        this._disposer.addEventListener(trigger, 'click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          if (!this._isExpanded || !kind) return;
+          this._setQrOpen(this._openQrDock === kind ? null : kind);
+        });
+      }
     }
 
     this._disposer.addEventListener(document, 'pointerdown', (event) => {
@@ -263,6 +268,7 @@ export class LeaderboardPanelView {
   }
 
   _setQrOpen(kind) {
+    if (!this._showQr) return;
     this._openQrDock = kind || null;
     for (const dock of this._qrDocks) {
       const dockKind = dock.dataset.qrDock || '';

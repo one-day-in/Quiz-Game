@@ -14,6 +14,10 @@ export function createAppController({
   onBackToLobby,
   onCellOpen = null,
   isReadOnly = false,
+  onCurrentPlayerChange = null,
+  allowCurrentPlayerControl = false,
+  allowLeaderboardControls = false,
+  showLeaderboardQr = true,
 }) {
   let appViewRef = null; // { el, update } — kept alive across state changes
   const disposer = new Disposer();
@@ -24,15 +28,18 @@ export function createAppController({
       return gameService.updateTopic(roundId, rowId, topic);
     },
     adjustPlayerScore: (playerId, delta) => {
-      if (isReadOnly) return;
+      if (isReadOnly && !allowLeaderboardControls) return;
       return playersService.adjustPlayerScore(playerId, delta);
     },
     removePlayer: (playerId) => {
-      if (isReadOnly) return;
+      if (isReadOnly && !allowLeaderboardControls) return;
       return playersService.removePlayer(playerId);
     },
-    setCurrentPlayer: (playerId) => {
-      if (isReadOnly) return;
+    setCurrentPlayer: async (playerId) => {
+      if (typeof onCurrentPlayerChange === 'function') {
+        return onCurrentPlayerChange(playerId);
+      }
+      if (isReadOnly && !allowCurrentPlayerControl) return;
       return gameService.setCurrentPlayerId(playerId);
     },
   };
@@ -100,6 +107,9 @@ export function createAppController({
         onBackToLobby,
         onRoundClick: handleRoundClick,
         isReadOnly,
+        allowCurrentPlayerControl,
+        allowLeaderboardControls,
+        showLeaderboardQr,
       });
       root.appendChild(appViewRef.el);
       return;
