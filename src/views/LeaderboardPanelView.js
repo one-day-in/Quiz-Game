@@ -575,14 +575,17 @@ export class LeaderboardPanelView {
       }
       if (nameEl) {
         nameEl.style.fontSize = '';
-        fitTextToBox(nameEl, nameEl, {
-          widthRatio: 0.98,
-          heightRatio: 1,
-          minSize: 16,
-          step: 0.25,
-          noWrap: true,
-          startFromComputedSize: true,
-        });
+        const isShortName = nameEl.classList.contains('is-short');
+        if (!isShortName) {
+          fitTextToBox(nameEl, nameEl, {
+            widthRatio: 0.99,
+            heightRatio: 1,
+            minSize: 16,
+            step: 0.25,
+            noWrap: true,
+            startFromComputedSize: true,
+          });
+        }
       }
       if (scoreEl) {
         scoreEl.style.fontSize = '';
