@@ -116,6 +116,8 @@ export function HeaderView({
   let playerQrDataUrl = '';
   let settingsOverlayController = null;
   let qrOverlayController = null;
+  let settingsOverlayHost = null;
+  let qrOverlayHost = null;
 
   function closeChooserMenu() {
     isChooserMenuOpen = false;
@@ -256,6 +258,17 @@ export function HeaderView({
     isOpen: () => !qrOverlayEl?.hidden,
     onRequestClose: () => hideQrOverlay(),
   });
+
+  // Render overlays at document level so they always cover the whole viewport
+  // and are not constrained by header stacking contexts.
+  if (settingsOverlayEl && settingsOverlayEl.parentElement !== document.body) {
+    settingsOverlayHost = settingsOverlayEl.parentElement;
+    document.body.appendChild(settingsOverlayEl);
+  }
+  if (qrOverlayEl && qrOverlayEl.parentElement !== document.body) {
+    qrOverlayHost = qrOverlayEl.parentElement;
+    document.body.appendChild(qrOverlayEl);
+  }
   el.querySelector('.hdr-lobby-btn')?.addEventListener('click', () => onBackToLobby?.());
   el.querySelector('.round-indicator').addEventListener('click', () => onRoundClick?.());
   document.addEventListener('pointerdown', handleDocumentPointerDown);
@@ -312,6 +325,12 @@ export function HeaderView({
     update,
     destroy() {
       hideQrOverlay();
+      if (settingsOverlayEl && settingsOverlayHost && settingsOverlayEl.parentElement === document.body) {
+        settingsOverlayHost.appendChild(settingsOverlayEl);
+      }
+      if (qrOverlayEl && qrOverlayHost && qrOverlayEl.parentElement === document.body) {
+        qrOverlayHost.appendChild(qrOverlayEl);
+      }
       settingsOverlayController?.destroy?.();
       qrOverlayController?.destroy?.();
       document.removeEventListener('pointerdown', handleDocumentPointerDown);
