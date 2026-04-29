@@ -39,6 +39,7 @@ export class LeaderboardPanelView {
     this._selectedPlayerId = null;
     this._isScoreLogsOpen = false;
     this._overlayHost = null;
+    this._dockSignature = '';
 
     this._build();
     this._disposer = new ViewDisposer(this._root);
@@ -479,9 +480,13 @@ export class LeaderboardPanelView {
   _renderDockSummary() {
     if (!this._dockSummary) return;
     if (!Array.isArray(this._players) || !this._players.length) {
-      this._dockSummary.innerHTML = `
-        <div class="leaderboard-panel__dockEmpty">${escapeHtml(t('no_players_available'))}</div>
-      `;
+      const emptySignature = '__empty__';
+      if (this._dockSignature !== emptySignature) {
+        this._dockSummary.innerHTML = `
+          <div class="leaderboard-panel__dockEmpty">${escapeHtml(t('no_players_available'))}</div>
+        `;
+        this._dockSignature = emptySignature;
+      }
       return;
     }
     const getPlayerScore = (player) => Number(player?.points ?? player?.score) || 0;
@@ -494,6 +499,10 @@ export class LeaderboardPanelView {
         name: player?.name || t('player_fallback'),
         score: getPlayerScore(player),
       }));
+
+    const nextSignature = JSON.stringify(leaders);
+    if (nextSignature === this._dockSignature) return;
+    this._dockSignature = nextSignature;
 
     this._dockSummary.innerHTML = `
       <div class="leaderboard-panel__dockList">
