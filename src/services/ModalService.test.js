@@ -53,6 +53,44 @@ describe('ModalService press reset', () => {
     expect(pressRuntime.openPress).toHaveBeenCalledTimes(1);
   });
 
+  it('keeps press closed when answer is shown', async () => {
+    const gameService = {
+      getGameId: () => 'game-1',
+    };
+    const pressRuntime = {
+      openPress: vi.fn().mockResolvedValue(undefined),
+      closePress: vi.fn().mockResolvedValue(undefined),
+    };
+    const service = new ModalService(gameService, {}, pressRuntime);
+    service.view = { updateWinnerName: vi.fn() };
+    service._modalViewMode = 'view';
+    service._modalIsAnswerShown = true;
+
+    await service._resetPressRuntime();
+
+    expect(pressRuntime.openPress).not.toHaveBeenCalled();
+    expect(pressRuntime.closePress).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps press closed in edit mode', async () => {
+    const gameService = {
+      getGameId: () => 'game-1',
+    };
+    const pressRuntime = {
+      openPress: vi.fn().mockResolvedValue(undefined),
+      closePress: vi.fn().mockResolvedValue(undefined),
+    };
+    const service = new ModalService(gameService, {}, pressRuntime);
+    service.view = { updateWinnerName: vi.fn() };
+    service._modalViewMode = 'edit';
+    service._modalIsAnswerShown = true;
+
+    await service._resetPressRuntime();
+
+    expect(pressRuntime.openPress).not.toHaveBeenCalled();
+    expect(pressRuntime.closePress).toHaveBeenCalledTimes(1);
+  });
+
   it('subtracts score and resets press on incorrect answer', async () => {
     const gameService = {
       getGameId: () => 'game-1',

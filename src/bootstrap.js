@@ -323,6 +323,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
                 pendingRoundId: Number.isFinite(Number(uiState?.pendingRoundId))
                     ? Number(uiState.pendingRoundId)
                     : null,
+                gameMode: String(uiState?.gameMode || 'play').toLowerCase() === 'edit' ? 'edit' : 'play',
             });
         };
         const buildGameSnapshotPayload = () => {
@@ -339,6 +340,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
                     pendingRoundId: Number.isFinite(Number(uiState?.pendingRoundId))
                         ? Number(uiState.pendingRoundId)
                         : null,
+                    gameMode: String(uiState?.gameMode || 'play').toLowerCase() === 'edit' ? 'edit' : 'play',
                 },
             };
             return payload?.game ? payload : null;
@@ -350,6 +352,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
             pendingRoundId: Number.isFinite(Number(payload?.uiState?.pendingRoundId))
                 ? Number(payload.uiState.pendingRoundId)
                 : null,
+            gameMode: String(payload?.uiState?.gameMode || 'play').toLowerCase() === 'edit' ? 'edit' : 'play',
         });
         const sendGameSnapshot = ({ force = false } = {}) => {
             if (hostMode !== 'host') return;
@@ -444,6 +447,10 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
                 : null,
             onModalViewStateChange: hostMode === 'host'
                 ? ({ mode, isAnswerShown }) => {
+                    const nextGameMode = mode === 'edit' ? 'edit' : 'play';
+                    gameService.setGameMode(nextGameMode);
+                    modalService.setGameMode(nextGameMode);
+                    void hostControlChannel.send('game_mode_state', { gameMode: nextGameMode });
                     lastModalViewState = { mode, isAnswerShown };
                     void hostControlChannel.send('modal_view_state', { mode, isAnswerShown });
                 }
@@ -554,9 +561,10 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
                 await gameService.setCurrentPlayerId(playerId);
             },
             onCellOpen: (payload) => {
+                const gameMode = String(gameService.getState()?.uiState?.gameMode || 'play').toLowerCase() === 'edit' ? 'edit' : 'play';
                 lastOpenCellPayload = payload || null;
-                lastModalViewState = { mode: 'view', isAnswerShown: false };
-                void hostControlChannel.send('open_cell', payload);
+                lastModalViewState = { mode: gameMode === 'edit' ? 'edit' : 'view', isAnswerShown: gameMode === 'edit' };
+                void hostControlChannel.send('open_cell', { ...(payload || {}), modalMode: lastModalViewState.mode });
             },
             onLeaderboardExpandedChange: (isExpanded) => {
                 leaderboardPanelExpanded = !!isExpanded;
@@ -573,8 +581,19 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
                 }
                 void roundNavigationService.setActiveRound(roundId);
             },
+            onGameModeChange: (mode) => {
+                const nextMode = mode === 'edit' ? 'edit' : 'play';
+                if (hostMode === 'controller') {
+                    void hostControlChannel.send('game_mode_set', { gameMode: nextMode });
+                    return;
+                }
+                gameService.setGameMode(nextMode);
+                modalService.setGameMode(nextMode);
+                void hostControlChannel.send('game_mode_state', { gameMode: nextMode });
+            },
         });
         appRef = app;
+        modalService.setGameMode(gameService.getState()?.uiState?.gameMode || 'play');
 
         let stopCurrentPlayerBroadcast = null;
         if (hostMode === 'host') {
@@ -648,6 +667,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
                 sendPlayersSnapshot({ force: true });
                 void hostControlChannel.send('leaderboard_panel_state', { isExpanded: leaderboardPanelExpanded });
                 void hostControlChannel.send('score_logs_state', { isOpen: !!scoreLogsOpen });
+                void hostControlChannel.send('game_mode_state', { gameMode: gameService.getState()?.uiState?.gameMode || 'play' });
                 void hostControlChannel.send('current_player_state', { playerId: gameService.getCurrentPlayerId?.() ?? null });
                 if (lastOpenCellPayload) {
                     void hostControlChannel.send('open_cell', lastOpenCellPayload);
@@ -687,6 +707,26 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
                 return;
             }
 
+            if (type === 'game_mode_set' && hostMode === 'host') {
+                const nextMode = payload?.gameMode === 'edit' ? 'edit' : 'play';
+                gameService.setGameMode(nextMode);
+                modalService.setGameMode(nextMode);
+                void hostControlChannel.send('game_mode_state', { gameMode: nextMode });
+                return;
+            }
+
+            if (type === 'game_mode_state') {
+                const nextMode = payload?.gameMode === 'edit' ? 'edit' : 'play';
+                gameService.setGameModeLocal(nextMode);
+                modalService.setGameMode(nextMode);
+                return;
+            }
+
+            if (type === 'game_mode_sync_request' && hostMode === 'host') {
+                void hostControlChannel.send('game_mode_state', { gameMode: gameService.getState()?.uiState?.gameMode || 'play' });
+                return;
+            }
+
             if (type === 'open_cell') {
                 if (hostMode === 'controller') {
                     const roundId = Number(payload?.roundId);
@@ -696,7 +736,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
                         gameService.setCellAnsweredLocal(roundId, rowId, cellId, true);
                     }
                 }
-                app.openCell(payload, { skipBroadcast: true });
+                app.openCell(payload, { skipBroadcast: true, modalMode: payload?.modalMode || 'view' });
                 return;
             }
 
@@ -845,6 +885,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
             hasRoundStateSynced = false;
             void hostControlChannel.send('host_runtime_state_request');
             void hostControlChannel.send('score_log_sync_request');
+            void hostControlChannel.send('game_mode_sync_request');
             requestControllerStateSync();
             startRoundSyncRetry();
         } else {

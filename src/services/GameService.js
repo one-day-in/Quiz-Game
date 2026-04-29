@@ -30,7 +30,7 @@ class GameService {
     constructor(repo) {
         this.repo = repo;
         this.model = null;
-        this.uiState = { activeRoundId: 0, isRoundTransitioning: false, pendingRoundId: null };
+        this.uiState = { activeRoundId: 0, isRoundTransitioning: false, pendingRoundId: null, gameMode: 'play' };
         this._subs = new Set();
         this._roundTransitionToken = 0;
     }
@@ -117,6 +117,23 @@ class GameService {
     restoreUiState() {
         const roundId = Number(localStorage.getItem('activeRoundId'));
         if (Number.isFinite(roundId) && roundId >= 0) this.uiState.activeRoundId = roundId;
+        const gameMode = String(localStorage.getItem('gameMode') || '').toLowerCase();
+        if (gameMode === 'edit' || gameMode === 'play') this.uiState.gameMode = gameMode;
+        this._emit();
+    }
+
+    setGameMode(mode = 'play') {
+        const nextMode = String(mode || 'play').toLowerCase() === 'edit' ? 'edit' : 'play';
+        if (this.uiState.gameMode === nextMode) return;
+        this.uiState.gameMode = nextMode;
+        localStorage.setItem('gameMode', nextMode);
+        this._emit();
+    }
+
+    setGameModeLocal(mode = 'play') {
+        const nextMode = String(mode || 'play').toLowerCase() === 'edit' ? 'edit' : 'play';
+        if (this.uiState.gameMode === nextMode) return;
+        this.uiState.gameMode = nextMode;
         this._emit();
     }
 
@@ -190,6 +207,9 @@ class GameService {
         this.uiState.pendingRoundId = Number.isFinite(pendingRoundId) && pendingRoundId >= 0
             ? pendingRoundId
             : null;
+        this.uiState.gameMode = String(nextState?.gameMode || this.uiState.gameMode || 'play').toLowerCase() === 'edit'
+            ? 'edit'
+            : 'play';
         this._emit();
     }
 

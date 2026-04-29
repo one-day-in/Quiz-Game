@@ -439,7 +439,8 @@
 /* ── Lobby + Logout buttons (same style as leaderboard button) ── */
 .hdr-lobby-btn,
 .hdr-logout-btn,
-.hdr-logs-btn {
+.hdr-logs-btn,
+.hdr-game-mode-btn {
   height: 44px;
   padding: 0 16px;
 
@@ -472,7 +473,8 @@
 
 .hdr-lobby-btn:hover,
 .hdr-logout-btn:hover,
-.hdr-logs-btn:hover {
+.hdr-logs-btn:hover,
+.hdr-game-mode-btn:hover {
   transform: translateY(calc(-1 * (var(--lift-y) / 3)));
   background: var(--btn-bg-hover);
   border-color: var(--border-5);
@@ -482,14 +484,16 @@
 
 .hdr-lobby-btn:active,
 .hdr-logout-btn:active,
-.hdr-logs-btn:active {
+.hdr-logs-btn:active,
+.hdr-game-mode-btn:active {
   transform: translateY(var(--btn-press-y));
   filter: brightness(0.98);
 }
 
 .hdr-lobby-btn:focus-visible,
 .hdr-logout-btn:focus-visible,
-.hdr-logs-btn:focus-visible {
+.hdr-logs-btn:focus-visible,
+.hdr-game-mode-btn:focus-visible {
   outline: none;
   box-shadow: var(--shadow-md), var(--ring);
 }
@@ -499,6 +503,10 @@
   min-width: 44px;
   padding: 0;
   border-radius: 999px;
+}
+
+.hdr-game-mode-btn {
+  min-width: 118px;
 }
 
 .hdr-logs-btn-icon {
@@ -704,7 +712,8 @@
 :root[data-theme="birthday"] .hdr-current-player-btn,
 :root[data-theme="birthday"] .hdr-lobby-btn,
 :root[data-theme="birthday"] .hdr-logout-btn,
-:root[data-theme="birthday"] .hdr-logs-btn {
+:root[data-theme="birthday"] .hdr-logs-btn,
+:root[data-theme="birthday"] .hdr-game-mode-btn {
   background: linear-gradient(180deg, rgba(116, 82, 166, 0.92), rgba(76, 52, 118, 0.92));
   border-color: rgba(210, 176, 255, 0.44);
   color: var(--text);
@@ -714,7 +723,8 @@
 :root[data-theme="birthday"] .hdr-current-player-btn:hover,
 :root[data-theme="birthday"] .hdr-lobby-btn:hover,
 :root[data-theme="birthday"] .hdr-logout-btn:hover,
-:root[data-theme="birthday"] .hdr-logs-btn:hover {
+:root[data-theme="birthday"] .hdr-logs-btn:hover,
+:root[data-theme="birthday"] .hdr-game-mode-btn:hover {
   border-color: rgba(255, 209, 102, 0.74);
   box-shadow:
     0 12px 24px rgba(20, 12, 35, 0.38),

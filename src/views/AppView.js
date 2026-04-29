@@ -23,6 +23,7 @@ export function AppView({
   scoreLogs = [],
   onLeaderboardExpandedChange = null,
   onScoreLogsOpenChange = null,
+  onGameModeToggle = null,
 }) {
   const container = document.createElement('div');
   container.className = 'app-shell';
@@ -57,6 +58,7 @@ export function AppView({
     onRoundClick,
     onScoreLogsClick: () => leaderboardPanel?.toggleScoreLogs?.(),
     onCurrentPlayerChange: (isReadOnly && !allowCurrentPlayerControl) ? null : (playerId) => actions.setCurrentPlayer?.(playerId),
+    onGameModeToggle: isReadOnly ? null : onGameModeToggle,
   });
   container.appendChild(header.el);
   disposer.add(() => header.destroy?.());

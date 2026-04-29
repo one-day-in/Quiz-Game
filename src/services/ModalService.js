@@ -47,6 +47,10 @@ export class ModalService {
     this._currentResolutionValue = 0;
     this._pressAutoResolveBlocked = false;
     this._pressDeadlineIso = null;
+    this._modalViewMode = 'view';
+    this._modalIsAnswerShown = false;
+    this._pressAvailabilityIntent = null;
+    this._globalGameMode = 'play';
     this._mediaInteractionUnlocked = this.isControllerMode();
     this._pendingMediaControl = null;
 
@@ -93,6 +97,15 @@ export class ModalService {
     this._open('view', cellData);
   }
 
+  showEditView(cellData) {
+    this._open('edit', cellData);
+  }
+
+  setGameMode(mode = 'play') {
+    this._globalGameMode = String(mode || 'play').toLowerCase() === 'edit' ? 'edit' : 'play';
+    void this._syncPressAvailability({ force: true });
+  }
+
   isControllerMode() {
     return this._presentationMode === 'controller';
   }
@@ -128,6 +141,9 @@ export class ModalService {
     this._currentResolutionValue = this._cellValue;
     this._pressAutoResolveBlocked = false;
     this._pressDeadlineIso = null;
+    this._modalViewMode = mode === 'edit' ? 'edit' : 'view';
+    this._modalIsAnswerShown = mode === 'edit';
+    this._pressAvailabilityIntent = null;
     if (!this.isControllerMode()) {
       void this._resetPressRuntime();
     }
@@ -273,13 +289,17 @@ export class ModalService {
       onViewStateChange: ({ mode: nextMode, isAnswerShown }) => {
         this._onModalViewStateChange?.({ mode: nextMode, isAnswerShown });
         if (this.isControllerMode()) return;
+        this._modalViewMode = nextMode === 'edit' ? 'edit' : 'view';
+        this._modalIsAnswerShown = !!isAnswerShown;
         this._pressAutoResolveBlocked = nextMode !== 'view' || !!isAnswerShown;
         if (this._pressAutoResolveBlocked) {
           this._pausePressCountdown();
+          void this._syncPressAvailability();
           return;
         }
 
         this._resumePressCountdown();
+        void this._syncPressAvailability();
       },
 
       onControllerMediaControl: ({ target, action }) => {
@@ -373,6 +393,9 @@ export class ModalService {
       this._currentResolutionValue = 0;
       this._pressAutoResolveBlocked = false;
       this._pressDeadlineIso = null;
+      this._modalViewMode = 'view';
+      this._modalIsAnswerShown = false;
+      this._pressAvailabilityIntent = null;
       void this._pressRuntime?.closePress?.();
       if (this.container?.isConnected) this.container.innerHTML = '';
       if (hadOpenModal) {
@@ -469,10 +492,30 @@ export class ModalService {
       this._clearPressCountdown();
       this._pressTimerPaused = false;
       this._setPressWinner(null, '');
-      await this._openPressRuntimeWithRetry();
+      await this._syncPressAvailability({ force: true });
     } catch (error) {
       console.error('[ModalService] Failed to reset press runtime:', error);
     }
+  }
+
+  _isQuestionPressWindowActive() {
+    return !this.isControllerMode()
+      && this._globalGameMode === 'play'
+      && this._modalViewMode === 'view'
+      && !this._modalIsAnswerShown;
+  }
+
+  async _syncPressAvailability({ force = false } = {}) {
+    if (!this._pressRuntime) return;
+    const shouldEnable = this._isQuestionPressWindowActive();
+    if (!force && this._pressAvailabilityIntent === shouldEnable) return;
+
+    this._pressAvailabilityIntent = shouldEnable;
+    if (shouldEnable) {
+      await this._openPressRuntimeWithRetry();
+      return;
+    }
+    await this._pressRuntime?.closePress?.();
   }
 
   async _openPressRuntimeWithRetry() {
@@ -534,13 +577,13 @@ export class ModalService {
     this.view?.updatePressTimer?.(secondsRemaining);
   }
 
-  _startPressCountdown(durationMs = FALLBACK_PRESS_RESPONSE_SECONDS * 1000) {
+  _startPressCountdown(durationMs = FALLBACK_PRESS_RESPONSE_SECONDS * 1000, deadlineIso = null) {
     if (!this._pressWinnerId || this._isResolvingPressResult) return;
     if (this._pressCountdownTimer) return;
 
     this._pressCountdownRemainingMs = durationMs;
     this._pressCountdownDeadline = Date.now() + durationMs;
-    this._pressDeadlineIso = new Date(this._pressCountdownDeadline).toISOString();
+    this._pressDeadlineIso = deadlineIso || new Date(this._pressCountdownDeadline).toISOString();
     this._syncPressCountdownView();
 
     this._pressCountdownTimer = setInterval(() => {
@@ -588,8 +631,8 @@ export class ModalService {
       const serverDeadlineMs = this._deriveRuntimeDeadlineMs(runtime);
       if (serverDeadlineMs) {
         const remainingMs = Math.max(0, serverDeadlineMs - Date.now());
-        this._pressDeadlineIso = new Date(serverDeadlineMs).toISOString();
-        this._startPressCountdown(remainingMs);
+        const serverDeadlineIso = new Date(serverDeadlineMs).toISOString();
+        this._startPressCountdown(remainingMs, serverDeadlineIso);
       } else {
         this._startPressCountdown();
       }

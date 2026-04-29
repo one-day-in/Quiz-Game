@@ -79,6 +79,12 @@ The project expects:
 - a `games` table for board data
 - a `game_players` table and RPC functions for player join/rename/score/leave
 - a `game_runtime` table plus `claim_game_press(...)` and `resolve_game_press(...)` for press winner state
+- server-side press timer fields in `game_runtime`:
+  - `press_expires_at timestamptz`
+  - `press_status text`
+  - `resolved_at timestamptz`
+  - `resolved_by text`
+- RPC `resolve_game_press_timeout(...)` for atomic timeout resolution
 - a `score_logs` table for score-change history sync between host/controller
 - a `media` storage bucket
 - a `service_role` key for the dedicated buzzer server
@@ -164,3 +170,67 @@ Manual smoke test before release:
 5. verify first press shows winner name in modal
 6. verify `Not Correct` resets the race
 7. verify `Correct` updates score and closes the modal
+
+## Server Press Timer (Authoritative)
+
+The press response timer is server-authoritative. Frontend countdown is only a UI mirror based on `game_runtime.press_expires_at`.
+
+### 1. Required DB fields
+
+Ensure `public.game_runtime` has:
+
+- `press_expires_at timestamptz`
+- `press_status text`
+- `resolved_at timestamptz`
+- `resolved_by text`
+
+### 2. Required RPC functions
+
+You need all three RPCs:
+
+- `claim_game_press(uuid, text)`:
+  - atomically claims winner
+  - sets `press_status = 'claimed'`
+  - sets `press_expires_at = now() + interval '30 seconds'`
+  - clears `resolved_at/resolved_by`
+- `resolve_game_press(uuid, text, text)`:
+  - resolves `correct|incorrect`
+  - clears claim fields and timer
+  - sets `resolved_at/resolved_by`
+- `resolve_game_press_timeout(uuid, text, timestamptz)`:
+  - resolves only if the same winner is still active and deadline has passed
+  - prevents duplicate or stale timeout penalties
+
+### 3. If SQL says return type cannot be changed
+
+If Supabase returns:
+
+- `cannot change return type of existing function`
+
+drop function first, then recreate:
+
+```sql
+drop function if exists public.claim_game_press(uuid, text);
+```
+
+Then run your new function definition.
+
+### 4. Frontend fallback env (optional)
+
+`VITE_PRESS_RESPONSE_SECONDS` is a fallback UI duration if `press_expires_at` is missing.  
+Recommended value: `30`.
+
+### 5. Verification checklist
+
+1. Open modal and wait for `PRESS` opening delay.
+2. Player presses: winner appears, timer starts from server deadline.
+3. Press `Показать ответ` and keep answer view open past 30s:
+   - score must NOT auto-decrease while answer is visible.
+4. Return to question view:
+   - if deadline already passed, timeout resolves once.
+5. `Not Correct`:
+   - subtracts exactly cell value once
+   - reopens race correctly.
+6. `Correct`:
+   - adds exactly cell value once
+   - closes modal and clears runtime claim/timer.

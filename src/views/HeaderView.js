@@ -15,6 +15,7 @@ export function HeaderView({
   onRoundClick,
   onScoreLogsClick,
   onCurrentPlayerChange,
+  onGameModeToggle,
 }) {
   const el = document.createElement('header');
   el.className = 'app-header';
@@ -25,6 +26,8 @@ export function HeaderView({
   let isChooserMenuOpen = false;
   const canBackToLobby = typeof onBackToLobby === 'function';
   const canOpenScoreLogs = typeof onScoreLogsClick === 'function';
+  const canToggleGameMode = typeof onGameModeToggle === 'function';
+  let currentGameMode = String(uiState?.gameMode || 'play').toLowerCase() === 'edit' ? 'edit' : 'play';
 
   el.innerHTML = `
     <div class="hdr-left">
@@ -32,6 +35,11 @@ export function HeaderView({
       <button class="round-indicator" type="button" title="${escapeHtml(t('switch_round'))}">
         ${escapeHtml(t('round'))}: <b class="js-round-value"></b>
       </button>
+      ${canToggleGameMode ? `
+      <button class="hdr-game-mode-btn" type="button" title="${escapeHtml(t('toggle_game_mode'))}">
+        <span class="js-game-mode-value"></span>
+      </button>
+      ` : ''}
     </div>
     <div class="hdr-center">
       ${showGameTitle ? `<h1 class="app-title">${escapeHtml(title)}</h1>` : ''}
@@ -66,6 +74,7 @@ export function HeaderView({
 
   const roundValueEl = el.querySelector('.js-round-value');
   const chooserValueEl = el.querySelector('.js-current-player-value');
+  const gameModeValueEl = el.querySelector('.js-game-mode-value');
   const chooserBtnEl = el.querySelector('.hdr-current-player-btn');
   const chooserMenuEl = el.querySelector('.hdr-current-player-menu');
   const chooserListEl = el.querySelector('.hdr-current-player-list');
@@ -117,6 +126,11 @@ export function HeaderView({
       ? (ui?.pendingRoundId ?? ui?.activeRoundId ?? 0)
       : (ui?.activeRoundId ?? 0);
     roundValueEl.textContent = String(displayRound + 1);
+    currentGameMode = String(ui?.gameMode || currentGameMode || 'play').toLowerCase() === 'edit' ? 'edit' : 'play';
+    if (gameModeValueEl) {
+      gameModeValueEl.textContent = currentGameMode === 'edit' ? t('mode_edit') : t('mode_play');
+    }
+    el.classList.toggle('app-header--editMode', currentGameMode === 'edit');
 
     if (Array.isArray(next?.players)) currentPlayers = next.players.slice();
     if (Object.prototype.hasOwnProperty.call(next, 'currentPlayerId')) {
@@ -150,6 +164,7 @@ export function HeaderView({
   });
 
   el.querySelector('.hdr-logs-btn')?.addEventListener('click', () => onScoreLogsClick?.());
+  el.querySelector('.hdr-game-mode-btn')?.addEventListener('click', () => onGameModeToggle?.(currentGameMode === 'edit' ? 'play' : 'edit'));
   el.querySelector('.hdr-lobby-btn')?.addEventListener('click', () => onBackToLobby?.());
   el.querySelector('.round-indicator').addEventListener('click', () => onRoundClick?.());
   document.addEventListener('pointerdown', handleDocumentPointerDown);

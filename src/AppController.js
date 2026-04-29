@@ -24,6 +24,7 @@ export function createAppController({
   onLeaderboardExpandedChange = null,
   onScoreLogsOpenChange = null,
   onRoundChangeRequest = null,
+  onGameModeChange = null,
 }) {
   let appViewRef = null; // { el, update } — kept alive across state changes
   const disposer = new Disposer();
@@ -103,10 +104,12 @@ export function createAppController({
     return rebuilt;
   }
 
-  function openCell(payload, { skipBroadcast = false, resolvePayload = true } = {}) {
+  function openCell(payload, { skipBroadcast = false, resolvePayload = true, modalMode = null } = {}) {
     const resolvedPayload = (skipBroadcast || !resolvePayload) ? payload : resolveCellPayload(payload);
     if (!resolvedPayload) return;
-    modalService.showQuestionView(resolvedPayload);
+    const effectiveMode = modalMode || gameService.getState()?.uiState?.gameMode || 'play';
+    if (effectiveMode === 'edit') modalService.showEditView?.(resolvedPayload);
+    else modalService.showQuestionView(resolvedPayload);
     if (!skipBroadcast) {
       onCellOpen?.(resolvedPayload);
     }
@@ -122,7 +125,8 @@ export function createAppController({
       gameService.setCellAnsweredLocal?.(roundId, rowId, cellId, true);
     }
 
-    openCell(payload, { resolvePayload: false });
+    const mode = String(gameService.getState()?.uiState?.gameMode || 'play').toLowerCase() === 'edit' ? 'edit' : 'view';
+    openCell(payload, { resolvePayload: false, modalMode: mode });
   }
 
   function render(state) {
@@ -156,6 +160,14 @@ export function createAppController({
         scoreLogs,
         onLeaderboardExpandedChange,
         onScoreLogsOpenChange,
+        onGameModeToggle: (mode) => {
+          const nextMode = mode === 'edit' ? 'edit' : 'play';
+          if (typeof onGameModeChange === 'function') {
+            onGameModeChange(nextMode);
+            return;
+          }
+          gameService.setGameMode?.(nextMode);
+        },
       });
       root.appendChild(appViewRef.el);
       return;
