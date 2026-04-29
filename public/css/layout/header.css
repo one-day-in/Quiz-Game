@@ -264,7 +264,10 @@
 .hdr-settings-overlay {
   position: fixed;
   inset: 0;
-  z-index: 3600;
+  z-index: 4000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .hdr-settings-overlay[hidden] {
@@ -274,7 +277,7 @@
 .hdr-settings-overlayBackdrop {
   position: absolute;
   inset: 0;
-  background: rgba(2, 6, 23, 0.62);
+  background: rgba(2, 6, 23, 0.72);
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
 }
@@ -312,20 +315,20 @@
 }
 
 .hdr-settings-menu {
-  position: fixed;
-  top: calc(var(--header-h) + 8px);
-  right: 16px;
+  position: relative;
   z-index: 1;
-  width: 20vw;
-  height: 80vh;
-  padding: 10px;
-  border-radius: 14px;
+  width: min(72vw, 840px);
+  max-width: 86vh;
+  max-height: 86vh;
+  min-height: min(58vh, 560px);
+  padding: 18px;
+  border-radius: 18px;
   border: 1px solid var(--border-2);
-  background: linear-gradient(180deg, var(--surface-2), var(--surface-3));
+  background: linear-gradient(180deg, rgba(17, 24, 39, 0.98), rgba(15, 23, 42, 0.98));
   box-shadow: var(--shadow-lg);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
   overflow-y: auto;
 }
 
@@ -348,13 +351,13 @@
 .hdr-settings-qrRow {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   justify-content: flex-start;
 }
 
 .hdr-settings-qrBtn {
   width: 100%;
-  min-height: 44px;
+  min-height: 54px;
   border-radius: 12px;
   border: 1px solid var(--border-2);
   background: var(--btn-bg);
