@@ -42,6 +42,7 @@ export function GameGridView({ model, uiState, roundId, onCellClick, onTopicChan
   root.appendChild(inner);
 
   if (!model) return root;
+  const canEditTopics = !isReadOnly && String(uiState?.gameMode || 'play').toLowerCase() === 'edit';
 
   const { ROWS, COLS } = GRID_CONFIG;
 
@@ -62,12 +63,12 @@ export function GameGridView({ model, uiState, roundId, onCellClick, onTopicChan
     editTopicBtn.className = 'cell-topic__editBtn';
     editTopicBtn.setAttribute('aria-label', t('edit_topic'));
     editTopicBtn.textContent = '✏';
-    if (!isReadOnly) {
+    if (canEditTopics) {
       topicCell.appendChild(editTopicBtn);
     }
 
     const openTopicEditor = () => {
-      if (isReadOnly || topicCell.querySelector('.topic-editor')) return;
+      if (!canEditTopics || topicCell.querySelector('.topic-editor')) return;
 
       const currentTopic = model.getTopic(roundId, row) || '';
 
@@ -93,7 +94,7 @@ export function GameGridView({ model, uiState, roundId, onCellClick, onTopicChan
       const closeFromModel = () => {
         resetTopicCellContent(topicCell);
         renderTopicCellFromModel(topicCell, model, roundId, row);
-        topicCell.appendChild(editTopicBtn);
+        if (canEditTopics) topicCell.appendChild(editTopicBtn);
       };
 
       const commit = () => {
@@ -110,7 +111,7 @@ export function GameGridView({ model, uiState, roundId, onCellClick, onTopicChan
 
         resetTopicCellContent(topicCell);
         setTopicCellText(topicCell, next);
-        topicCell.appendChild(editTopicBtn);
+        if (canEditTopics) topicCell.appendChild(editTopicBtn);
         onTopicChange?.(roundId, row, next);
       };
 
@@ -125,7 +126,7 @@ export function GameGridView({ model, uiState, roundId, onCellClick, onTopicChan
       input.addEventListener('blur', commit);
     };
 
-    if (!isReadOnly) {
+    if (canEditTopics) {
       editTopicBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         openTopicEditor();

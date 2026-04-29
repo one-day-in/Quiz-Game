@@ -33,6 +33,8 @@ export function createAppController({
   const actions = {
     updateTopic: (roundId, rowId, topic) => {
       if (isReadOnly) return;
+      const gameMode = String(gameService.getState?.()?.uiState?.gameMode || 'play').toLowerCase();
+      if (gameMode !== 'edit') return;
       return gameService.updateTopic(roundId, rowId, topic);
     },
     adjustPlayerScore: (playerId, delta) => {
