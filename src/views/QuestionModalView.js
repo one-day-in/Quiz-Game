@@ -8,6 +8,7 @@ import { t } from '../i18n.js';
 export class QuestionModalView {
     constructor({
         mode,
+        allowModeToggle = true,
         displayMode = 'host',
         headerTitle,
         isAnswered,
@@ -27,6 +28,7 @@ export class QuestionModalView {
         onControllerMediaControl,
     }) {
         this._mode          = mode;
+        this._allowModeToggle = !!allowModeToggle;
         this._displayMode   = displayMode;
         this._headerTitle   = (headerTitle || '').trim();
         this._winnerName    = '';
@@ -324,7 +326,7 @@ export class QuestionModalView {
 
         // ── Toggle mode button (view ↔ edit) ──────────────────────────────────
         this._disposer.addEventListener(r.btnToggleMode, 'click', () => {
-            if (this._displayMode === 'controller') return;
+            if (this._displayMode === 'controller' || !this._allowModeToggle) return;
             this._mode = this._mode === 'edit' ? 'view' : 'edit';
             if (this._mode === 'edit') this._isAnswerShown = true;
             applyModeUI(this, this._refs);

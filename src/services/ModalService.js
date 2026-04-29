@@ -141,14 +141,16 @@ export class ModalService {
     this._currentResolutionValue = this._cellValue;
     this._pressAutoResolveBlocked = false;
     this._pressDeadlineIso = null;
-    this._modalViewMode = mode === 'edit' ? 'edit' : 'view';
-    this._modalIsAnswerShown = mode === 'edit';
+    const allowModeToggle = !this.isControllerMode() && this._globalGameMode === 'edit';
+    const effectiveMode = allowModeToggle && mode === 'edit' ? 'edit' : 'view';
+    this._modalViewMode = effectiveMode;
+    this._modalIsAnswerShown = effectiveMode === 'edit';
     this._pressAvailabilityIntent = null;
     if (!this.isControllerMode()) {
       void this._resetPressRuntime();
     }
 
-    const shouldMarkAsAnswered = !this.isControllerMode() && mode === 'view' && !cellData.isAnswered;
+    const shouldMarkAsAnswered = !this.isControllerMode() && effectiveMode === 'view' && !cellData.isAnswered;
     if (shouldMarkAsAnswered) {
       void this._updateCell({ isAnswered: true }, { silent: true });
     }
@@ -166,7 +168,8 @@ export class ModalService {
     const headerTitle = this._getHeaderTitle(cellData);
 
     this.view = new QuestionModalView({
-      mode,
+      mode: effectiveMode,
+      allowModeToggle,
       displayMode: this.isControllerMode() ? 'controller' : 'host',
       headerTitle,
 

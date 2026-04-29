@@ -220,7 +220,7 @@ export function applyModeUI(view, refs) {
   // Toggle mode button: shows current mode and what clicking will do
   if (refs.btnToggleMode) {
     refs.btnToggleMode.textContent = isEdit ? `👁 ${t('view')}` : `✏ ${t('edit')}`;
-    setHidden(refs.btnToggleMode, isController);
+    setHidden(refs.btnToggleMode, isController || !view._allowModeToggle);
   }
 
   for (const t of ['question', 'answer']) {
