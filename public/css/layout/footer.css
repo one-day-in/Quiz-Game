@@ -39,25 +39,27 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  min-height: 42px;
-  padding: 0 14px;
+  min-height: 58px;
+  padding: 14px 16px 12px;
   font-family: var(--font-display);
-  font-size: clamp(20px, 2.3vw, 30px);
-  letter-spacing: 0.08em;
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  border-bottom: 1px solid var(--border-1);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
-  transition: opacity 140ms var(--ease), transform 140ms var(--ease);
+  color: inherit;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: transparent;
+  transition: color 140ms var(--ease), text-shadow 140ms var(--ease), transform 140ms var(--ease);
 }
 
 .leaderboard-panel--overlayV2 .leaderboard-panel__dockTitle::after {
-  content: "⌃";
+  content: "▴";
   position: absolute;
   left: 50%;
-  top: 40%;
-  transform: translate(-50%, -38%);
+  top: 50%;
+  transform: translate(-50%, calc(-50% + 4px));
   opacity: 0;
-  font-size: clamp(20px, 2.2vw, 30px);
+  font-size: 22px;
   line-height: 1;
   color: rgba(255, 255, 255, 0.96);
   text-shadow:
