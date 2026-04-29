@@ -46,13 +46,17 @@ export async function getGameRuntime(gameId) {
 }
 
 export async function setPressEnabled(gameId, enabled) {
+    const isEnabled = !!enabled;
     const { data, error } = await supabase
         .from('game_runtime')
         .upsert({
             game_id: gameId,
-            press_enabled: !!enabled,
+            press_enabled: isEnabled,
             winner_player_id: null,
             pressed_at: null,
+            press_expires_at: null,
+            press_status: isEnabled ? 'open' : 'idle',
+            resolved_at: isEnabled ? null : new Date().toISOString(),
             updated_at: new Date().toISOString(),
         }, { onConflict: 'game_id' })
         .select(GAME_RUNTIME_COLUMNS)
@@ -76,7 +80,11 @@ export async function claimGamePress(gameId, controllerId) {
         winnerPlayerId: row?.winner_player_id || null,
         winnerName: row?.winner_name || null,
         pressedAt: row?.pressed_at || null,
+        pressExpiresAt: row?.press_expires_at || null,
+        pressStatus: row?.press_status || null,
+        resolvedAt: row?.resolved_at || null,
         pressEnabled: !!row?.press_enabled,
+        updatedAt: row?.updated_at || null,
     };
 }
 

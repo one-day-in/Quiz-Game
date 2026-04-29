@@ -32,6 +32,9 @@ function normalizeRuntime(gameId, runtime = null) {
     winnerPlayerId: runtime?.winnerPlayerId || null,
     winnerName: runtime?.winnerName || null,
     pressedAt: runtime?.pressedAt || null,
+    pressExpiresAt: runtime?.pressExpiresAt || runtime?.press_expires_at || null,
+    pressStatus: runtime?.pressStatus || runtime?.press_status || null,
+    resolvedAt: runtime?.resolvedAt || runtime?.resolved_at || null,
     updatedAt: runtime?.updatedAt || null,
   };
 }
