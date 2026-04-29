@@ -167,7 +167,7 @@ export class LeaderboardPanelView {
         title="${t('show_all_players')}"
       >
         <span class="leaderboard-panel__dockTitle">${t('leaderboard')}</span>
-        <span class="leaderboard-panel__dockSummary">${t('players')}</span>
+        <div class="leaderboard-panel__dockSummary">${t('players')}</div>
       </button>
 
       <div class="leaderboard-panel__overlay leaderboard-panel__overlay--v2">
@@ -479,17 +479,33 @@ export class LeaderboardPanelView {
   _renderDockSummary() {
     if (!this._dockSummary) return;
     if (!Array.isArray(this._players) || !this._players.length) {
-      this._dockSummary.textContent = t('no_players_available');
+      this._dockSummary.innerHTML = `
+        <div class="leaderboard-panel__dockEmpty">${escapeHtml(t('no_players_available'))}</div>
+      `;
       return;
     }
     const getPlayerScore = (player) => Number(player?.points ?? player?.score) || 0;
-    const summary = this._players
+    const leaders = this._players
       .slice()
       .sort((a, b) => getPlayerScore(b) - getPlayerScore(a))
       .slice(0, 5)
-      .map((player) => `${player?.name || t('player_fallback')}: ${getPlayerScore(player)}`)
-      .join(' · ');
-    this._dockSummary.textContent = summary;
+      .map((player, index) => ({
+        rank: index + 1,
+        name: player?.name || t('player_fallback'),
+        score: getPlayerScore(player),
+      }));
+
+    this._dockSummary.innerHTML = `
+      <div class="leaderboard-panel__dockList">
+        ${leaders.map((entry) => `
+          <article class="leaderboard-panel__dockItem">
+            <span class="leaderboard-panel__dockRank">${entry.rank}</span>
+            <span class="leaderboard-panel__dockName">${escapeHtml(entry.name)}</span>
+            <span class="leaderboard-panel__dockScore">${entry.score}</span>
+          </article>
+        `).join('')}
+      </div>
+    `;
   }
 
   _collectScoreChanges(prevPlayers = [], nextPlayers = []) {

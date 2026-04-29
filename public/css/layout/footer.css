@@ -41,14 +41,89 @@
 }
 
 .leaderboard-panel--overlayV2 .leaderboard-panel__dockSummary {
-  font-family: var(--font-label);
-  font-size: clamp(12px, 1.4vw, 16px);
-  letter-spacing: 0.02em;
-  color: var(--muted);
-  white-space: nowrap;
+  width: min(1200px, 100%);
+  max-width: 100%;
+}
+
+.leaderboard-panel__dockList {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.leaderboard-panel__dockItem {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background:
+    linear-gradient(180deg, rgba(51, 65, 85, 0.94), rgba(15, 23, 42, 0.98)),
+    linear-gradient(90deg, rgba(96, 165, 250, 0.08), transparent 62%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 8px 20px rgba(2, 6, 23, 0.30);
+}
+
+.leaderboard-panel__dockRank {
+  min-width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid var(--border-3);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--warning);
+  font-family: var(--font-numeric);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.leaderboard-panel__dockName {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 100%;
+  white-space: nowrap;
+  text-align: left;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: clamp(14px, 1.1vw, 18px);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.leaderboard-panel__dockScore {
+  color: var(--danger);
+  font-family: var(--font-numeric);
+  font-size: clamp(16px, 1.3vw, 22px);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
+.leaderboard-panel__dockEmpty {
+  color: var(--muted);
+  font-family: var(--font-label);
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  text-align: center;
+  padding: 6px 0;
+}
+
+@media (max-width: 1200px) {
+  .leaderboard-panel__dockList {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .leaderboard-panel__dockList {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .leaderboard-panel--overlayV2 .leaderboard-panel__overlay[hidden],
