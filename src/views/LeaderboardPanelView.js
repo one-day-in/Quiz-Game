@@ -35,6 +35,7 @@ export class LeaderboardPanelView {
     this._readOnly = !!readOnly;
     this._showQr = !!showQr;
     this._isExpanded = false;
+    this._overlayHideTimer = null;
     this._openQrDock = null;
     this._selectedPlayerId = null;
     this._isScoreLogsOpen = false;
@@ -89,9 +90,21 @@ export class LeaderboardPanelView {
     const isExpanded = !!nextExpanded;
     if (this._isExpanded === isExpanded) return;
 
+    window.clearTimeout(this._overlayHideTimer);
+    this._overlayHideTimer = null;
+    if (isExpanded && this._overlay) {
+      this._overlay.hidden = false;
+    }
+
     this._isExpanded = isExpanded;
     this._root.classList.toggle('is-expanded', isExpanded);
-    if (this._overlay) this._overlay.hidden = !isExpanded;
+    if (!isExpanded && this._overlay) {
+      this._overlayHideTimer = window.setTimeout(() => {
+        if (this._isExpanded || !this._overlay) return;
+        this._overlay.hidden = true;
+        this._overlayHideTimer = null;
+      }, 240);
+    }
     if (this._dockBtn) this._dockBtn.setAttribute('aria-expanded', String(isExpanded));
     this._toggleChevron.classList.toggle('is-down', isExpanded);
     this._toggleBtn.setAttribute('aria-expanded', String(isExpanded));
@@ -120,6 +133,8 @@ export class LeaderboardPanelView {
   }
 
   destroy() {
+    window.clearTimeout(this._overlayHideTimer);
+    this._overlayHideTimer = null;
     this._scoreLogsModal?.destroy?.();
     this._scoreLogsModal = null;
     this._fullView?.destroy?.();

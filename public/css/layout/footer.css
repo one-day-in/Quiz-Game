@@ -55,34 +55,83 @@
   position: fixed;
   inset: 0;
   z-index: 5000;
+  pointer-events: none;
 }
 
 .leaderboard-panel--overlayV2 .leaderboard-panel__backdrop {
   z-index: 0;
-  opacity: 1;
-  pointer-events: auto;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms var(--ease);
 }
 
 .leaderboard-panel--overlayV2 .leaderboard-panel__shell {
   position: fixed;
-  left: 50%;
-  bottom: 12px;
-  transform: translateX(-50%);
-  width: min(1600px, calc(100vw - 24px));
+  left: 0;
+  right: 0;
+  bottom: 0;
+  transform: translateY(100%);
+  width: 100vw;
   height: var(--leaderboard-panel-expanded-h);
-  right: auto;
   z-index: 1;
+  border-radius: 24px 24px 0 0;
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 0;
+  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 220ms var(--ease);
 }
 
 .leaderboard-panel--overlayV2 .leaderboard-panel__expanded {
   display: block;
-  opacity: 1;
+  opacity: 0;
   pointer-events: auto;
+  transition: opacity 160ms var(--ease);
 }
 
 .leaderboard-panel--overlayV2 .leaderboard-panel__toggle {
   min-height: 62px;
   padding: 16px 20px;
+}
+
+.leaderboard-panel--overlayV2.is-expanded .leaderboard-panel__overlay {
+  pointer-events: auto;
+}
+
+.leaderboard-panel--overlayV2.is-expanded .leaderboard-panel__backdrop {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.leaderboard-panel--overlayV2.is-expanded .leaderboard-panel__shell {
+  transform: translateY(0);
+}
+
+.leaderboard-panel--overlayV2.is-expanded .leaderboard-panel__expanded {
+  opacity: 1;
+}
+
+.leaderboard-panel--overlayV2 .leaderboard__rowWrap {
+  border-radius: 20px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 14px 28px rgba(2, 6, 23, 0.36);
+}
+
+.leaderboard-panel--overlayV2 .leaderboard__row {
+  border-radius: 20px;
+  border-color: rgba(255, 255, 255, 0.18);
+  background:
+    linear-gradient(180deg, rgba(51, 65, 85, 0.94), rgba(15, 23, 42, 0.98)),
+    linear-gradient(90deg, rgba(96, 165, 250, 0.08), transparent 62%);
+}
+
+.leaderboard-panel--overlayV2 .leaderboard__nameLabel {
+  font-size: clamp(22px, 2.1vw, 30px);
+  letter-spacing: 0.09em;
+}
+
+.leaderboard-panel--overlayV2 .leaderboard__scoreValue {
+  font-size: clamp(30px, 3.2vh, 46px);
 }
 
 .leaderboard-panel.is-expanded {
