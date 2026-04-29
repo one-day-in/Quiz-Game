@@ -10,7 +10,7 @@ function formatLogTime(iso) {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
-function buildLogMetaHtml(entry = {}, { escapeHtml, t }) {
+function buildLogMetaParts(entry = {}, { t }) {
   const rawLabel = String(entry?.cellLabel || '');
   const delta = Number(entry?.delta) || 0;
   const hasDelta = delta !== 0;
@@ -22,14 +22,11 @@ function buildLogMetaHtml(entry = {}, { escapeHtml, t }) {
   const outcomeText = entry?.outcome
     ? `, ${entry.outcome === 'correct' ? t('correct') : t('not_correct')}`
     : '';
+  const reasonText = `${labelWithoutDelta}${outcomeText}`;
   const scoreRangeText = Number.isFinite(Number(entry?.scoreBefore)) && Number.isFinite(Number(entry?.scoreAfter))
-    ? ` (${Number(entry.scoreBefore)}→${Number(entry.scoreAfter)})`
+    ? `${Number(entry.scoreBefore)}→${Number(entry.scoreAfter)}`
     : '';
-  const separator = labelWithoutDelta && deltaText ? ' / ' : '';
-  const deltaHtml = deltaText
-    ? `<span class="hdr-settings-logDelta ${deltaClass}">${escapeHtml(deltaText)}</span>`
-    : '';
-  return `${escapeHtml(labelWithoutDelta)}${separator}${deltaHtml}${escapeHtml(outcomeText + scoreRangeText)}`;
+  return { reasonText, deltaText, deltaClass, scoreRangeText };
 }
 
 function resolveCurrentPlayer(players = [], currentPlayerId = null) {
@@ -249,15 +246,23 @@ export function HeaderView({
     const nextSignature = JSON.stringify(currentScoreLogs);
     if (nextSignature === scoreLogsSignature) return;
 
-    settingsLogsListEl.innerHTML = currentScoreLogs.map((entry) => `
+    settingsLogsListEl.innerHTML = currentScoreLogs.map((entry) => {
+      const meta = buildLogMetaParts(entry, { t });
+      const hasPill = meta.deltaText || meta.scoreRangeText;
+      const pillText = [meta.deltaText, meta.scoreRangeText].filter(Boolean).join(' · ');
+      return `
       <article class="leaderboard-panel__logItem">
-        <p class="leaderboard-panel__logMain">
+        <p class="leaderboard-panel__logTop">
           <strong>${escapeHtml(entry?.playerName || t('player_fallback'))}</strong>
-          <span>${buildLogMetaHtml(entry, { escapeHtml, t })}</span>
+          <span class="leaderboard-panel__logTime">${escapeHtml(formatLogTime(entry?.happenedAt))}</span>
         </p>
-        <p class="leaderboard-panel__logTime">${escapeHtml(formatLogTime(entry?.happenedAt))}</p>
+        <p class="leaderboard-panel__logSub">
+          <span class="leaderboard-panel__logReason">${escapeHtml(meta.reasonText)}</span>
+          ${hasPill ? `<span class="leaderboard-panel__logDeltaPill"><span class="hdr-settings-logDelta ${meta.deltaClass}">${escapeHtml(pillText)}</span></span>` : ''}
+        </p>
       </article>
-    `).join('');
+    `;
+    }).join('');
     scoreLogsSignature = nextSignature;
   }
 
