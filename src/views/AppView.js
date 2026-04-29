@@ -24,8 +24,6 @@ export function AppView({
   onLeaderboardExpandedChange = null,
   onScoreLogsOpenChange = null,
   onGameModeToggle = null,
-  onOpenHostQr = null,
-  onOpenPlayerQr = null,
 }) {
   const container = document.createElement('div');
   container.className = 'app-shell';
@@ -52,13 +50,13 @@ export function AppView({
   // Header — created once, stays alive; header.update() refreshes mode/round indicators
   const header = HeaderView({
     uiState,
+    gameId,
+    showQrInSettings: showLeaderboardQr,
     players: leaderboardPlayers,
     currentPlayerId: model?.getCurrentPlayerId?.() ?? null,
     onBackToLobby: isReadOnly ? null : onBackToLobby,
     onRoundClick,
     onScoreLogsClick: () => leaderboardPanel?.toggleScoreLogs?.(),
-    onOpenHostQr: () => onOpenHostQr?.() || leaderboardPanel?.openQr?.('host'),
-    onOpenPlayerQr: () => onOpenPlayerQr?.() || leaderboardPanel?.openQr?.('player'),
     onCurrentPlayerChange: (isReadOnly && !allowCurrentPlayerControl) ? null : (playerId) => actions.setCurrentPlayer?.(playerId),
     onGameModeToggle: isReadOnly ? null : onGameModeToggle,
   });
@@ -98,7 +96,7 @@ export function AppView({
         onExpandedChange: (expanded) => onLeaderboardExpandedChange?.(expanded),
         onScoreLogsOpenChange: (isOpen) => onScoreLogsOpenChange?.(isOpen),
         readOnly: isReadOnly && !allowLeaderboardControls,
-        showQr: showLeaderboardQr,
+        showQr: false,
       });
       container.appendChild(leaderboardPanel.el);
       fit();

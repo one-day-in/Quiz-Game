@@ -1,5 +1,7 @@
 import { escapeHtml } from '../utils/utils.js';
-import { t } from '../i18n.js';
+import QRCode from 'qrcode';
+import { t, withLanguageParam } from '../i18n.js';
+import { getActiveBuzzerUrl } from '../utils/localBuzzerUrl.js';
 
 function resolveCurrentPlayer(players = [], currentPlayerId = null) {
   return (Array.isArray(players) ? players : []).find((player) => String(player?.id) === String(currentPlayerId)) || null;
@@ -7,13 +9,13 @@ function resolveCurrentPlayer(players = [], currentPlayerId = null) {
 
 export function HeaderView({
   uiState,
+  gameId = '',
+  showQrInSettings = false,
   players = [],
   currentPlayerId = null,
   onBackToLobby,
   onRoundClick,
   onScoreLogsClick,
-  onOpenHostQr,
-  onOpenPlayerQr,
   onCurrentPlayerChange,
   onGameModeToggle,
 }) {
@@ -26,9 +28,8 @@ export function HeaderView({
   let isSettingsOpen = false;
   const canBackToLobby = typeof onBackToLobby === 'function';
   const canOpenScoreLogs = typeof onScoreLogsClick === 'function';
-  const canOpenHostQr = typeof onOpenHostQr === 'function';
-  const canOpenPlayerQr = typeof onOpenPlayerQr === 'function';
   const canToggleGameMode = typeof onGameModeToggle === 'function';
+  const canShowQr = !!showQrInSettings && !!gameId;
   let currentGameMode = String(uiState?.gameMode || 'play').toLowerCase() === 'edit' ? 'edit' : 'play';
 
   el.innerHTML = `
@@ -68,14 +69,20 @@ export function HeaderView({
           ${canToggleGameMode ? `
           <button class="hdr-settings-item js-settings-mode" type="button"></button>
           ` : ''}
-          ${canOpenHostQr ? `
-          <button class="hdr-settings-item" type="button" data-action="host-qr">${escapeHtml(t('host_controller'))}</button>
-          ` : ''}
-          ${canOpenPlayerQr ? `
-          <button class="hdr-settings-item" type="button" data-action="player-qr">${escapeHtml(t('join_from_phone'))}</button>
-          ` : ''}
           ${canOpenScoreLogs ? `
           <button class="hdr-settings-item" type="button" data-action="logs">${escapeHtml(t('score_logs'))}</button>
+          ` : ''}
+          ${canShowQr ? `
+          <div class="hdr-settings-qrSection">
+            <p class="hdr-settings-qrTitle">${escapeHtml(t('host_controller'))}</p>
+            <img class="hdr-settings-qrImg js-host-qr" alt="${escapeHtml(t('host_controller_qr_alt'))}">
+            <p class="hdr-settings-qrHint">${escapeHtml(t('scan_host_qr'))}</p>
+          </div>
+          <div class="hdr-settings-qrSection">
+            <p class="hdr-settings-qrTitle">${escapeHtml(t('join_from_phone'))}</p>
+            <img class="hdr-settings-qrImg js-player-qr" alt="${escapeHtml(t('player_controller_qr_alt'))}">
+            <p class="hdr-settings-qrHint">${escapeHtml(t('scan_player_qr'))}</p>
+          </div>
           ` : ''}
         </div>
       </div>
@@ -90,6 +97,8 @@ export function HeaderView({
   const settingsBtnEl = el.querySelector('.hdr-settings-btn');
   const settingsMenuEl = el.querySelector('.hdr-settings-menu');
   const settingsModeBtnEl = el.querySelector('.js-settings-mode');
+  const hostQrImgEl = el.querySelector('.js-host-qr');
+  const playerQrImgEl = el.querySelector('.js-player-qr');
 
   function closeChooserMenu() {
     isChooserMenuOpen = false;
@@ -205,8 +214,6 @@ export function HeaderView({
       closeSettingsMenu();
       return;
     }
-    if (action === 'host-qr') onOpenHostQr?.();
-    if (action === 'player-qr') onOpenPlayerQr?.();
     if (action === 'logs') onScoreLogsClick?.();
     closeSettingsMenu();
   });
@@ -216,6 +223,32 @@ export function HeaderView({
   document.addEventListener('keydown', handleDocumentKeyDown);
 
   update({ uiState, players: currentPlayers, currentPlayerId: currentChooserId });
+  void renderQrs();
+
+  async function renderQrs() {
+    if (!canShowQr || !hostQrImgEl || !playerQrImgEl) return;
+    const playerUrl = new URL(withLanguageParam(`${import.meta.env.BASE_URL}player.html?gameId=${gameId}`), window.location.origin);
+    const hostUrl = new URL(withLanguageParam(`${import.meta.env.BASE_URL}host-controller.html?gameId=${gameId}`), window.location.origin);
+    const buzzerUrl = getActiveBuzzerUrl();
+    if (buzzerUrl) {
+      playerUrl.searchParams.set('buzzer', buzzerUrl);
+      hostUrl.searchParams.set('buzzer', buzzerUrl);
+    }
+    try {
+      playerQrImgEl.src = await QRCode.toDataURL(playerUrl.toString(), {
+        width: 420,
+        margin: 2,
+        color: { dark: '#f8fafc', light: '#111827' },
+      });
+      hostQrImgEl.src = await QRCode.toDataURL(hostUrl.toString(), {
+        width: 420,
+        margin: 2,
+        color: { dark: '#f8fafc', light: '#111827' },
+      });
+    } catch (error) {
+      console.warn('[HeaderView] settings QR generation failed:', error);
+    }
+  }
 
   return {
     el,
