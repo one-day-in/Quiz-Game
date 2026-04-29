@@ -364,6 +364,7 @@
   flex-direction: column;
   gap: 10px;
   min-height: 0;
+  flex: 1 1 auto;
   margin-top: 6px;
   padding: 10px;
   border-radius: 14px;
@@ -383,7 +384,8 @@
 
 .hdr-settings-logsListWrap {
   min-height: 0;
-  max-height: min(44vh, 420px);
+  flex: 1 1 auto;
+  max-height: none;
   overflow: auto;
   -webkit-overflow-scrolling: touch;
   display: flex;
