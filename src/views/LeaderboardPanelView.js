@@ -357,6 +357,14 @@ export class LeaderboardPanelView {
     this._disposer.addEventListener(document, 'pointerdown', (event) => {
       const target = event.target;
       if (!(target instanceof Element)) return;
+      if (this._isExpanded && !target.closest('.leaderboard-panel__shell') && !target.closest('.leaderboard-panel__logsModalContent')) {
+        event.preventDefault();
+        event.stopPropagation();
+        this._setQrOpen(null);
+        this.setScoreLogsOpen(false, { silent: true });
+        this.setExpanded(false);
+        return;
+      }
       if (this._isExpanded && this._openQrDock && !target.closest('.leaderboard-panel__qrDock')) {
         this._setQrOpen(null);
       }
@@ -365,6 +373,15 @@ export class LeaderboardPanelView {
       if (target.closest('.leaderboard-panel__scoreBar, .leaderboard-panel__qrDock, .leaderboard-panel__toggle, .leaderboard-panel__logsModalContent, .hdr-settings, .hdr-settings-menu')) return;
 
       this._clearSelectedPlayer();
+    }, true);
+
+    this._disposer.addEventListener(document, 'click', (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      if (!this._isExpanded) return;
+      if (target.closest('.leaderboard-panel__shell') || target.closest('.leaderboard-panel__logsModalContent')) return;
+      event.preventDefault();
+      event.stopPropagation();
     }, true);
 
     bindOverlayDismiss({
