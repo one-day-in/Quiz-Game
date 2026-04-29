@@ -165,7 +165,7 @@ export class LeaderboardPanelView {
         <section class="leaderboard-panel__shell" aria-label="${t('leaderboard')}">
           <div class="leaderboard-panel__headerBar">
           <button
-            class="leaderboard__header leaderboard-panel__toggle"
+            class="leaderboard__header leaderboard-panel__toggle leaderboard-panel__actionBtn"
             type="button"
             aria-label="${t('show_all_players')}"
             aria-expanded="false"
@@ -437,7 +437,7 @@ export class LeaderboardPanelView {
     for (const delta of deltas) {
       const button = document.createElement('button');
       button.type = 'button';
-      button.className = 'leaderboard-panel__scoreBtn';
+      button.className = 'leaderboard-panel__scoreBtn leaderboard-panel__actionBtn';
       button.textContent = delta > 0 ? `+${delta}` : String(delta);
       button.dataset.delta = String(delta);
       button.disabled = true;

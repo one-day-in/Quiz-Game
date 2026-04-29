@@ -71,7 +71,7 @@ export function HeaderView({
           <div class="hdr-settings-overlayBackdrop"></div>
           <div class="hdr-settings-menu" role="dialog" aria-label="${escapeHtml(t('settings'))}">
             ${canToggleGameMode ? `
-            <button class="hdr-settings-item js-settings-mode" type="button"></button>
+            <button class="hdr-settings-qrBtn js-settings-mode" type="button"></button>
             ` : ''}
             ${canShowQr ? `
             <div class="hdr-settings-qrRow">
@@ -84,7 +84,7 @@ export function HeaderView({
             </div>
             ` : ''}
             ${canOpenScoreLogs ? `
-            <button class="hdr-settings-item" type="button" data-action="logs">${escapeHtml(t('score_logs'))}</button>
+            <button class="hdr-settings-qrBtn" type="button" data-action="logs">${escapeHtml(t('score_logs'))}</button>
             ` : ''}
           </div>
         </div>
