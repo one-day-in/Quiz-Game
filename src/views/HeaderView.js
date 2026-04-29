@@ -194,6 +194,7 @@ export function HeaderView({
     const target = event.target;
     if (!(target instanceof Element)) return;
     if (target.closest('.hdr-qrOverlay')) return;
+    if (target.closest('.qmodal--scoreLogs') || target.closest('.leaderboard-panel__logsModalContent')) return;
     if (isChooserMenuOpen && !target.closest('.hdr-current-player')) closeChooserMenu();
     if (isSettingsOpen && !target.closest('.hdr-settings')) closeSettingsMenu();
   }
@@ -233,7 +234,10 @@ export function HeaderView({
       showQrOverlay(action);
       return;
     }
-    if (action === 'logs') onScoreLogsClick?.();
+    if (action === 'logs') {
+      onScoreLogsClick?.();
+      return;
+    }
     closeSettingsMenu();
   });
   qrOverlayEl?.addEventListener('click', () => hideQrOverlay());

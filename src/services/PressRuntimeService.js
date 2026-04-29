@@ -126,6 +126,7 @@ class SocketPressRuntimeService {
     this._requestId = 0;
     this._pending = new Map();
     this._pendingHello = null;
+    this._permanentError = null;
   }
 
   subscribe(fn) {
@@ -139,6 +140,7 @@ class SocketPressRuntimeService {
 
   async connect() {
     if (this._destroyed) return;
+    if (this._permanentError) throw this._permanentError;
     if (this._ws && this._ws.readyState === WebSocket.OPEN) return;
     if (this._connectPromise) return this._connectPromise;
 
@@ -294,10 +296,12 @@ class SocketPressRuntimeService {
       const errorText = String(message.error || 'Buzzer socket error');
       this._pendingHello?.reject?.(new Error(errorText));
       if (errorText.includes('Host access denied')) {
+        this._permanentError = new Error(errorText);
         this._destroyed = true;
         this._ws?.close();
         this._ws = null;
         this._connectPromise = null;
+        return;
       }
       console.error('[PressRuntimeService] buzzer socket error:', errorText);
     }
@@ -313,6 +317,7 @@ class SocketPressRuntimeService {
     this._reconnectTimer = window.setTimeout(() => {
       if (this._destroyed) return;
       void this.connect().catch((error) => {
+        if (this._permanentError) return;
         console.error('[PressRuntimeService] reconnect failed:', error);
       });
     }, 1000);
