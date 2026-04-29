@@ -3,7 +3,7 @@ import { supabase } from './supabaseClient.js';
 export const MAX_PLAYERS = 8;
 export const PUBLIC_PLAYER_COLUMNS = 'id, game_id, name, points, joined_at';
 export const PRIVATE_PLAYER_COLUMNS = `${PUBLIC_PLAYER_COLUMNS}, controller_id`;
-export const GAME_RUNTIME_COLUMNS = 'game_id, press_enabled, winner_player_id, pressed_at, updated_at';
+export const GAME_RUNTIME_COLUMNS = '*';
 
 export const DEFAULT_CELL = {
     isAnswered: false,

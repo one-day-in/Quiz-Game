@@ -1,7 +1,7 @@
 import { QuestionModalView } from '../views/QuestionModalView.js';
 import { Disposer } from '../utils/disposer.js';
 import { showConfirm } from '../utils/confirm.js';
-import { adjustPlayerScore, resolveGamePress } from '../api/gameApi.js';
+import { adjustPlayerScore, resolveGamePress, resolveGamePressTimeout } from '../api/gameApi.js';
 import { t } from '../i18n.js';
 
 const PRESS_RESPONSE_SECONDS = 30;
@@ -44,6 +44,7 @@ export class ModalService {
     this._isClosing = false;
     this._currentResolutionValue = 0;
     this._pressAutoResolveBlocked = false;
+    this._pressDeadlineIso = null;
     this._mediaInteractionUnlocked = this.isControllerMode();
     this._pendingMediaControl = null;
 
@@ -124,6 +125,7 @@ export class ModalService {
     this._cellValue = Number(cellData.value) || 0;
     this._currentResolutionValue = this._cellValue;
     this._pressAutoResolveBlocked = false;
+    this._pressDeadlineIso = null;
     if (!this.isControllerMode()) {
       void this._resetPressRuntime();
     }
@@ -368,6 +370,7 @@ export class ModalService {
       this._isResolvingPressResult = false;
       this._currentResolutionValue = 0;
       this._pressAutoResolveBlocked = false;
+      this._pressDeadlineIso = null;
       void this._pressRuntime?.closePress?.();
       if (this.container?.isConnected) this.container.innerHTML = '';
       if (hadOpenModal) {
@@ -388,7 +391,10 @@ export class ModalService {
     this._clearPressCountdown();
     const resolutionValue = this._getEffectiveResolutionValue();
     const winnerId = this._pressWinnerId;
-    const lockAcquired = await this._acquirePressResolutionLock(winnerId, { pressEnabled: true });
+    const lockAcquired = await this._acquirePressResolutionLock(winnerId, {
+      pressEnabled: true,
+      source,
+    });
     if (!lockAcquired) {
       this._isResolvingPressResult = false;
       return;
@@ -433,10 +439,14 @@ export class ModalService {
     this.close();
   }
 
-  async _acquirePressResolutionLock(winnerPlayerId, { pressEnabled = false } = {}) {
+  async _acquirePressResolutionLock(winnerPlayerId, { pressEnabled = false, source = 'manual' } = {}) {
     if (!winnerPlayerId) return false;
     try {
-      await resolveGamePress(this._game.getGameId(), winnerPlayerId, { pressEnabled });
+      if (source === 'timeout') {
+        await resolveGamePressTimeout(this._game.getGameId(), winnerPlayerId, this._pressDeadlineIso);
+      } else {
+        await resolveGamePress(this._game.getGameId(), winnerPlayerId, { pressEnabled });
+      }
       return true;
     } catch (error) {
       const message = String(error?.message || '');
@@ -528,6 +538,7 @@ export class ModalService {
 
     this._pressCountdownRemainingMs = durationMs;
     this._pressCountdownDeadline = Date.now() + durationMs;
+    this._pressDeadlineIso = new Date(this._pressCountdownDeadline).toISOString();
     this._syncPressCountdownView();
 
     this._pressCountdownTimer = setInterval(() => {
@@ -572,8 +583,26 @@ export class ModalService {
     if (nextWinnerId !== prevWinnerId) {
       this._clearPressCountdown();
       this._pressTimerPaused = false;
-      this._startPressCountdown();
+      const serverDeadlineMs = this._deriveRuntimeDeadlineMs(runtime);
+      if (serverDeadlineMs) {
+        const remainingMs = Math.max(0, serverDeadlineMs - Date.now());
+        this._pressDeadlineIso = new Date(serverDeadlineMs).toISOString();
+        this._startPressCountdown(remainingMs);
+      } else {
+        this._startPressCountdown();
+      }
     }
+  }
+
+  _deriveRuntimeDeadlineMs(runtime) {
+    const directDeadline = Date.parse(runtime?.pressExpiresAt || '');
+    if (Number.isFinite(directDeadline) && directDeadline > 0) return directDeadline;
+
+    const pressedAtMs = Date.parse(runtime?.pressedAt || '');
+    if (Number.isFinite(pressedAtMs) && pressedAtMs > 0) {
+      return pressedAtMs + (PRESS_RESPONSE_SECONDS * 1000);
+    }
+    return 0;
   }
 
   _shouldBlockAutoIncorrect() {

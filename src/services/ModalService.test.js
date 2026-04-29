@@ -4,14 +4,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const {
   adjustPlayerScoreMock,
   resolveGamePressMock,
+  resolveGamePressTimeoutMock,
 } = vi.hoisted(() => ({
   adjustPlayerScoreMock: vi.fn(),
   resolveGamePressMock: vi.fn(),
+  resolveGamePressTimeoutMock: vi.fn(),
 }));
 
 vi.mock('../api/gameApi.js', () => ({
   adjustPlayerScore: adjustPlayerScoreMock,
   resolveGamePress: resolveGamePressMock,
+  resolveGamePressTimeout: resolveGamePressTimeoutMock,
 }));
 
 import { ModalService } from './ModalService.js';
@@ -21,6 +24,12 @@ describe('ModalService press reset', () => {
     vi.useFakeTimers();
     vi.clearAllMocks();
     resolveGamePressMock.mockResolvedValue({
+      gameId: 'game-1',
+      winnerPlayerId: null,
+      pressEnabled: true,
+      pressedAt: null,
+    });
+    resolveGamePressTimeoutMock.mockResolvedValue({
       gameId: 'game-1',
       winnerPlayerId: null,
       pressEnabled: true,
