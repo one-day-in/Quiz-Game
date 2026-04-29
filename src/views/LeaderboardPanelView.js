@@ -3,7 +3,6 @@ import { LeaderboardGridView } from './LeaderboardGridView.js';
 import { ViewDisposer } from '../utils/disposer.js';
 import { createModalController } from '../utils/ModalController.js';
 import { createOverlayController } from '../utils/OverlayController.js';
-import { fitTextToBox } from '../utils/fitText.js';
 import { t, withLanguageParam } from '../i18n.js';
 import { getActiveBuzzerUrl } from '../utils/localBuzzerUrl.js';
 import { escapeHtml } from '../utils/utils.js';
@@ -41,7 +40,6 @@ export class LeaderboardPanelView {
     this._isScoreLogsOpen = false;
     this._overlayHost = null;
     this._dockSignature = '';
-    this._dockFitRaf = 0;
     this._selectionSignature = '';
 
     this._build();
@@ -139,7 +137,6 @@ export class LeaderboardPanelView {
   }
 
   destroy() {
-    this._cancelDockFit();
     this._overlayController?.destroy?.();
     this._overlayController = null;
     this._scoreLogsModal?.destroy?.();
@@ -395,10 +392,6 @@ export class LeaderboardPanelView {
       this._clearSelectedPlayer();
     }, true);
 
-    this._disposer.addEventListener(window, 'resize', () => {
-      this._scheduleDockFit();
-    });
-
   }
 
   _renderScoreLogs() {
@@ -507,7 +500,6 @@ export class LeaderboardPanelView {
           <div class="leaderboard-panel__dockEmpty">${escapeHtml(t('no_players_available'))}</div>
         `;
         this._dockSignature = emptySignature;
-        this._scheduleDockFit();
       }
       return;
     }
@@ -545,52 +537,6 @@ export class LeaderboardPanelView {
         `).join('')}
       </div>
     `;
-    this._scheduleDockFit();
-  }
-
-  _cancelDockFit() {
-    if (!this._dockFitRaf) return;
-    window.cancelAnimationFrame(this._dockFitRaf);
-    this._dockFitRaf = 0;
-  }
-
-  _scheduleDockFit() {
-    this._cancelDockFit();
-    this._dockFitRaf = window.requestAnimationFrame(() => {
-      this._dockFitRaf = 0;
-      this._fitDockSummaryText();
-    });
-  }
-
-  _fitDockSummaryText() {
-    if (!this._dockSummary) return;
-    const cards = this._dockSummary.querySelectorAll('.leaderboard-panel__dockItem');
-    for (const card of cards) {
-      const rankEl = card.querySelector('.leaderboard-panel__dockRank');
-      const nameEl = card.querySelector('.leaderboard-panel__dockName');
-      const scoreEl = card.querySelector('.leaderboard-panel__dockScore');
-
-      if (rankEl) {
-        rankEl.style.fontSize = '';
-      }
-      if (nameEl) {
-        nameEl.style.fontSize = '';
-        const isShortName = nameEl.classList.contains('is-short');
-        if (!isShortName) {
-          fitTextToBox(nameEl, nameEl, {
-            widthRatio: 0.99,
-            heightRatio: 1,
-            minSize: 16,
-            step: 0.25,
-            noWrap: true,
-            startFromComputedSize: true,
-          });
-        }
-      }
-      if (scoreEl) {
-        scoreEl.style.fontSize = '';
-      }
-    }
   }
 
   _getDockNameSizeClass(name = '') {

@@ -145,30 +145,34 @@
   flex: 1 1 auto;
   min-width: 0;
   min-height: 0;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  align-self: center;
+  max-height: calc(2 * 1.05em);
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
   text-align: left;
   color: var(--text);
   font-family: var(--font-display);
-  font-size: clamp(17px, 1.4vw, 24px);
+  font-size: clamp(20px, 1.9vw, 30px);
+  line-height: 1.05;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
 .leaderboard-panel__dockName.is-short {
-  font-size: clamp(19px, 1.65vw, 27px);
+  font-size: clamp(22px, 2.1vw, 32px);
 }
 
 .leaderboard-panel__dockName.is-medium {
-  font-size: clamp(17px, 1.45vw, 24px);
+  font-size: clamp(20px, 1.9vw, 29px);
 }
 
 .leaderboard-panel__dockName.is-long {
-  font-size: clamp(15px, 1.25vw, 20px);
+  font-size: clamp(18px, 1.65vw, 26px);
 }
 
 .leaderboard-panel__dockScore {
