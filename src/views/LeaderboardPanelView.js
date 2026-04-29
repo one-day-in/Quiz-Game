@@ -331,6 +331,16 @@ export class LeaderboardPanelView {
 
   _wire() {
     this._disposer.addEventListener(this._toggleBtn, 'click', () => this.toggleExpanded());
+    this._disposer.addEventListener(this._backdrop, 'pointerdown', (event) => {
+      if (!this._isExpanded) return;
+      event.preventDefault();
+      event.stopPropagation();
+    }, true);
+    this._disposer.addEventListener(this._backdrop, 'click', (event) => {
+      if (!this._isExpanded) return;
+      event.preventDefault();
+      event.stopPropagation();
+    }, true);
     if (this._showQr) {
       for (const dock of this._qrDocks) {
         const trigger = dock.querySelector('.leaderboard-panel__qrTrigger');

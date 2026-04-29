@@ -227,7 +227,6 @@ export function HeaderView({
     const action = button.dataset.action || '';
     if (button.classList.contains('js-settings-mode')) {
       onGameModeToggle?.(currentGameMode === 'edit' ? 'play' : 'edit');
-      closeSettingsMenu();
       return;
     }
     if (action === 'host-qr' || action === 'player-qr') {
@@ -238,7 +237,6 @@ export function HeaderView({
       onScoreLogsClick?.();
       return;
     }
-    closeSettingsMenu();
   });
   qrOverlayEl?.addEventListener('click', () => hideQrOverlay());
   el.querySelector('.hdr-lobby-btn')?.addEventListener('click', () => onBackToLobby?.());
