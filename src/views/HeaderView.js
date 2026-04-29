@@ -264,10 +264,11 @@ export function HeaderView({
             ${meta.outcomeType === 'correct' ? '<span class="leaderboard-panel__logOutcomeMark is-correct" aria-label="Correct" title="Correct">✓</span>' : ''}
             ${meta.outcomeType === 'incorrect' ? '<span class="leaderboard-panel__logOutcomeMark is-incorrect" aria-label="Incorrect" title="Incorrect">✕</span>' : ''}
           </span>
+          ${hasPill ? '<span class="leaderboard-panel__logMetaSep">·</span>' : ''}
           ${hasPill ? `
             <span class="leaderboard-panel__logDeltaPill">
               ${meta.deltaText ? `<span class="hdr-settings-logDelta ${meta.deltaClass}">${escapeHtml(meta.deltaText)}</span>` : ''}
-              ${hasRange ? `<span class="leaderboard-panel__logDeltaSep">·</span>` : ''}
+              ${hasRange ? `<span class="leaderboard-panel__logDeltaRangeSep">·</span>` : ''}
               ${hasRange ? `<span class="leaderboard-panel__logRange">${escapeHtml(meta.scoreRangeText)}</span>` : ''}
             </span>
           ` : ''}

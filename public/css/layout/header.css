@@ -976,9 +976,16 @@
   font-weight: 800;
 }
 
-.leaderboard-panel__logDeltaSep,
+.leaderboard-panel__logMetaSep,
+.leaderboard-panel__logDeltaRangeSep,
 .leaderboard-panel__logRange {
   color: inherit;
+}
+
+.leaderboard-panel__logMetaSep {
+  flex: 0 0 auto;
+  color: rgba(226, 232, 240, 0.7);
+  font-weight: 700;
 }
 
 @media (max-width: 1200px) {
