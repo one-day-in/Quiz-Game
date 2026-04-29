@@ -62,6 +62,8 @@ export function HeaderView({
   const canShowQr = !!showQrInSettings && !!gameId;
   let currentGameMode = String(uiState?.gameMode || 'play').toLowerCase() === 'edit' ? 'edit' : 'play';
   let lastModeLabel = '';
+  let chooserMenuSignature = '';
+  let chooserSummarySignature = '';
 
   el.innerHTML = `
     <div class="hdr-left">
@@ -190,9 +192,22 @@ export function HeaderView({
     if (!chooserListEl) return;
 
     if (!currentPlayers.length) {
+      const emptySignature = '__empty__';
+      if (chooserMenuSignature === emptySignature) return;
       chooserListEl.innerHTML = `<p class="hdr-current-player-empty">${escapeHtml(t('no_players_available'))}</p>`;
+      chooserMenuSignature = emptySignature;
       return;
     }
+
+    const nextSignature = JSON.stringify({
+      currentChooserId: String(currentChooserId || ''),
+      players: currentPlayers.map((player) => ({
+        id: String(player?.id || ''),
+        name: String(player?.name || ''),
+        points: Number(player?.points) || 0,
+      })),
+    });
+    if (nextSignature === chooserMenuSignature) return;
 
     chooserListEl.innerHTML = currentPlayers.map((player) => {
       const isActive = String(player?.id) === String(currentChooserId);
@@ -207,13 +222,22 @@ export function HeaderView({
         </button>
       `;
     }).join('');
+    chooserMenuSignature = nextSignature;
   }
 
   function renderChooserSummary() {
     const currentPlayer = resolveCurrentPlayer(currentPlayers, currentChooserId);
+    const nextSignature = JSON.stringify({
+      id: String(currentPlayer?.id || ''),
+      name: String(currentPlayer?.name || ''),
+      points: currentPlayer ? Number(currentPlayer?.points) || 0 : null,
+    });
+    if (nextSignature === chooserSummarySignature) return;
+
     chooserValueEl.textContent = currentPlayer?.name || t('choose_current_player');
     chooserScoreEl.textContent = currentPlayer ? String(Number(currentPlayer?.points) || 0) : '—';
     chooserBtnEl.classList.toggle('is-unset', !currentPlayer);
+    chooserSummarySignature = nextSignature;
   }
 
   function update(next = {}) {
