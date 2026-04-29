@@ -3,6 +3,7 @@ import { LeaderboardGridView } from './LeaderboardGridView.js';
 import { ViewDisposer } from '../utils/disposer.js';
 import { createModalController } from '../utils/ModalController.js';
 import { createOverlayController } from '../utils/OverlayController.js';
+import { fitTextToBox } from '../utils/fitText.js';
 import { t, withLanguageParam } from '../i18n.js';
 import { getActiveBuzzerUrl } from '../utils/localBuzzerUrl.js';
 import { escapeHtml } from '../utils/utils.js';
@@ -40,6 +41,8 @@ export class LeaderboardPanelView {
     this._isScoreLogsOpen = false;
     this._overlayHost = null;
     this._dockSignature = '';
+    this._dockFitRaf = 0;
+    this._selectionSignature = '';
 
     this._build();
     this._disposer = new ViewDisposer(this._root);
@@ -136,6 +139,7 @@ export class LeaderboardPanelView {
   }
 
   destroy() {
+    this._cancelDockFit();
     this._overlayController?.destroy?.();
     this._overlayController = null;
     this._scoreLogsModal?.destroy?.();
@@ -391,6 +395,10 @@ export class LeaderboardPanelView {
       this._clearSelectedPlayer();
     }, true);
 
+    this._disposer.addEventListener(window, 'resize', () => {
+      this._scheduleDockFit();
+    });
+
   }
 
   _renderScoreLogs() {
@@ -469,12 +477,18 @@ export class LeaderboardPanelView {
 
   _renderSelectionState() {
     const selectedPlayer = this._players.find((player) => String(player?.id ?? '') === this._selectedPlayerId) || null;
+    const selectionText = selectedPlayer
+      ? t('selected_player_label', { name: selectedPlayer.name || t('player_fallback') })
+      : t('select_player_for_manual_score');
+    const isPlaceholder = !selectedPlayer;
+    const nextSelectionSignature = `${selectionText}::${isPlaceholder ? 1 : 0}`;
 
     if (this._selectionText) {
-      this._selectionText.textContent = selectedPlayer
-        ? t('selected_player_label', { name: selectedPlayer.name || t('player_fallback') })
-        : t('select_player_for_manual_score');
-      this._selectionText.classList.toggle('is-placeholder', !selectedPlayer);
+      if (this._selectionSignature !== nextSelectionSignature) {
+        this._selectionText.textContent = selectionText;
+        this._selectionText.classList.toggle('is-placeholder', isPlaceholder);
+        this._selectionSignature = nextSelectionSignature;
+      }
     }
 
     if (this._scoreBar) {
@@ -493,6 +507,7 @@ export class LeaderboardPanelView {
           <div class="leaderboard-panel__dockEmpty">${escapeHtml(t('no_players_available'))}</div>
         `;
         this._dockSignature = emptySignature;
+        this._scheduleDockFit();
       }
       return;
     }
@@ -530,6 +545,65 @@ export class LeaderboardPanelView {
         `).join('')}
       </div>
     `;
+    this._scheduleDockFit();
+  }
+
+  _cancelDockFit() {
+    if (!this._dockFitRaf) return;
+    window.cancelAnimationFrame(this._dockFitRaf);
+    this._dockFitRaf = 0;
+  }
+
+  _scheduleDockFit() {
+    this._cancelDockFit();
+    this._dockFitRaf = window.requestAnimationFrame(() => {
+      this._dockFitRaf = 0;
+      this._fitDockSummaryText();
+    });
+  }
+
+  _fitDockSummaryText() {
+    if (!this._dockSummary) return;
+    const cards = this._dockSummary.querySelectorAll('.leaderboard-panel__dockItem');
+    for (const card of cards) {
+      const rankEl = card.querySelector('.leaderboard-panel__dockRank');
+      const nameEl = card.querySelector('.leaderboard-panel__dockName');
+      const scoreEl = card.querySelector('.leaderboard-panel__dockScore');
+
+      if (rankEl) {
+        fitTextToBox(rankEl, rankEl, {
+          widthRatio: 0.86,
+          heightRatio: 0.66,
+          minSize: 10,
+          step: 0.5,
+          noWrap: true,
+          startFromComputedSize: true,
+          respectMinSizeOnStart: true,
+        });
+      }
+      if (nameEl) {
+        fitTextToBox(nameEl, nameEl, {
+          widthRatio: 0.98,
+          heightRatio: 0.78,
+          minSize: 10,
+          step: 0.5,
+          noWrap: true,
+          startFromComputedSize: true,
+          respectMinSizeOnStart: true,
+        });
+      }
+      if (scoreEl) {
+        fitTextToBox(scoreEl, scoreEl, {
+          widthRatio: 0.96,
+          heightRatio: 0.80,
+          minSize: 12,
+          step: 0.5,
+          noWrap: true,
+          startFromComputedSize: true,
+          respectMinSizeOnStart: true,
+        });
+      }
+    }
   }
 
   _getDockNameSizeClass(name = '') {
