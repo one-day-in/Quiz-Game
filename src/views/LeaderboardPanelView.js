@@ -509,12 +509,19 @@ export class LeaderboardPanelView {
         ${leaders.map((entry) => `
           <article class="leaderboard-panel__dockItem">
             <span class="leaderboard-panel__dockRank">${entry.rank}</span>
-            <span class="leaderboard-panel__dockName">${escapeHtml(entry.name)}</span>
+            <span class="leaderboard-panel__dockName ${this._getDockNameSizeClass(entry.name)}">${escapeHtml(entry.name)}</span>
             <span class="leaderboard-panel__dockScore">${entry.score}</span>
           </article>
         `).join('')}
       </div>
     `;
+  }
+
+  _getDockNameSizeClass(name = '') {
+    const length = String(name || '').trim().length;
+    if (length >= 20) return 'is-long';
+    if (length >= 13) return 'is-medium';
+    return 'is-short';
   }
 
   _collectScoreChanges(prevPlayers = [], nextPlayers = []) {

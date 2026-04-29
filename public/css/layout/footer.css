@@ -87,8 +87,8 @@
 }
 
 .leaderboard-panel__dockRank {
-  min-width: 24px;
-  height: 24px;
+  min-width: 30px;
+  height: 30px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -97,7 +97,7 @@
   background: rgba(255, 255, 255, 0.05);
   color: var(--warning);
   font-family: var(--font-numeric);
-  font-size: 11px;
+  font-size: clamp(12px, 0.9vw, 15px);
   font-weight: 900;
   letter-spacing: 0.08em;
 }
@@ -110,15 +110,27 @@
   text-align: left;
   color: var(--text);
   font-family: var(--font-display);
-  font-size: clamp(14px, 1.1vw, 18px);
+  font-size: clamp(13px, 1vw, 18px);
   letter-spacing: 0.05em;
   text-transform: uppercase;
+}
+
+.leaderboard-panel__dockName.is-short {
+  font-size: clamp(15px, 1.2vw, 20px);
+}
+
+.leaderboard-panel__dockName.is-medium {
+  font-size: clamp(13px, 1.05vw, 17px);
+}
+
+.leaderboard-panel__dockName.is-long {
+  font-size: clamp(11px, 0.9vw, 15px);
 }
 
 .leaderboard-panel__dockScore {
   color: var(--danger);
   font-family: var(--font-numeric);
-  font-size: clamp(16px, 1.3vw, 22px);
+  font-size: clamp(19px, 1.6vw, 28px);
   font-weight: 900;
   letter-spacing: 0.04em;
 }
