@@ -32,8 +32,10 @@ export function bindOverlayDismiss({
   if (closeOnOverlay && overlay) {
     addListener(overlay, 'click', (event) => {
       if (!shouldDismissOnOverlay(event, overlay)) return;
+      event.preventDefault();
+      event.stopPropagation();
       dismiss('overlay', event);
-    });
+    }, true);
   }
 
   if (closeOnButton && closeButton) {
