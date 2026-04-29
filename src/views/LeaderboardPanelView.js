@@ -575,7 +575,7 @@ export class LeaderboardPanelView {
         fitTextToBox(rankEl, rankEl, {
           widthRatio: 0.86,
           heightRatio: 0.66,
-          minSize: 12,
+          minSize: 15,
           step: 0.5,
           noWrap: true,
           startFromComputedSize: true,
@@ -586,7 +586,7 @@ export class LeaderboardPanelView {
         fitTextToBox(nameEl, nameEl, {
           widthRatio: 0.98,
           heightRatio: 0.78,
-          minSize: 12,
+          minSize: 16,
           step: 0.5,
           noWrap: true,
           startFromComputedSize: true,
@@ -597,7 +597,7 @@ export class LeaderboardPanelView {
         fitTextToBox(scoreEl, scoreEl, {
           widthRatio: 0.96,
           heightRatio: 0.80,
-          minSize: 14,
+          minSize: 16,
           step: 0.5,
           noWrap: true,
           startFromComputedSize: true,
