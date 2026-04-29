@@ -71,11 +71,11 @@ export function HeaderView({
           ` : ''}
           ${canShowQr ? `
           <div class="hdr-settings-qrRow">
-            <button class="hdr-settings-qrBtn" type="button" data-action="host-qr" title="${escapeHtml(t('host_controller'))}" aria-label="${escapeHtml(t('host_controller'))}">
-              <span aria-hidden="true">QR-H</span>
+            <button class="hdr-settings-qrBtn" type="button" data-action="host-qr" title="подключить ведущего" aria-label="подключить ведущего">
+              <span>подключить ведущего</span>
             </button>
-            <button class="hdr-settings-qrBtn" type="button" data-action="player-qr" title="${escapeHtml(t('join_from_phone'))}" aria-label="${escapeHtml(t('join_from_phone'))}">
-              <span aria-hidden="true">QR-P</span>
+            <button class="hdr-settings-qrBtn" type="button" data-action="player-qr" title="подключить игрока" aria-label="подключить игрока">
+              <span>подключить игрока</span>
             </button>
           </div>
           ` : ''}
@@ -221,18 +221,13 @@ export function HeaderView({
       closeSettingsMenu();
       return;
     }
+    if (action === 'host-qr' || action === 'player-qr') {
+      showQrOverlay(action);
+      return;
+    }
     if (action === 'logs') onScoreLogsClick?.();
     closeSettingsMenu();
   });
-  for (const btn of qrButtons) {
-    const kind = btn.dataset.action || '';
-    const show = () => showQrOverlay(kind);
-    const hide = () => hideQrOverlay();
-    btn.addEventListener('mouseenter', show);
-    btn.addEventListener('mouseleave', hide);
-    btn.addEventListener('focus', show);
-    btn.addEventListener('blur', hide);
-  }
   qrOverlayEl?.addEventListener('click', () => hideQrOverlay());
   el.querySelector('.hdr-lobby-btn')?.addEventListener('click', () => onBackToLobby?.());
   el.querySelector('.round-indicator').addEventListener('click', () => onRoundClick?.());
