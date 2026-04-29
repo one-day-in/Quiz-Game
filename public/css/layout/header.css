@@ -389,15 +389,27 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-direction: column;
+  gap: 14px;
   padding: 18px;
 }
 
 .hdr-qrOverlayImg {
-  width: 100%;
-  height: 100%;
+  width: min(100%, 720px);
+  height: auto;
+  max-height: calc(100% - 52px);
   object-fit: contain;
   border-radius: 12px;
   background: #111827;
+}
+
+.hdr-qrOverlayHint {
+  margin: 0;
+  text-align: center;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 .hdr-settings-btn:hover,

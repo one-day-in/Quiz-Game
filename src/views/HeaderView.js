@@ -71,11 +71,11 @@ export function HeaderView({
           ` : ''}
           ${canShowQr ? `
           <div class="hdr-settings-qrRow">
-            <button class="hdr-settings-qrBtn" type="button" data-action="host-qr" title="подключить ведущего" aria-label="подключить ведущего">
-              <span>подключить ведущего</span>
+            <button class="hdr-settings-qrBtn" type="button" data-action="host-qr" title="${escapeHtml(t('connect_host'))}" aria-label="${escapeHtml(t('connect_host'))}">
+              <span>${escapeHtml(t('connect_host'))}</span>
             </button>
-            <button class="hdr-settings-qrBtn" type="button" data-action="player-qr" title="подключить игрока" aria-label="подключить игрока">
-              <span>подключить игрока</span>
+            <button class="hdr-settings-qrBtn" type="button" data-action="player-qr" title="${escapeHtml(t('connect_player'))}" aria-label="${escapeHtml(t('connect_player'))}">
+              <span>${escapeHtml(t('connect_player'))}</span>
             </button>
           </div>
           ` : ''}
@@ -89,6 +89,7 @@ export function HeaderView({
       <div class="hdr-qrOverlayBackdrop"></div>
       <div class="hdr-qrOverlayCard">
         <img class="hdr-qrOverlayImg" alt="">
+        <p class="hdr-qrOverlayHint"></p>
       </div>
     </div>
   `;
@@ -103,6 +104,7 @@ export function HeaderView({
   const settingsModeBtnEl = el.querySelector('.js-settings-mode');
   const qrOverlayEl = el.querySelector('.hdr-qrOverlay');
   const qrOverlayImgEl = el.querySelector('.hdr-qrOverlayImg');
+  const qrOverlayHintEl = el.querySelector('.hdr-qrOverlayHint');
   const qrButtons = Array.from(el.querySelectorAll('.hdr-settings-qrBtn'));
   let hostQrDataUrl = '';
   let playerQrDataUrl = '';
@@ -186,6 +188,7 @@ export function HeaderView({
   function handleDocumentPointerDown(event) {
     const target = event.target;
     if (!(target instanceof Element)) return;
+    if (target.closest('.hdr-qrOverlay')) return;
     if (isChooserMenuOpen && !target.closest('.hdr-current-player')) closeChooserMenu();
     if (isSettingsOpen && !target.closest('.hdr-settings')) closeSettingsMenu();
   }
@@ -269,6 +272,9 @@ export function HeaderView({
     if (!src) return;
     qrOverlayImgEl.src = src;
     qrOverlayImgEl.alt = isHost ? t('host_controller_qr_alt') : t('player_controller_qr_alt');
+    if (qrOverlayHintEl) {
+      qrOverlayHintEl.textContent = isHost ? t('scan_host_qr') : t('scan_player_qr');
+    }
     qrOverlayEl.hidden = false;
   }
 
