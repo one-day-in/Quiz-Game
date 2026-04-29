@@ -482,11 +482,12 @@ export class LeaderboardPanelView {
       this._dockSummary.textContent = t('no_players_available');
       return;
     }
+    const getPlayerScore = (player) => Number(player?.points ?? player?.score) || 0;
     const summary = this._players
       .slice()
-      .sort((a, b) => (Number(b?.score) || 0) - (Number(a?.score) || 0))
-      .slice(0, 4)
-      .map((player) => `${player?.name || t('player_fallback')}: ${Number(player?.score) || 0}`)
+      .sort((a, b) => getPlayerScore(b) - getPlayerScore(a))
+      .slice(0, 5)
+      .map((player) => `${player?.name || t('player_fallback')}: ${getPlayerScore(player)}`)
       .join(' · ');
     this._dockSummary.textContent = summary;
   }
