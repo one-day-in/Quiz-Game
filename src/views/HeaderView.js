@@ -4,6 +4,12 @@ import { t, withLanguageParam } from '../i18n.js';
 import { getActiveBuzzerUrl } from '../utils/localBuzzerUrl.js';
 import { createOverlayController } from '../utils/OverlayController.js';
 
+function formatLogTime(iso) {
+  const date = iso ? new Date(iso) : new Date();
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
 function resolveCurrentPlayer(players = [], currentPlayerId = null) {
   return (Array.isArray(players) ? players : []).find((player) => String(player?.id) === String(currentPlayerId)) || null;
 }
@@ -13,10 +19,10 @@ export function HeaderView({
   gameId = '',
   showQrInSettings = false,
   players = [],
+  scoreLogs = [],
   currentPlayerId = null,
   onBackToLobby,
   onRoundClick,
-  onScoreLogsClick,
   onCurrentPlayerChange,
   onGameModeToggle,
 }) {
@@ -27,8 +33,8 @@ export function HeaderView({
   let currentChooserId = currentPlayerId ? String(currentPlayerId) : null;
   let isChooserMenuOpen = false;
   let isSettingsOpen = false;
+  let currentScoreLogs = Array.isArray(scoreLogs) ? scoreLogs.slice() : [];
   const canBackToLobby = typeof onBackToLobby === 'function';
-  const canOpenScoreLogs = typeof onScoreLogsClick === 'function';
   const canToggleGameMode = typeof onGameModeToggle === 'function';
   const canShowQr = !!showQrInSettings && !!gameId;
   let currentGameMode = String(uiState?.gameMode || 'play').toLowerCase() === 'edit' ? 'edit' : 'play';
@@ -83,9 +89,13 @@ export function HeaderView({
               </button>
             </div>
             ` : ''}
-            ${canOpenScoreLogs ? `
-            <button class="hdr-settings-qrBtn" type="button" data-action="logs">${escapeHtml(t('score_logs'))}</button>
-            ` : ''}
+            <section class="hdr-settings-logs" aria-label="${escapeHtml(t('score_logs'))}">
+              <p class="hdr-settings-logsTitle">${escapeHtml(t('score_logs'))}</p>
+              <div class="hdr-settings-logsListWrap">
+                <div class="hdr-settings-logsList"></div>
+                <div class="hdr-settings-logsSpacer" aria-hidden="true"></div>
+              </div>
+            </section>
           </div>
         </div>
       </div>
@@ -107,6 +117,7 @@ export function HeaderView({
   const settingsBtnEl = el.querySelector('.hdr-settings-btn');
   const settingsOverlayEl = el.querySelector('.hdr-settings-overlay');
   const settingsMenuEl = el.querySelector('.hdr-settings-menu');
+  const settingsLogsListEl = el.querySelector('.hdr-settings-logsList');
   const settingsModeBtnEl = el.querySelector('.js-settings-mode');
   const qrOverlayEl = el.querySelector('.hdr-qrOverlay');
   const qrOverlayImgEl = el.querySelector('.hdr-qrOverlayImg');
@@ -191,19 +202,37 @@ export function HeaderView({
     el.classList.toggle('app-header--editMode', currentGameMode === 'edit');
 
     if (Array.isArray(next?.players)) currentPlayers = next.players.slice();
+    if (Array.isArray(next?.scoreLogs)) currentScoreLogs = next.scoreLogs.slice();
     if (Object.prototype.hasOwnProperty.call(next, 'currentPlayerId')) {
       currentChooserId = next.currentPlayerId ? String(next.currentPlayerId) : null;
     }
 
     renderChooserSummary();
     renderChooserMenu();
+    renderScoreLogs();
+  }
+
+  function renderScoreLogs() {
+    if (!settingsLogsListEl) return;
+    if (!Array.isArray(currentScoreLogs) || !currentScoreLogs.length) {
+      settingsLogsListEl.innerHTML = `<p class="leaderboard-panel__copy">${escapeHtml(t('score_logs_empty'))}</p>`;
+      return;
+    }
+    settingsLogsListEl.innerHTML = currentScoreLogs.map((entry) => `
+      <article class="leaderboard-panel__logItem">
+        <p class="leaderboard-panel__logMain">
+          <strong>${escapeHtml(entry?.playerName || t('player_fallback'))}</strong>
+          <span>${escapeHtml(`${entry?.cellLabel || ''}${entry?.outcome ? `, ${entry.outcome === 'correct' ? t('correct') : t('not_correct')}` : ''}`)}</span>
+        </p>
+        <p class="leaderboard-panel__logTime">${escapeHtml(formatLogTime(entry?.happenedAt))}</p>
+      </article>
+    `).join('');
   }
 
   function handleDocumentPointerDown(event) {
     const target = event.target;
     if (!(target instanceof Element)) return;
     if (target.closest('.hdr-qrOverlay')) return;
-    if (target.closest('.qmodal--scoreLogs') || target.closest('.leaderboard-panel__logsModalContent')) return;
     if (isChooserMenuOpen && !target.closest('.hdr-current-player')) closeChooserMenu();
   }
 
@@ -239,10 +268,6 @@ export function HeaderView({
     }
     if (action === 'host-qr' || action === 'player-qr') {
       showQrOverlay(action);
-      return;
-    }
-    if (action === 'logs') {
-      onScoreLogsClick?.();
       return;
     }
   });

@@ -53,10 +53,10 @@ export function AppView({
     gameId,
     showQrInSettings: showLeaderboardQr,
     players: leaderboardPlayers,
+    scoreLogs: leaderboardScoreLogs,
     currentPlayerId: model?.getCurrentPlayerId?.() ?? null,
     onBackToLobby: isReadOnly ? null : onBackToLobby,
     onRoundClick,
-    onScoreLogsClick: () => leaderboardPanel?.toggleScoreLogs?.(),
     onCurrentPlayerChange: (isReadOnly && !allowCurrentPlayerControl) ? null : (playerId) => actions.setCurrentPlayer?.(playerId),
     onGameModeToggle: isReadOnly ? null : onGameModeToggle,
   });
@@ -114,6 +114,7 @@ export function AppView({
     header.update({
       uiState: ui,
       players: leaderboardPlayers,
+      scoreLogs: leaderboardScoreLogs,
       currentPlayerId: m?.getCurrentPlayerId?.() ?? null,
     });
     renderGrid(m, ui);
@@ -127,6 +128,7 @@ export function AppView({
     header.update({
       uiState: ui,
       players: leaderboardPlayers,
+      scoreLogs: leaderboardScoreLogs,
       currentPlayerId: m?.getCurrentPlayerId?.() ?? null,
     });
     renderLeaderboard(leaderboardPlayers);
@@ -138,6 +140,7 @@ export function AppView({
     header.update({
       uiState: ui,
       players: leaderboardPlayers,
+      scoreLogs: leaderboardScoreLogs,
       currentPlayerId: currentModel?.getCurrentPlayerId?.() ?? null,
     });
   }
@@ -147,6 +150,7 @@ export function AppView({
     header.update({
       uiState: currentUiState,
       players: leaderboardPlayers,
+      scoreLogs: leaderboardScoreLogs,
       currentPlayerId: currentModel?.getCurrentPlayerId?.() ?? null,
     });
     renderLeaderboard(nextPlayers);
@@ -154,6 +158,12 @@ export function AppView({
 
   function updateScoreLogs(nextLogs = []) {
     leaderboardScoreLogs = Array.isArray(nextLogs) ? nextLogs : [];
+    header.update({
+      uiState: currentUiState,
+      players: leaderboardPlayers,
+      scoreLogs: leaderboardScoreLogs,
+      currentPlayerId: currentModel?.getCurrentPlayerId?.() ?? null,
+    });
     leaderboardPanel?.updateScoreLogs?.(leaderboardScoreLogs);
   }
 
@@ -162,7 +172,9 @@ export function AppView({
   }
 
   function setScoreLogsOpen(isOpen, options = {}) {
-    leaderboardPanel?.setScoreLogsOpen?.(!!isOpen, options);
+    // Score logs are rendered in Header settings now; keep as no-op for backward-compatible callers.
+    void isOpen;
+    void options;
   }
 
   // Targeted patch for a single cell (avoids full grid rebuild)

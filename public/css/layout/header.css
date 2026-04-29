@@ -359,6 +359,50 @@
     background var(--t-fast) var(--ease);
 }
 
+.hdr-settings-logs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  margin-top: 6px;
+  padding: 10px;
+  border-radius: 14px;
+  border: 1px solid var(--border-2);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.76), rgba(2, 6, 23, 0.84));
+}
+
+.hdr-settings-logsTitle {
+  margin: 0;
+  font-family: var(--font-label);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.hdr-settings-logsListWrap {
+  min-height: 0;
+  max-height: min(44vh, 420px);
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding-right: 2px;
+}
+
+.hdr-settings-logsList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hdr-settings-logsSpacer {
+  height: clamp(20px, 3vh, 28px);
+  flex: 0 0 auto;
+}
+
 .hdr-qrOverlay {
   position: fixed;
   inset: 0;
@@ -719,7 +763,7 @@
 
 /* Logs modal (opened from header logs button) */
 .qmodal--scoreLogs {
-  z-index: 4200;
+  z-index: 6200;
 }
 
 .qmodal--scoreLogs .qmodal__overlay {
