@@ -18,10 +18,6 @@
   content: "";
   position: absolute;
   inset: 0;
-
-  background:
-    radial-gradient(900px 140px at 50% 0%, var(--brand-a18), transparent 60%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 55%);
   pointer-events: none;
 }
 
