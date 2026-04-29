@@ -43,7 +43,7 @@ export class HostControlChannelService {
     await this.connect();
     if (!this._channel) return;
 
-    await this._channel.send({
+    const message = {
       type: 'broadcast',
       event: 'host-command',
       payload: {
@@ -53,7 +53,14 @@ export class HostControlChannelService {
         senderId: this._instanceId,
         sentAt: new Date().toISOString(),
       },
-    });
+    };
+
+    if (typeof this._channel.httpSend === 'function') {
+      await this._channel.httpSend(message);
+      return;
+    }
+
+    await this._channel.send(message);
   }
 
   destroy() {

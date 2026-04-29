@@ -207,6 +207,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
             gameId,
             role: hostMode === 'controller' ? 'player' : 'host',
             controllerId: hostMode === 'controller' ? `host-controller-${gameId}` : null,
+            wsUrl: hostMode === 'controller' ? '' : undefined,
         });
         const hostControlChannel = createHostControlChannelService({
             gameId,
