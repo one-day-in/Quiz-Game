@@ -10,13 +10,17 @@
   flex: 0 0 auto;
   height: auto;
   min-height: 0;
+  margin-left: calc(-1 * (var(--app-pad) + env(safe-area-inset-left, 0px)));
+  margin-right: calc(-1 * (var(--app-pad) + env(safe-area-inset-right, 0px)));
+  margin-bottom: calc(-1 * (var(--app-pad) + env(safe-area-inset-bottom, 0px)));
 }
 
 .leaderboard-panel--overlayV2 .leaderboard-panel__dock {
   width: 100%;
   min-height: var(--footer-preview-h);
-  border-radius: var(--radius-lg);
+  border-radius: 24px 24px 0 0;
   border: 1px solid var(--border-1);
+  border-bottom: 0;
   background: linear-gradient(180deg, var(--surface), var(--surface-3));
   color: var(--text);
   box-shadow: var(--shadow-sm);
