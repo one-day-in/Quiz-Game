@@ -38,6 +38,7 @@ export class LeaderboardPanelView {
     this._openQrDock = null;
     this._selectedPlayerId = null;
     this._isScoreLogsOpen = false;
+    this._overlayHost = null;
 
     this._build();
     this._disposer = new ViewDisposer(this._root);
@@ -55,6 +56,10 @@ export class LeaderboardPanelView {
         this.setExpanded(false);
       },
     });
+    if (this._overlay && this._overlay.parentElement !== document.body) {
+      this._overlayHost = this._overlay.parentElement;
+      document.body.appendChild(this._overlay);
+    }
     this.updatePlayers(this._players);
   }
 
@@ -101,6 +106,7 @@ export class LeaderboardPanelView {
 
     this._isExpanded = isExpanded;
     this._root.classList.toggle('is-expanded', isExpanded);
+    this._overlay?.classList.toggle('is-open', isExpanded);
     if (this._dockBtn) this._dockBtn.setAttribute('aria-expanded', String(isExpanded));
     this._toggleChevron.classList.toggle('is-down', isExpanded);
     this._toggleBtn.setAttribute('aria-expanded', String(isExpanded));
@@ -135,6 +141,10 @@ export class LeaderboardPanelView {
     this._scoreLogsModal = null;
     this._fullView?.destroy?.();
     this._fullView = null;
+    if (this._overlay && this._overlayHost && this._overlay.parentElement === document.body) {
+      this._overlayHost.appendChild(this._overlay);
+    }
+    this._overlayHost = null;
     this._disposer?.destroy();
     this._root?.remove();
     this._root = null;
@@ -160,7 +170,7 @@ export class LeaderboardPanelView {
         <span class="leaderboard-panel__dockSummary">${t('players')}</span>
       </button>
 
-      <div class="leaderboard-panel__overlay">
+      <div class="leaderboard-panel__overlay leaderboard-panel__overlay--v2">
         <div class="leaderboard-panel__backdrop"></div>
         <section class="leaderboard-panel__shell" aria-label="${t('leaderboard')}">
           <div class="leaderboard-panel__headerBar">
@@ -347,16 +357,6 @@ export class LeaderboardPanelView {
   _wire() {
     this._disposer.addEventListener(this._dockBtn, 'click', () => this.toggleExpanded());
     this._disposer.addEventListener(this._toggleBtn, 'click', () => this.setExpanded(false));
-    this._disposer.addEventListener(this._backdrop, 'pointerdown', (event) => {
-      if (!this._isExpanded) return;
-      event.preventDefault();
-      event.stopPropagation();
-    }, true);
-    this._disposer.addEventListener(this._backdrop, 'click', (event) => {
-      if (!this._isExpanded) return;
-      event.preventDefault();
-      event.stopPropagation();
-    }, true);
     if (this._showQr) {
       for (const dock of this._qrDocks) {
         const trigger = dock.querySelector('.leaderboard-panel__qrTrigger');
@@ -370,17 +370,9 @@ export class LeaderboardPanelView {
       }
     }
 
-    this._disposer.addEventListener(document, 'pointerdown', (event) => {
+    this._disposer.addEventListener(this._root.querySelector('.leaderboard-panel__shell'), 'pointerdown', (event) => {
       const target = event.target;
       if (!(target instanceof Element)) return;
-      if (this._isExpanded && !target.closest('.leaderboard-panel__shell') && !target.closest('.leaderboard-panel__logsModalContent')) {
-        event.preventDefault();
-        event.stopPropagation();
-        this._setQrOpen(null);
-        this.setScoreLogsOpen(false, { silent: true });
-        this.setExpanded(false);
-        return;
-      }
       if (this._isExpanded && this._openQrDock && !target.closest('.leaderboard-panel__qrDock')) {
         this._setQrOpen(null);
       }
@@ -389,15 +381,6 @@ export class LeaderboardPanelView {
       if (target.closest('.leaderboard-panel__scoreBar, .leaderboard-panel__qrDock, .leaderboard-panel__toggle, .leaderboard-panel__logsModalContent, .hdr-settings, .hdr-settings-menu')) return;
 
       this._clearSelectedPlayer();
-    }, true);
-
-    this._disposer.addEventListener(document, 'click', (event) => {
-      const target = event.target;
-      if (!(target instanceof Element)) return;
-      if (!this._isExpanded) return;
-      if (target.closest('.leaderboard-panel__shell') || target.closest('.leaderboard-panel__logsModalContent')) return;
-      event.preventDefault();
-      event.stopPropagation();
     }, true);
 
   }

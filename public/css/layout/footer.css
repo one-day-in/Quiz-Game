@@ -47,25 +47,29 @@
   max-width: 100%;
 }
 
-.leaderboard-panel--overlayV2 .leaderboard-panel__overlay[hidden] {
+.leaderboard-panel--overlayV2 .leaderboard-panel__overlay[hidden],
+.leaderboard-panel__overlay--v2[hidden] {
   display: none;
 }
 
-.leaderboard-panel--overlayV2 .leaderboard-panel__overlay {
+.leaderboard-panel--overlayV2 .leaderboard-panel__overlay,
+.leaderboard-panel__overlay--v2 {
   position: fixed;
   inset: 0;
   z-index: 5000;
   pointer-events: none;
 }
 
-.leaderboard-panel--overlayV2 .leaderboard-panel__backdrop {
+.leaderboard-panel--overlayV2 .leaderboard-panel__backdrop,
+.leaderboard-panel__overlay--v2 .leaderboard-panel__backdrop {
   z-index: 0;
   opacity: 0;
   pointer-events: none;
   transition: opacity 220ms var(--ease);
 }
 
-.leaderboard-panel--overlayV2 .leaderboard-panel__shell {
+.leaderboard-panel--overlayV2 .leaderboard-panel__shell,
+.leaderboard-panel__overlay--v2 .leaderboard-panel__shell {
   position: fixed;
   left: 0;
   right: 0;
@@ -81,7 +85,8 @@
   transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 220ms var(--ease);
 }
 
-.leaderboard-panel--overlayV2 .leaderboard-panel__expanded {
+.leaderboard-panel--overlayV2 .leaderboard-panel__expanded,
+.leaderboard-panel__overlay--v2 .leaderboard-panel__expanded {
   display: block;
   opacity: 0;
   pointer-events: auto;
@@ -120,20 +125,24 @@
   filter: brightness(0.98);
 }
 
-.leaderboard-panel--overlayV2.is-expanded .leaderboard-panel__overlay {
+.leaderboard-panel--overlayV2.is-expanded .leaderboard-panel__overlay,
+.leaderboard-panel__overlay--v2.is-open {
   pointer-events: auto;
 }
 
-.leaderboard-panel--overlayV2.is-expanded .leaderboard-panel__backdrop {
+.leaderboard-panel--overlayV2.is-expanded .leaderboard-panel__backdrop,
+.leaderboard-panel__overlay--v2.is-open .leaderboard-panel__backdrop {
   opacity: 1;
   pointer-events: auto;
 }
 
-.leaderboard-panel--overlayV2.is-expanded .leaderboard-panel__shell {
+.leaderboard-panel--overlayV2.is-expanded .leaderboard-panel__shell,
+.leaderboard-panel__overlay--v2.is-open .leaderboard-panel__shell {
   transform: translateY(0);
 }
 
-.leaderboard-panel--overlayV2.is-expanded .leaderboard-panel__expanded {
+.leaderboard-panel--overlayV2.is-expanded .leaderboard-panel__expanded,
+.leaderboard-panel__overlay--v2.is-open .leaderboard-panel__expanded {
   opacity: 1;
 }
 
