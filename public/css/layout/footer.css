@@ -17,7 +17,7 @@
 
 .leaderboard-panel--overlayV2 .leaderboard-panel__dock {
   width: 100%;
-  min-height: clamp(180px, 21vh, 248px);
+  min-height: clamp(154px, 18vh, 212px);
   border-radius: 24px 24px 0 0;
   border: 1px solid var(--border-1);
   border-bottom: 0;
@@ -108,7 +108,7 @@
 .leaderboard-panel__dockItem {
   flex: 1 1 0;
   min-width: 0;
-  min-height: clamp(52px, 6.2vh, 78px);
+  min-height: clamp(44px, 5.3vh, 66px);
   display: flex;
   align-items: center;
   justify-content: space-between;

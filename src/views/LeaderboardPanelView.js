@@ -572,36 +572,20 @@ export class LeaderboardPanelView {
 
       if (rankEl) {
         rankEl.style.fontSize = '';
-        fitTextToBox(rankEl, rankEl, {
-          widthRatio: 0.86,
-          heightRatio: 0.66,
-          minSize: 15,
-          step: 0.5,
-          noWrap: true,
-          startFromComputedSize: true,
-        });
       }
       if (nameEl) {
         nameEl.style.fontSize = '';
         fitTextToBox(nameEl, nameEl, {
           widthRatio: 0.98,
-          heightRatio: 0.78,
+          heightRatio: 1,
           minSize: 16,
-          step: 0.5,
+          step: 0.25,
           noWrap: true,
           startFromComputedSize: true,
         });
       }
       if (scoreEl) {
         scoreEl.style.fontSize = '';
-        fitTextToBox(scoreEl, scoreEl, {
-          widthRatio: 0.96,
-          heightRatio: 0.80,
-          minSize: 16,
-          step: 0.5,
-          noWrap: true,
-          startFromComputedSize: true,
-        });
       }
     }
   }
