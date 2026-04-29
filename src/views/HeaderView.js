@@ -7,25 +7,27 @@ function resolveCurrentPlayer(players = [], currentPlayerId = null) {
 
 export function HeaderView({
   uiState,
-  gameName,
-  showGameTitle = true,
   players = [],
   currentPlayerId = null,
   onBackToLobby,
   onRoundClick,
   onScoreLogsClick,
+  onOpenHostQr,
+  onOpenPlayerQr,
   onCurrentPlayerChange,
   onGameModeToggle,
 }) {
   const el = document.createElement('header');
   el.className = 'app-header';
 
-  const title = gameName || t('app_name');
   let currentPlayers = Array.isArray(players) ? players.slice() : [];
   let currentChooserId = currentPlayerId ? String(currentPlayerId) : null;
   let isChooserMenuOpen = false;
+  let isSettingsOpen = false;
   const canBackToLobby = typeof onBackToLobby === 'function';
   const canOpenScoreLogs = typeof onScoreLogsClick === 'function';
+  const canOpenHostQr = typeof onOpenHostQr === 'function';
+  const canOpenPlayerQr = typeof onOpenPlayerQr === 'function';
   const canToggleGameMode = typeof onGameModeToggle === 'function';
   let currentGameMode = String(uiState?.gameMode || 'play').toLowerCase() === 'edit' ? 'edit' : 'play';
 
@@ -35,27 +37,11 @@ export function HeaderView({
       <button class="round-indicator" type="button" title="${escapeHtml(t('switch_round'))}">
         ${escapeHtml(t('round'))}: <b class="js-round-value"></b>
       </button>
-      ${canToggleGameMode ? `
-      <button class="hdr-game-mode-btn" type="button" title="${escapeHtml(t('toggle_game_mode'))}">
-        <span class="js-game-mode-value"></span>
-      </button>
-      ` : ''}
     </div>
     <div class="hdr-center">
-      ${showGameTitle ? `<h1 class="app-title">${escapeHtml(title)}</h1>` : ''}
-    </div>
-    <div class="hdr-right">
-      ${canOpenScoreLogs ? `
-      <button class="hdr-logs-btn" type="button" title="${escapeHtml(t('score_logs'))}" aria-label="${escapeHtml(t('score_logs'))}">
-        <svg class="hdr-logs-btn-icon" viewBox="0 0 24 24" focusable="false" aria-hidden="true">
-          <path d="M5 4h11l3 3v13H5z" />
-          <path d="M8 9h8M8 13h8M8 17h6" />
-        </svg>
-      </button>
-      ` : ''}
-      <div class="hdr-current-player">
+      <div class="hdr-current-player hdr-current-player--center">
         <button
-          class="hdr-current-player-btn"
+          class="hdr-current-player-btn hdr-current-player-btn--center"
           type="button"
           aria-haspopup="true"
           aria-expanded="false"
@@ -70,14 +56,40 @@ export function HeaderView({
         </div>
       </div>
     </div>
+    <div class="hdr-right">
+      <div class="hdr-settings">
+        <button class="hdr-settings-btn" type="button" aria-haspopup="true" aria-expanded="false" title="${escapeHtml(t('settings'))}" aria-label="${escapeHtml(t('settings'))}">
+          <svg class="hdr-settings-icon" viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+            <path d="M12 8.25a3.75 3.75 0 1 0 0 7.5 3.75 3.75 0 0 0 0-7.5Z"/>
+            <path d="M19.5 12a7.5 7.5 0 0 0-.12-1.31l2.02-1.57-1.92-3.32-2.45.72a7.67 7.67 0 0 0-2.27-1.31L14.25 2h-4.5l-.51 3.21a7.67 7.67 0 0 0-2.27 1.31l-2.45-.72-1.92 3.32 2.02 1.57A7.5 7.5 0 0 0 4.5 12c0 .45.04.89.12 1.31L2.6 14.88l1.92 3.32 2.45-.72c.69.56 1.45 1 2.27 1.31L9.75 22h4.5l.51-3.21c.82-.31 1.58-.75 2.27-1.31l2.45.72 1.92-3.32-2.02-1.57c.08-.42.12-.86.12-1.31Z"/>
+          </svg>
+        </button>
+        <div class="hdr-settings-menu" hidden>
+          ${canToggleGameMode ? `
+          <button class="hdr-settings-item js-settings-mode" type="button"></button>
+          ` : ''}
+          ${canOpenHostQr ? `
+          <button class="hdr-settings-item" type="button" data-action="host-qr">${escapeHtml(t('host_controller'))}</button>
+          ` : ''}
+          ${canOpenPlayerQr ? `
+          <button class="hdr-settings-item" type="button" data-action="player-qr">${escapeHtml(t('join_from_phone'))}</button>
+          ` : ''}
+          ${canOpenScoreLogs ? `
+          <button class="hdr-settings-item" type="button" data-action="logs">${escapeHtml(t('score_logs'))}</button>
+          ` : ''}
+        </div>
+      </div>
+    </div>
   `;
 
   const roundValueEl = el.querySelector('.js-round-value');
   const chooserValueEl = el.querySelector('.js-current-player-value');
-  const gameModeValueEl = el.querySelector('.js-game-mode-value');
   const chooserBtnEl = el.querySelector('.hdr-current-player-btn');
   const chooserMenuEl = el.querySelector('.hdr-current-player-menu');
   const chooserListEl = el.querySelector('.hdr-current-player-list');
+  const settingsBtnEl = el.querySelector('.hdr-settings-btn');
+  const settingsMenuEl = el.querySelector('.hdr-settings-menu');
+  const settingsModeBtnEl = el.querySelector('.js-settings-mode');
 
   function closeChooserMenu() {
     isChooserMenuOpen = false;
@@ -89,6 +101,20 @@ export function HeaderView({
     isChooserMenuOpen = true;
     chooserMenuEl.hidden = false;
     chooserBtnEl.setAttribute('aria-expanded', 'true');
+  }
+
+  function closeSettingsMenu() {
+    if (!settingsBtnEl || !settingsMenuEl) return;
+    isSettingsOpen = false;
+    settingsMenuEl.hidden = true;
+    settingsBtnEl.setAttribute('aria-expanded', 'false');
+  }
+
+  function openSettingsMenu() {
+    if (!settingsBtnEl || !settingsMenuEl) return;
+    isSettingsOpen = true;
+    settingsMenuEl.hidden = false;
+    settingsBtnEl.setAttribute('aria-expanded', 'true');
   }
 
   function renderChooserMenu() {
@@ -127,8 +153,8 @@ export function HeaderView({
       : (ui?.activeRoundId ?? 0);
     roundValueEl.textContent = String(displayRound + 1);
     currentGameMode = String(ui?.gameMode || currentGameMode || 'play').toLowerCase() === 'edit' ? 'edit' : 'play';
-    if (gameModeValueEl) {
-      gameModeValueEl.textContent = currentGameMode === 'edit' ? t('mode_edit') : t('mode_play');
+    if (settingsModeBtnEl) {
+      settingsModeBtnEl.textContent = currentGameMode === 'edit' ? t('mode_edit') : t('mode_play');
     }
     el.classList.toggle('app-header--editMode', currentGameMode === 'edit');
 
@@ -142,13 +168,16 @@ export function HeaderView({
   }
 
   function handleDocumentPointerDown(event) {
-    if (!isChooserMenuOpen) return;
-    if (el.contains(event.target)) return;
-    closeChooserMenu();
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    if (isChooserMenuOpen && !target.closest('.hdr-current-player')) closeChooserMenu();
+    if (isSettingsOpen && !target.closest('.hdr-settings')) closeSettingsMenu();
   }
 
   function handleDocumentKeyDown(event) {
-    if (event.key === 'Escape') closeChooserMenu();
+    if (event.key !== 'Escape') return;
+    closeChooserMenu();
+    closeSettingsMenu();
   }
 
   chooserBtnEl.addEventListener('click', () => {
@@ -163,8 +192,24 @@ export function HeaderView({
     onCurrentPlayerChange?.(button.dataset.playerId || null);
   });
 
-  el.querySelector('.hdr-logs-btn')?.addEventListener('click', () => onScoreLogsClick?.());
-  el.querySelector('.hdr-game-mode-btn')?.addEventListener('click', () => onGameModeToggle?.(currentGameMode === 'edit' ? 'play' : 'edit'));
+  settingsBtnEl?.addEventListener('click', () => {
+    if (isSettingsOpen) closeSettingsMenu();
+    else openSettingsMenu();
+  });
+  settingsMenuEl?.addEventListener('click', (event) => {
+    const button = event.target.closest('button');
+    if (!button) return;
+    const action = button.dataset.action || '';
+    if (button.classList.contains('js-settings-mode')) {
+      onGameModeToggle?.(currentGameMode === 'edit' ? 'play' : 'edit');
+      closeSettingsMenu();
+      return;
+    }
+    if (action === 'host-qr') onOpenHostQr?.();
+    if (action === 'player-qr') onOpenPlayerQr?.();
+    if (action === 'logs') onScoreLogsClick?.();
+    closeSettingsMenu();
+  });
   el.querySelector('.hdr-lobby-btn')?.addEventListener('click', () => onBackToLobby?.());
   el.querySelector('.round-indicator').addEventListener('click', () => onRoundClick?.());
   document.addEventListener('pointerdown', handleDocumentPointerDown);

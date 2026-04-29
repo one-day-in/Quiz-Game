@@ -122,26 +122,13 @@
 
   width: min(70vw, 760px);
   text-align: center;
+  min-width: 0;
 
   padding: 0 16px;
   box-sizing: border-box;
 }
 
-.app-title {
-  margin: 0;
-  font-family: var(--font-display);
-
-  font-size: var(--fs-5);
-  font-weight: 400;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-
-  color: var(--text);
-
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+.app-title { display: none; }
 
 .hdr-right {
   right: 16px;
@@ -153,6 +140,11 @@
 
 .hdr-current-player {
   position: relative;
+}
+
+.hdr-current-player--center {
+  width: min(460px, 62vw);
+  max-width: 100%;
 }
 
 .hdr-current-player-btn {
@@ -181,6 +173,18 @@
     box-shadow var(--t-fast) var(--ease),
     border-color var(--t-fast) var(--ease),
     background var(--t-fast) var(--ease);
+}
+
+.hdr-current-player-btn--center {
+  width: 100%;
+  min-height: 62px;
+  min-width: 0;
+}
+
+.hdr-current-player-btn--center .js-current-player-value {
+  font-size: clamp(24px, 2.5vw, 34px);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .hdr-current-player-btn:hover {
@@ -247,6 +251,95 @@
   background: linear-gradient(180deg, var(--surface-2), var(--surface-3));
   box-shadow: var(--shadow-md);
   z-index: 120;
+}
+
+.hdr-settings {
+  position: relative;
+}
+
+.hdr-settings-btn {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid var(--border-2);
+  background: var(--btn-bg);
+  color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-btn);
+  cursor: pointer;
+  transition:
+    transform var(--t-fast) var(--ease),
+    filter var(--t-fast) var(--ease),
+    box-shadow var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease),
+    background var(--t-fast) var(--ease);
+}
+
+.hdr-settings-icon {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.hdr-settings-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  min-width: 220px;
+  padding: 10px;
+  border-radius: 14px;
+  border: 1px solid var(--border-2);
+  background: linear-gradient(180deg, var(--surface-2), var(--surface-3));
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hdr-settings-item {
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid var(--border-2);
+  background: var(--btn-bg);
+  color: var(--text);
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform var(--t-fast) var(--ease),
+    filter var(--t-fast) var(--ease),
+    box-shadow var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease),
+    background var(--t-fast) var(--ease);
+}
+
+.hdr-settings-btn:hover,
+.hdr-settings-item:hover {
+  transform: translateY(calc(-1 * (var(--lift-y) / 3)));
+  background: var(--btn-bg-hover);
+  border-color: var(--border-5);
+  box-shadow: var(--shadow-md), var(--btn-glow-hover);
+  filter: brightness(1.06);
+}
+
+.hdr-settings-btn:active,
+.hdr-settings-item:active {
+  transform: translateY(var(--btn-press-y));
+  filter: brightness(0.98);
+}
+
+.hdr-settings-btn:focus-visible,
+.hdr-settings-item:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-md), var(--ring);
 }
 
 .hdr-current-player-list {

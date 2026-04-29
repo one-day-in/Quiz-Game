@@ -79,6 +79,13 @@ export class LeaderboardPanelView {
     this.setScoreLogsOpen(!this._isScoreLogsOpen);
   }
 
+  openQr(kind) {
+    const qrKind = kind === 'host' ? 'host' : kind === 'player' ? 'player' : null;
+    if (!qrKind || !this._showQr) return;
+    if (!this._isExpanded) this.setExpanded(true, { silent: true });
+    this._setQrOpen(qrKind);
+  }
+
   setExpanded(nextExpanded, { silent = false } = {}) {
     const isExpanded = !!nextExpanded;
     if (this._isExpanded === isExpanded) return;
@@ -345,7 +352,7 @@ export class LeaderboardPanelView {
       }
       if (!this._isExpanded || !this._selectedPlayerId) return;
       if (target.closest('.leaderboard__rowWrap, .leaderboard__row')) return;
-      if (target.closest('.leaderboard-panel__scoreBar, .leaderboard-panel__qrDock, .leaderboard-panel__toggle, .leaderboard-panel__logsModalContent, .hdr-logs-btn')) return;
+      if (target.closest('.leaderboard-panel__scoreBar, .leaderboard-panel__qrDock, .leaderboard-panel__toggle, .leaderboard-panel__logsModalContent, .hdr-settings, .hdr-settings-menu')) return;
 
       this._clearSelectedPlayer();
     }, true);
