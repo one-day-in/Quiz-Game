@@ -49,18 +49,19 @@
   color: inherit;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   background: transparent;
-  transition: color 140ms var(--ease), text-shadow 140ms var(--ease), transform 140ms var(--ease);
+  transition: transform 140ms var(--ease);
 }
 
-.leaderboard-panel--overlayV2 .leaderboard-panel__dockTitle::after {
-  content: "▴";
+.leaderboard-panel--overlayV2 .leaderboard-panel__dockTitleText {
+  transition: opacity 140ms var(--ease), transform 140ms var(--ease);
+}
+
+.leaderboard-panel--overlayV2 .leaderboard-panel__dockChevron {
   position: absolute;
   left: 50%;
   top: 50%;
   transform: translate(-50%, calc(-50% + 4px));
   opacity: 0;
-  font-size: 22px;
-  line-height: 1;
   color: rgba(255, 255, 255, 0.96);
   text-shadow:
     0 0 10px rgba(255, 255, 255, 0.28),
@@ -69,12 +70,15 @@
 }
 
 .leaderboard-panel--overlayV2 .leaderboard-panel__dock:hover .leaderboard-panel__dockTitle {
-  color: transparent;
-  text-shadow: none;
+  transform: none;
+}
+
+.leaderboard-panel--overlayV2 .leaderboard-panel__dock:hover .leaderboard-panel__dockTitleText {
+  opacity: 0;
   transform: translateY(-4px);
 }
 
-.leaderboard-panel--overlayV2 .leaderboard-panel__dock:hover .leaderboard-panel__dockTitle::after {
+.leaderboard-panel--overlayV2 .leaderboard-panel__dock:hover .leaderboard-panel__dockChevron {
   opacity: 1;
   transform: translate(-50%, -50%);
   animation: leaderboardChevronPulse 900ms ease-in-out infinite;

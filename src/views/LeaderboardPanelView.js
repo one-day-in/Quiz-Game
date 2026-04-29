@@ -167,7 +167,14 @@ export class LeaderboardPanelView {
         aria-label="${t('show_all_players')}"
         title="${t('show_all_players')}"
       >
-        <span class="leaderboard-panel__dockTitle">${t('leaderboard')}</span>
+        <span class="leaderboard-panel__dockTitle">
+          <span class="leaderboard-panel__dockTitleText">${t('leaderboard')}</span>
+          <span class="leaderboard-panel__dockChevron" aria-hidden="true">
+            <svg class="leaderboard-panel__titleChevronIcon" viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+              <path d="M6 15l6-6 6 6" />
+            </svg>
+          </span>
+        </span>
         <div class="leaderboard-panel__dockSummary">${t('players')}</div>
       </button>
 
