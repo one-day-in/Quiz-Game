@@ -250,7 +250,7 @@ export function HeaderView({
 
     settingsLogsListEl.innerHTML = currentScoreLogs.map((entry) => {
       const meta = buildLogMetaParts(entry, { t });
-      const hasPill = meta.deltaText || meta.scoreRangeText;
+      const hasPill = !!meta.scoreRangeText;
       const hasRange = !!meta.scoreRangeText;
       return `
       <article class="leaderboard-panel__logItem">
@@ -261,14 +261,12 @@ export function HeaderView({
         <p class="leaderboard-panel__logSub">
           <span class="leaderboard-panel__logReason">
             ${escapeHtml(meta.reasonText)}
+            ${meta.deltaText ? `<span class="hdr-settings-logDelta ${meta.deltaClass}">${escapeHtml(meta.deltaText)}</span>` : ''}
             ${meta.outcomeType === 'correct' ? '<span class="leaderboard-panel__logOutcomeMark is-correct" aria-label="Correct" title="Correct">✓</span>' : ''}
             ${meta.outcomeType === 'incorrect' ? '<span class="leaderboard-panel__logOutcomeMark is-incorrect" aria-label="Incorrect" title="Incorrect">✕</span>' : ''}
           </span>
-          ${hasPill ? '<span class="leaderboard-panel__logMetaSep">·</span>' : ''}
           ${hasPill ? `
             <span class="leaderboard-panel__logDeltaPill">
-              ${meta.deltaText ? `<span class="hdr-settings-logDelta ${meta.deltaClass}">${escapeHtml(meta.deltaText)}</span>` : ''}
-              ${hasRange ? `<span class="leaderboard-panel__logDeltaRangeSep">·</span>` : ''}
               ${hasRange ? `<span class="leaderboard-panel__logRange">${escapeHtml(meta.scoreRangeText)}</span>` : ''}
             </span>
           ` : ''}
