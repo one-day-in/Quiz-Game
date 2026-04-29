@@ -443,7 +443,10 @@ class HybridPressRuntimeService {
   }
 }
 
-export function createPressRuntimeService({ gameId, role, controllerId = null, wsUrl = '' }) {
+export function createPressRuntimeService({ gameId, role, controllerId = null, wsUrl = '', disableSocket = false }) {
+  if (disableSocket) {
+    return new ApiPressRuntimeService({ gameId, controllerId });
+  }
   const resolvedWsUrl = resolveBuzzerUrl(wsUrl);
 
   if (!resolvedWsUrl) {
