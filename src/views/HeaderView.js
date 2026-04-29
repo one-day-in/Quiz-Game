@@ -2,6 +2,7 @@ import { escapeHtml } from '../utils/utils.js';
 import QRCode from 'qrcode';
 import { t, withLanguageParam } from '../i18n.js';
 import { getActiveBuzzerUrl } from '../utils/localBuzzerUrl.js';
+import { createOverlayController } from '../utils/OverlayController.js';
 
 function resolveCurrentPlayer(players = [], currentPlayerId = null) {
   return (Array.isArray(players) ? players : []).find((player) => String(player?.id) === String(currentPlayerId)) || null;
@@ -113,6 +114,8 @@ export function HeaderView({
   const qrButtons = Array.from(el.querySelectorAll('.hdr-settings-qrBtn'));
   let hostQrDataUrl = '';
   let playerQrDataUrl = '';
+  let settingsOverlayController = null;
+  let qrOverlayController = null;
 
   function closeChooserMenu() {
     isChooserMenuOpen = false;
@@ -200,7 +203,6 @@ export function HeaderView({
     if (target.closest('.hdr-qrOverlay')) return;
     if (target.closest('.qmodal--scoreLogs') || target.closest('.leaderboard-panel__logsModalContent')) return;
     if (isChooserMenuOpen && !target.closest('.hdr-current-player')) closeChooserMenu();
-    if (isSettingsOpen && !target.closest('.hdr-settings-menu') && !target.closest('.hdr-settings-btn')) closeSettingsMenu();
   }
 
   function handleDocumentKeyDown(event) {
@@ -242,13 +244,18 @@ export function HeaderView({
       return;
     }
   });
-  settingsOverlayEl?.addEventListener('click', (event) => {
-    const target = event.target;
-    if (!(target instanceof Element)) return;
-    if (target.closest('.hdr-settings-menu')) return;
-    closeSettingsMenu();
+  settingsOverlayController = createOverlayController({
+    overlay: settingsOverlayEl,
+    panel: settingsMenuEl,
+    isOpen: () => isSettingsOpen,
+    onRequestClose: () => closeSettingsMenu(),
   });
-  qrOverlayEl?.addEventListener('click', () => hideQrOverlay());
+  qrOverlayController = createOverlayController({
+    overlay: qrOverlayEl,
+    panel: el.querySelector('.hdr-qrOverlayCard'),
+    isOpen: () => !qrOverlayEl?.hidden,
+    onRequestClose: () => hideQrOverlay(),
+  });
   el.querySelector('.hdr-lobby-btn')?.addEventListener('click', () => onBackToLobby?.());
   el.querySelector('.round-indicator').addEventListener('click', () => onRoundClick?.());
   document.addEventListener('pointerdown', handleDocumentPointerDown);
@@ -305,6 +312,8 @@ export function HeaderView({
     update,
     destroy() {
       hideQrOverlay();
+      settingsOverlayController?.destroy?.();
+      qrOverlayController?.destroy?.();
       document.removeEventListener('pointerdown', handleDocumentPointerDown);
       document.removeEventListener('keydown', handleDocumentKeyDown);
     },

@@ -1,8 +1,8 @@
 import QRCode from 'qrcode';
 import { LeaderboardGridView } from './LeaderboardGridView.js';
 import { ViewDisposer } from '../utils/disposer.js';
-import { bindOverlayDismiss } from '../utils/overlayDismiss.js';
 import { createModalController } from '../utils/ModalController.js';
+import { createOverlayController } from '../utils/OverlayController.js';
 import { t, withLanguageParam } from '../i18n.js';
 import { getActiveBuzzerUrl } from '../utils/localBuzzerUrl.js';
 import { escapeHtml } from '../utils/utils.js';
@@ -35,7 +35,6 @@ export class LeaderboardPanelView {
     this._readOnly = !!readOnly;
     this._showQr = !!showQr;
     this._isExpanded = false;
-    this._overlayHideTimer = null;
     this._openQrDock = null;
     this._selectedPlayerId = null;
     this._isScoreLogsOpen = false;
@@ -46,6 +45,16 @@ export class LeaderboardPanelView {
     this._buildScoreLogsModal();
     this._buildScoreBar();
     this._wire();
+    this._overlayController = createOverlayController({
+      overlay: this._overlay,
+      panel: this._root.querySelector('.leaderboard-panel__shell'),
+      isOpen: () => this._isExpanded,
+      onRequestClose: () => {
+        this._setQrOpen(null);
+        this.setScoreLogsOpen(false, { silent: true });
+        this.setExpanded(false);
+      },
+    });
     this.updatePlayers(this._players);
   }
 
@@ -90,21 +99,8 @@ export class LeaderboardPanelView {
     const isExpanded = !!nextExpanded;
     if (this._isExpanded === isExpanded) return;
 
-    window.clearTimeout(this._overlayHideTimer);
-    this._overlayHideTimer = null;
-    if (isExpanded && this._overlay) {
-      this._overlay.hidden = false;
-    }
-
     this._isExpanded = isExpanded;
     this._root.classList.toggle('is-expanded', isExpanded);
-    if (!isExpanded && this._overlay) {
-      this._overlayHideTimer = window.setTimeout(() => {
-        if (this._isExpanded || !this._overlay) return;
-        this._overlay.hidden = true;
-        this._overlayHideTimer = null;
-      }, 240);
-    }
     if (this._dockBtn) this._dockBtn.setAttribute('aria-expanded', String(isExpanded));
     this._toggleChevron.classList.toggle('is-down', isExpanded);
     this._toggleBtn.setAttribute('aria-expanded', String(isExpanded));
@@ -133,8 +129,8 @@ export class LeaderboardPanelView {
   }
 
   destroy() {
-    window.clearTimeout(this._overlayHideTimer);
-    this._overlayHideTimer = null;
+    this._overlayController?.destroy?.();
+    this._overlayController = null;
     this._scoreLogsModal?.destroy?.();
     this._scoreLogsModal = null;
     this._fullView?.destroy?.();
@@ -164,7 +160,7 @@ export class LeaderboardPanelView {
         <span class="leaderboard-panel__dockSummary">${t('players')}</span>
       </button>
 
-      <div class="leaderboard-panel__overlay" hidden>
+      <div class="leaderboard-panel__overlay">
         <div class="leaderboard-panel__backdrop"></div>
         <section class="leaderboard-panel__shell" aria-label="${t('leaderboard')}">
           <div class="leaderboard-panel__headerBar">
@@ -404,16 +400,6 @@ export class LeaderboardPanelView {
       event.stopPropagation();
     }, true);
 
-    bindOverlayDismiss({
-      disposer: this._disposer,
-      overlay: this._backdrop,
-      onDismiss: () => {
-        this._setQrOpen(null);
-        this.setScoreLogsOpen(false, { silent: true });
-        this.setExpanded(false);
-      },
-      shouldDismissOnEscape: () => this._isExpanded,
-    });
   }
 
   _renderScoreLogs() {
