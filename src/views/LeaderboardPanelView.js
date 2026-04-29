@@ -571,36 +571,36 @@ export class LeaderboardPanelView {
       const scoreEl = card.querySelector('.leaderboard-panel__dockScore');
 
       if (rankEl) {
+        rankEl.style.fontSize = '';
         fitTextToBox(rankEl, rankEl, {
           widthRatio: 0.86,
           heightRatio: 0.66,
-          minSize: 10,
-          step: 0.5,
-          noWrap: true,
-          startFromComputedSize: true,
-          respectMinSizeOnStart: true,
-        });
-      }
-      if (nameEl) {
-        fitTextToBox(nameEl, nameEl, {
-          widthRatio: 0.98,
-          heightRatio: 0.78,
-          minSize: 10,
-          step: 0.5,
-          noWrap: true,
-          startFromComputedSize: true,
-          respectMinSizeOnStart: true,
-        });
-      }
-      if (scoreEl) {
-        fitTextToBox(scoreEl, scoreEl, {
-          widthRatio: 0.96,
-          heightRatio: 0.80,
           minSize: 12,
           step: 0.5,
           noWrap: true,
           startFromComputedSize: true,
-          respectMinSizeOnStart: true,
+        });
+      }
+      if (nameEl) {
+        nameEl.style.fontSize = '';
+        fitTextToBox(nameEl, nameEl, {
+          widthRatio: 0.98,
+          heightRatio: 0.78,
+          minSize: 12,
+          step: 0.5,
+          noWrap: true,
+          startFromComputedSize: true,
+        });
+      }
+      if (scoreEl) {
+        scoreEl.style.fontSize = '';
+        fitTextToBox(scoreEl, scoreEl, {
+          widthRatio: 0.96,
+          heightRatio: 0.80,
+          minSize: 14,
+          step: 0.5,
+          noWrap: true,
+          startFromComputedSize: true,
         });
       }
     }
