@@ -139,7 +139,7 @@
 }
 
 .hdr-current-player--center {
-  width: min(460px, 62vw);
+  width: 100%;
   max-width: 100%;
 }
 
@@ -175,6 +175,7 @@
   width: 100%;
   min-height: 62px;
   min-width: 0;
+  max-width: 100%;
 }
 
 .hdr-current-player-btn--center .js-current-player-value {
@@ -728,6 +729,11 @@
   .hdr-current-player-btn {
     min-width: 180px;
     max-width: 34vw;
+  }
+
+  .hdr-current-player-btn--center {
+    min-width: 0;
+    max-width: 100%;
   }
 
   .hdr-current-player-menu {
