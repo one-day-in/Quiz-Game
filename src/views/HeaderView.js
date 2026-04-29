@@ -66,23 +66,26 @@ export function HeaderView({
             <path d="M19.5 12a7.5 7.5 0 0 0-.12-1.31l2.02-1.57-1.92-3.32-2.45.72a7.67 7.67 0 0 0-2.27-1.31L14.25 2h-4.5l-.51 3.21a7.67 7.67 0 0 0-2.27 1.31l-2.45-.72-1.92 3.32 2.02 1.57A7.5 7.5 0 0 0 4.5 12c0 .45.04.89.12 1.31L2.6 14.88l1.92 3.32 2.45-.72c.69.56 1.45 1 2.27 1.31L9.75 22h4.5l.51-3.21c.82-.31 1.58-.75 2.27-1.31l2.45.72 1.92-3.32-2.02-1.57c.08-.42.12-.86.12-1.31Z"/>
           </svg>
         </button>
-        <div class="hdr-settings-menu" hidden>
-          ${canToggleGameMode ? `
-          <button class="hdr-settings-item js-settings-mode" type="button"></button>
-          ` : ''}
-          ${canShowQr ? `
-          <div class="hdr-settings-qrRow">
-            <button class="hdr-settings-qrBtn" type="button" data-action="host-qr" title="${escapeHtml(t('connect_host'))}" aria-label="${escapeHtml(t('connect_host'))}">
-              <span>${escapeHtml(t('connect_host'))}</span>
-            </button>
-            <button class="hdr-settings-qrBtn" type="button" data-action="player-qr" title="${escapeHtml(t('connect_player'))}" aria-label="${escapeHtml(t('connect_player'))}">
-              <span>${escapeHtml(t('connect_player'))}</span>
-            </button>
+        <div class="hdr-settings-overlay" hidden>
+          <div class="hdr-settings-overlayBackdrop"></div>
+          <div class="hdr-settings-menu" role="dialog" aria-label="${escapeHtml(t('settings'))}">
+            ${canToggleGameMode ? `
+            <button class="hdr-settings-item js-settings-mode" type="button"></button>
+            ` : ''}
+            ${canShowQr ? `
+            <div class="hdr-settings-qrRow">
+              <button class="hdr-settings-qrBtn" type="button" data-action="host-qr" title="${escapeHtml(t('connect_host'))}" aria-label="${escapeHtml(t('connect_host'))}">
+                <span>${escapeHtml(t('connect_host'))}</span>
+              </button>
+              <button class="hdr-settings-qrBtn" type="button" data-action="player-qr" title="${escapeHtml(t('connect_player'))}" aria-label="${escapeHtml(t('connect_player'))}">
+                <span>${escapeHtml(t('connect_player'))}</span>
+              </button>
+            </div>
+            ` : ''}
+            ${canOpenScoreLogs ? `
+            <button class="hdr-settings-item" type="button" data-action="logs">${escapeHtml(t('score_logs'))}</button>
+            ` : ''}
           </div>
-          ` : ''}
-          ${canOpenScoreLogs ? `
-          <button class="hdr-settings-item" type="button" data-action="logs">${escapeHtml(t('score_logs'))}</button>
-          ` : ''}
         </div>
       </div>
     </div>
@@ -101,6 +104,7 @@ export function HeaderView({
   const chooserMenuEl = el.querySelector('.hdr-current-player-menu');
   const chooserListEl = el.querySelector('.hdr-current-player-list');
   const settingsBtnEl = el.querySelector('.hdr-settings-btn');
+  const settingsOverlayEl = el.querySelector('.hdr-settings-overlay');
   const settingsMenuEl = el.querySelector('.hdr-settings-menu');
   const settingsModeBtnEl = el.querySelector('.js-settings-mode');
   const qrOverlayEl = el.querySelector('.hdr-qrOverlay');
@@ -123,16 +127,16 @@ export function HeaderView({
   }
 
   function closeSettingsMenu() {
-    if (!settingsBtnEl || !settingsMenuEl) return;
+    if (!settingsBtnEl || !settingsMenuEl || !settingsOverlayEl) return;
     isSettingsOpen = false;
-    settingsMenuEl.hidden = true;
+    settingsOverlayEl.hidden = true;
     settingsBtnEl.setAttribute('aria-expanded', 'false');
   }
 
   function openSettingsMenu() {
-    if (!settingsBtnEl || !settingsMenuEl) return;
+    if (!settingsBtnEl || !settingsMenuEl || !settingsOverlayEl) return;
     isSettingsOpen = true;
-    settingsMenuEl.hidden = false;
+    settingsOverlayEl.hidden = false;
     settingsBtnEl.setAttribute('aria-expanded', 'true');
   }
 
@@ -196,7 +200,7 @@ export function HeaderView({
     if (target.closest('.hdr-qrOverlay')) return;
     if (target.closest('.qmodal--scoreLogs') || target.closest('.leaderboard-panel__logsModalContent')) return;
     if (isChooserMenuOpen && !target.closest('.hdr-current-player')) closeChooserMenu();
-    if (isSettingsOpen && !target.closest('.hdr-settings')) closeSettingsMenu();
+    if (isSettingsOpen && !target.closest('.hdr-settings-menu') && !target.closest('.hdr-settings-btn')) closeSettingsMenu();
   }
 
   function handleDocumentKeyDown(event) {
@@ -237,6 +241,12 @@ export function HeaderView({
       onScoreLogsClick?.();
       return;
     }
+  });
+  settingsOverlayEl?.addEventListener('click', (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    if (target.closest('.hdr-settings-menu')) return;
+    closeSettingsMenu();
   });
   qrOverlayEl?.addEventListener('click', () => hideQrOverlay());
   el.querySelector('.hdr-lobby-btn')?.addEventListener('click', () => onBackToLobby?.());

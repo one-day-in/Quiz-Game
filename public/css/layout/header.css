@@ -261,6 +261,24 @@
   position: relative;
 }
 
+.hdr-settings-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3600;
+}
+
+.hdr-settings-overlay[hidden] {
+  display: none !important;
+}
+
+.hdr-settings-overlayBackdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.62);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
 .hdr-settings-btn {
   width: 44px;
   min-width: 44px;
@@ -294,10 +312,10 @@
 }
 
 .hdr-settings-menu {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  z-index: 30;
+  position: fixed;
+  top: calc(var(--header-h) + 8px);
+  right: 16px;
+  z-index: 1;
   width: 20vw;
   height: 80vh;
   padding: 10px;
@@ -309,10 +327,6 @@
   flex-direction: column;
   gap: 8px;
   overflow-y: auto;
-}
-
-.hdr-settings-menu[hidden] {
-  display: none !important;
 }
 
 .hdr-settings-item {
