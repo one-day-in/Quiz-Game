@@ -54,7 +54,7 @@
   content: "⌃";
   position: absolute;
   left: 50%;
-  top: 50%;
+  top: 40%;
   transform: translate(-50%, -38%);
   opacity: 0;
   font-size: clamp(20px, 2.2vw, 30px);
