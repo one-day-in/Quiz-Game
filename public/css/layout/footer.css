@@ -46,12 +46,15 @@
 }
 
 .leaderboard-panel__dockList {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
+  align-items: stretch;
 }
 
 .leaderboard-panel__dockItem {
+  flex: 1 1 0;
+  min-width: 0;
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
@@ -115,14 +118,14 @@
 }
 
 @media (max-width: 1200px) {
-  .leaderboard-panel__dockList {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  .leaderboard-panel__dockItem {
+    flex-basis: calc((100% - 16px) / 3);
   }
 }
 
 @media (max-width: 760px) {
-  .leaderboard-panel__dockList {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .leaderboard-panel__dockItem {
+    flex-basis: calc((100% - 8px) / 2);
   }
 }
 
