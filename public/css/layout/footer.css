@@ -34,6 +34,7 @@
 }
 
 .leaderboard-panel--overlayV2 .leaderboard-panel__dockTitle {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -46,6 +47,35 @@
   text-transform: uppercase;
   border-bottom: 1px solid var(--border-1);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+  transition: opacity 140ms var(--ease), transform 140ms var(--ease);
+}
+
+.leaderboard-panel--overlayV2 .leaderboard-panel__dockTitle::after {
+  content: "⌃";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -38%);
+  opacity: 0;
+  font-size: clamp(20px, 2.2vw, 30px);
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.96);
+  text-shadow:
+    0 0 10px rgba(255, 255, 255, 0.28),
+    0 0 24px rgba(255, 255, 255, 0.18);
+  transition: opacity 140ms var(--ease), transform 140ms var(--ease);
+}
+
+.leaderboard-panel--overlayV2 .leaderboard-panel__dock:hover .leaderboard-panel__dockTitle {
+  color: transparent;
+  text-shadow: none;
+  transform: translateY(-4px);
+}
+
+.leaderboard-panel--overlayV2 .leaderboard-panel__dock:hover .leaderboard-panel__dockTitle::after {
+  opacity: 1;
+  transform: translate(-50%, -50%);
+  animation: leaderboardChevronPulse 900ms ease-in-out infinite;
 }
 
 .leaderboard-panel--overlayV2 .leaderboard-panel__dockSummary {
