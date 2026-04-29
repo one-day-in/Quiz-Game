@@ -25,24 +25,34 @@
   color: var(--text);
   box-shadow: var(--shadow-sm);
   display: grid;
-  gap: 8px;
-  align-content: center;
-  justify-items: center;
-  padding: 14px 18px;
+  grid-template-rows: auto 1fr;
+  gap: 0;
+  align-content: stretch;
+  justify-items: stretch;
   text-align: center;
   cursor: pointer;
 }
 
 .leaderboard-panel--overlayV2 .leaderboard-panel__dockTitle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 42px;
+  padding: 0 14px;
   font-family: var(--font-display);
   font-size: clamp(20px, 2.3vw, 30px);
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  border-bottom: 1px solid var(--border-1);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
 }
 
 .leaderboard-panel--overlayV2 .leaderboard-panel__dockSummary {
   width: min(1200px, 100%);
   max-width: 100%;
+  padding: 8px 12px 10px;
+  box-sizing: border-box;
 }
 
 .leaderboard-panel__dockList {
