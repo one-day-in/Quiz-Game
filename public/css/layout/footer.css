@@ -6,6 +6,85 @@
   z-index: 20;
 }
 
+.leaderboard-panel--overlayV2 {
+  flex: 0 0 auto;
+  height: auto;
+  min-height: 0;
+}
+
+.leaderboard-panel--overlayV2 .leaderboard-panel__dock {
+  width: 100%;
+  min-height: var(--footer-preview-h);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-1);
+  background: linear-gradient(180deg, var(--surface), var(--surface-3));
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+  display: grid;
+  gap: 8px;
+  align-content: center;
+  justify-items: center;
+  padding: 14px 18px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.leaderboard-panel--overlayV2 .leaderboard-panel__dockTitle {
+  font-family: var(--font-display);
+  font-size: clamp(20px, 2.3vw, 30px);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.leaderboard-panel--overlayV2 .leaderboard-panel__dockSummary {
+  font-family: var(--font-label);
+  font-size: clamp(12px, 1.4vw, 16px);
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.leaderboard-panel--overlayV2 .leaderboard-panel__overlay[hidden] {
+  display: none;
+}
+
+.leaderboard-panel--overlayV2 .leaderboard-panel__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+}
+
+.leaderboard-panel--overlayV2 .leaderboard-panel__backdrop {
+  z-index: 0;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.leaderboard-panel--overlayV2 .leaderboard-panel__shell {
+  position: fixed;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  width: min(1600px, calc(100vw - 24px));
+  height: var(--leaderboard-panel-expanded-h);
+  right: auto;
+  z-index: 1;
+}
+
+.leaderboard-panel--overlayV2 .leaderboard-panel__expanded {
+  display: block;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.leaderboard-panel--overlayV2 .leaderboard-panel__toggle {
+  min-height: 62px;
+  padding: 16px 20px;
+}
+
 .leaderboard-panel.is-expanded {
   z-index: 5000;
 }

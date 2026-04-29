@@ -56,12 +56,11 @@ export class LeaderboardPanelView {
     const scoreChanges = this._collectScoreChanges(this._players, players);
     this._players = Array.isArray(players) ? players : [];
     this._syncSelectedPlayer();
-    this._previewView?.update?.(this._players);
     this._fullView?.update?.(this._players);
     this._fullView?.setSelectedPlayerId?.(this._selectedPlayerId);
     this._renderSelectionState();
+    this._renderDockSummary();
     for (const change of scoreChanges) {
-      this._previewView?.pulseScoreChange?.(change.playerId, change.delta);
       this._fullView?.pulseScoreChange?.(change.playerId, change.delta);
     }
   }
@@ -92,6 +91,8 @@ export class LeaderboardPanelView {
 
     this._isExpanded = isExpanded;
     this._root.classList.toggle('is-expanded', isExpanded);
+    if (this._overlay) this._overlay.hidden = !isExpanded;
+    if (this._dockBtn) this._dockBtn.setAttribute('aria-expanded', String(isExpanded));
     this._toggleChevron.classList.toggle('is-down', isExpanded);
     this._toggleBtn.setAttribute('aria-expanded', String(isExpanded));
     this._toggleBtn.setAttribute('aria-label', isExpanded ? t('close') : t('show_all_players'));
@@ -121,9 +122,7 @@ export class LeaderboardPanelView {
   destroy() {
     this._scoreLogsModal?.destroy?.();
     this._scoreLogsModal = null;
-    this._previewView?.destroy?.();
     this._fullView?.destroy?.();
-    this._previewView = null;
     this._fullView = null;
     this._disposer?.destroy();
     this._root?.remove();
@@ -133,15 +132,27 @@ export class LeaderboardPanelView {
   _build() {
     const root = document.createElement('footer');
     root.className = 'app-footer leaderboard-panel';
+    root.classList.add('leaderboard-panel--overlayV2');
     if (!this._showQr) {
       root.classList.add('leaderboard-panel--noQr');
     }
 
     root.innerHTML = `
-      <div class="leaderboard-panel__backdrop"></div>
+      <button
+        class="leaderboard-panel__dock"
+        type="button"
+        aria-expanded="false"
+        aria-label="${t('show_all_players')}"
+        title="${t('show_all_players')}"
+      >
+        <span class="leaderboard-panel__dockTitle">${t('leaderboard')}</span>
+        <span class="leaderboard-panel__dockSummary">${t('players')}</span>
+      </button>
 
-      <section class="leaderboard-panel__shell" aria-label="${t('leaderboard')}">
-        <div class="leaderboard-panel__headerBar">
+      <div class="leaderboard-panel__overlay" hidden>
+        <div class="leaderboard-panel__backdrop"></div>
+        <section class="leaderboard-panel__shell" aria-label="${t('leaderboard')}">
+          <div class="leaderboard-panel__headerBar">
           <button
             class="leaderboard__header leaderboard-panel__toggle"
             type="button"
@@ -206,14 +217,10 @@ export class LeaderboardPanelView {
             </div>
           </div>
           ` : ''}
-        </div>
+          </div>
 
-        <div class="leaderboard-panel__preview">
-          <div class="leaderboard-panel__previewMount"></div>
-        </div>
-
-        <div class="leaderboard-panel__expanded">
-          <div class="leaderboard-panel__expandedInner">
+          <div class="leaderboard-panel__expanded is-open">
+            <div class="leaderboard-panel__expandedInner">
             <section class="leaderboard-panel__section leaderboard-panel__section--board">
               <div class="leaderboard-panel__boardMount"></div>
             </section>
@@ -227,29 +234,25 @@ export class LeaderboardPanelView {
                 <div class="leaderboard-panel__scoreBar" role="group" aria-label="${t('manage_score')}"></div>
               </div>
             </section>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
     `;
 
     this._root = root;
+    this._dockBtn = root.querySelector('.leaderboard-panel__dock');
+    this._dockSummary = root.querySelector('.leaderboard-panel__dockSummary');
+    this._overlay = root.querySelector('.leaderboard-panel__overlay');
     this._backdrop = root.querySelector('.leaderboard-panel__backdrop');
     this._toggleBtn = root.querySelector('.leaderboard-panel__toggle');
     this._toggleChevron = root.querySelector('.leaderboard-panel__titleChevron');
     this._qrDocks = Array.from(root.querySelectorAll('.leaderboard-panel__qrDock'));
-    this._previewMount = root.querySelector('.leaderboard-panel__previewMount');
     this._boardMount = root.querySelector('.leaderboard-panel__boardMount');
     this._selectionText = root.querySelector('.leaderboard-panel__selectionText');
     this._scoreBar = root.querySelector('.leaderboard-panel__scoreBar');
     this._playerQrImg = root.querySelector('.leaderboard-panel__playerQrImg');
     this._hostQrImg = root.querySelector('.leaderboard-panel__hostQrImg');
-
-    this._previewView = LeaderboardGridView({
-      players: this._players,
-      variant: 'footer',
-      showHeader: false,
-    });
-    this._previewMount.appendChild(this._previewView);
 
     this._fullView = LeaderboardGridView({
       players: this._players,
@@ -263,6 +266,7 @@ export class LeaderboardPanelView {
 
     void this._generateQr();
     this._renderScoreLogs();
+    this._renderDockSummary();
   }
 
   _buildScoreLogsModal() {
@@ -330,7 +334,8 @@ export class LeaderboardPanelView {
   }
 
   _wire() {
-    this._disposer.addEventListener(this._toggleBtn, 'click', () => this.toggleExpanded());
+    this._disposer.addEventListener(this._dockBtn, 'click', () => this.toggleExpanded());
+    this._disposer.addEventListener(this._toggleBtn, 'click', () => this.setExpanded(false));
     this._disposer.addEventListener(this._backdrop, 'pointerdown', (event) => {
       if (!this._isExpanded) return;
       event.preventDefault();
@@ -485,6 +490,21 @@ export class LeaderboardPanelView {
         button.disabled = this._readOnly || !selectedPlayer;
       }
     }
+  }
+
+  _renderDockSummary() {
+    if (!this._dockSummary) return;
+    if (!Array.isArray(this._players) || !this._players.length) {
+      this._dockSummary.textContent = t('no_players_available');
+      return;
+    }
+    const summary = this._players
+      .slice()
+      .sort((a, b) => (Number(b?.score) || 0) - (Number(a?.score) || 0))
+      .slice(0, 4)
+      .map((player) => `${player?.name || t('player_fallback')}: ${Number(player?.score) || 0}`)
+      .join(' · ');
+    this._dockSummary.textContent = summary;
   }
 
   _collectScoreChanges(prevPlayers = [], nextPlayers = []) {
