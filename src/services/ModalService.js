@@ -4,7 +4,9 @@ import { showConfirm } from '../utils/confirm.js';
 import { adjustPlayerScore, resolveGamePress, resolveGamePressTimeout } from '../api/gameApi.js';
 import { t } from '../i18n.js';
 
-const PRESS_RESPONSE_SECONDS = 30;
+const FALLBACK_PRESS_RESPONSE_SECONDS = Number(import.meta?.env?.VITE_PRESS_RESPONSE_SECONDS) > 0
+  ? Number(import.meta.env.VITE_PRESS_RESPONSE_SECONDS)
+  : 30;
 const PRESS_OPEN_RETRY_ATTEMPTS = 3;
 const PRESS_OPEN_RETRY_DELAY_MS = 220;
 
@@ -532,7 +534,7 @@ export class ModalService {
     this.view?.updatePressTimer?.(secondsRemaining);
   }
 
-  _startPressCountdown(durationMs = PRESS_RESPONSE_SECONDS * 1000) {
+  _startPressCountdown(durationMs = FALLBACK_PRESS_RESPONSE_SECONDS * 1000) {
     if (!this._pressWinnerId || this._isResolvingPressResult) return;
     if (this._pressCountdownTimer) return;
 
@@ -600,7 +602,7 @@ export class ModalService {
 
     const pressedAtMs = Date.parse(runtime?.pressedAt || '');
     if (Number.isFinite(pressedAtMs) && pressedAtMs > 0) {
-      return pressedAtMs + (PRESS_RESPONSE_SECONDS * 1000);
+      return pressedAtMs + (FALLBACK_PRESS_RESPONSE_SECONDS * 1000);
     }
     return 0;
   }
