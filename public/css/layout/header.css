@@ -373,6 +373,13 @@
   background: linear-gradient(180deg, rgba(15, 23, 42, 0.76), rgba(2, 6, 23, 0.84));
 }
 
+.hdr-settings-logsHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
 .hdr-settings-logsTitle {
   margin: 0;
   font-family: var(--font-label);
@@ -381,6 +388,39 @@
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--muted);
+}
+
+.hdr-settings-logsClearBtn {
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-2);
+  background: rgba(239, 68, 68, 0.14);
+  color: #fecaca;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    transform var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease),
+    filter var(--t-fast) var(--ease);
+}
+
+.hdr-settings-logsClearBtn:hover {
+  transform: translateY(calc(-1 * (var(--lift-y) / 3)));
+  border-color: rgba(248, 113, 113, 0.62);
+  filter: brightness(1.06);
+}
+
+.hdr-settings-logsClearBtn:active {
+  transform: translateY(var(--btn-press-y));
+}
+
+.hdr-settings-logsClearBtn:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
 }
 
 .hdr-settings-logsListWrap {

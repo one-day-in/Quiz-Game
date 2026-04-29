@@ -24,6 +24,7 @@ export function AppView({
   onLeaderboardExpandedChange = null,
   onScoreLogsOpenChange = null,
   onGameModeToggle = null,
+  onClearScoreLogs = null,
 }) {
   const container = document.createElement('div');
   container.className = 'app-shell';
@@ -59,6 +60,7 @@ export function AppView({
     onRoundClick,
     onCurrentPlayerChange: (isReadOnly && !allowCurrentPlayerControl) ? null : (playerId) => actions.setCurrentPlayer?.(playerId),
     onGameModeToggle: isReadOnly ? null : onGameModeToggle,
+    onClearScoreLogs: isReadOnly ? null : onClearScoreLogs,
   });
   container.appendChild(header.el);
   disposer.add(() => header.destroy?.());

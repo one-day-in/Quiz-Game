@@ -25,6 +25,7 @@ export function createAppController({
   onScoreLogsOpenChange = null,
   onRoundChangeRequest = null,
   onGameModeChange = null,
+  onClearScoreLogs = null,
 }) {
   let appViewRef = null; // { el, update } — kept alive across state changes
   const disposer = new Disposer();
@@ -168,6 +169,7 @@ export function createAppController({
           }
           gameService.setGameMode?.(nextMode);
         },
+        onClearScoreLogs,
       });
       root.appendChild(appViewRef.el);
       return;

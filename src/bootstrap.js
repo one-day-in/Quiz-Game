@@ -1,7 +1,7 @@
 // src/bootstrap.js
 import { getSession, signOut, onAuthStateChange } from './api/authApi.js';
 import { createGame, subscribeToGame } from './api/gameApi.js';
-import { insertScoreLog, listScoreLogs, subscribeToScoreLogs } from './api/scoreLogsApi.js';
+import { clearScoreLogs, insertScoreLog, listScoreLogs, subscribeToScoreLogs } from './api/scoreLogsApi.js';
 import { syncCurrentUserProfile } from './api/profileApi.js';
 import { escapeHtml } from './utils/utils.js';
 import { createAppController } from './AppController.js';
@@ -327,6 +327,12 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
             }
             return nextEntry;
         };
+        const clearAllScoreLogs = async () => {
+            if (hostMode !== 'host') return;
+            await clearScoreLogs(gameId);
+            setScoreLogs([]);
+            void hostControlChannel.send('score_log_snapshot', { logs: [] });
+        };
         const makeManualScoreLog = ({ playerId, delta }) => {
             const players = playersService.getPlayers?.() || [];
             const player = players.find((entry) => String(entry?.id || '') === String(playerId || ''));
@@ -622,6 +628,13 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
                 modalService.setGameMode(nextMode);
                 void hostControlChannel.send('game_mode_state', { gameMode: nextMode });
             },
+            onClearScoreLogs: async () => {
+                if (hostMode === 'controller') {
+                    void hostControlChannel.send('score_logs_clear_request');
+                    return;
+                }
+                await clearAllScoreLogs();
+            },
         });
         appRef = app;
         modalService.setGameMode(gameService.getState()?.uiState?.gameMode || 'play');
@@ -817,6 +830,13 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
 
             if (type === 'score_logs_sync_request' && hostMode === 'host') {
                 void hostControlChannel.send('score_logs_state', { isOpen: !!scoreLogsOpen });
+                return;
+            }
+
+            if (type === 'score_logs_clear_request' && hostMode === 'host') {
+                void clearAllScoreLogs().catch((error) => {
+                    console.warn('[Bootstrap] score logs clear skipped:', error?.message || error);
+                });
                 return;
             }
 

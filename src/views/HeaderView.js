@@ -46,6 +46,7 @@ export function HeaderView({
   onRoundClick,
   onCurrentPlayerChange,
   onGameModeToggle,
+  onClearScoreLogs,
 }) {
   const el = document.createElement('header');
   el.className = 'app-header';
@@ -112,7 +113,12 @@ export function HeaderView({
             </div>
             ` : ''}
             <section class="hdr-settings-logs" aria-label="${escapeHtml(t('score_logs'))}">
-              <p class="hdr-settings-logsTitle">${escapeHtml(t('score_logs'))}</p>
+              <div class="hdr-settings-logsHead">
+                <p class="hdr-settings-logsTitle">${escapeHtml(t('score_logs'))}</p>
+                <button class="hdr-settings-logsClearBtn" type="button" data-action="clear-score-logs" title="${escapeHtml(t('clear_score_logs'))}" aria-label="${escapeHtml(t('clear_score_logs'))}">
+                  ${escapeHtml(t('clear'))}
+                </button>
+              </div>
               <div class="hdr-settings-logsListWrap">
                 <div class="hdr-settings-logsList"></div>
                 <div class="hdr-settings-logsSpacer" aria-hidden="true"></div>
@@ -261,9 +267,9 @@ export function HeaderView({
         <p class="leaderboard-panel__logSub">
           <span class="leaderboard-panel__logReason">
             ${escapeHtml(meta.reasonText)}
-            ${meta.deltaText ? `<span class="hdr-settings-logDelta ${meta.deltaClass}">${escapeHtml(meta.deltaText)}</span>` : ''}
             ${meta.outcomeType === 'correct' ? '<span class="leaderboard-panel__logOutcomeMark is-correct" aria-label="Correct" title="Correct">✓</span>' : ''}
             ${meta.outcomeType === 'incorrect' ? '<span class="leaderboard-panel__logOutcomeMark is-incorrect" aria-label="Incorrect" title="Incorrect">✕</span>' : ''}
+            ${meta.deltaText ? `<span class="hdr-settings-logDelta ${meta.deltaClass}">${escapeHtml(meta.deltaText)}</span>` : ''}
           </span>
           ${hasPill ? `
             <span class="leaderboard-panel__logDeltaPill">
@@ -316,6 +322,10 @@ export function HeaderView({
     }
     if (action === 'host-qr' || action === 'player-qr') {
       showQrOverlay(action);
+      return;
+    }
+    if (action === 'clear-score-logs') {
+      onClearScoreLogs?.();
       return;
     }
   });
