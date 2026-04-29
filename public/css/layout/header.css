@@ -942,17 +942,43 @@
   white-space: nowrap;
 }
 
+.leaderboard-panel__logOutcomeMark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 8px;
+  font-weight: 900;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.leaderboard-panel__logOutcomeMark.is-correct {
+  color: #22c55e;
+}
+
+.leaderboard-panel__logOutcomeMark.is-incorrect {
+  color: #ef4444;
+}
+
 .leaderboard-panel__logDeltaPill {
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
   padding: 4px 10px;
   border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.34);
-  background: rgba(148, 163, 184, 0.12);
+  border: 1px solid rgba(234, 179, 8, 0.42);
+  background: rgba(234, 179, 8, 0.16);
   line-height: 1;
   white-space: nowrap;
+  color: rgba(255, 247, 214, 0.95);
+  font-weight: 800;
+}
+
+.leaderboard-panel__logDeltaSep,
+.leaderboard-panel__logRange {
+  color: inherit;
 }
 
 @media (max-width: 1200px) {

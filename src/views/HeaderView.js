@@ -19,14 +19,16 @@ function buildLogMetaParts(entry = {}, { t }) {
   const labelWithoutDelta = hasDelta
     ? rawLabel.replace(/\s*\/\s*[+-]\d+\s*$/u, '').trim()
     : rawLabel;
-  const outcomeText = entry?.outcome
-    ? `, ${entry.outcome === 'correct' ? t('correct') : t('not_correct')}`
-    : '';
-  const reasonText = `${labelWithoutDelta}${outcomeText}`;
+  const outcomeType = entry?.outcome === 'correct'
+    ? 'correct'
+    : entry?.outcome === 'incorrect'
+      ? 'incorrect'
+      : null;
+  const reasonText = `${labelWithoutDelta}`;
   const scoreRangeText = Number.isFinite(Number(entry?.scoreBefore)) && Number.isFinite(Number(entry?.scoreAfter))
     ? `${Number(entry.scoreBefore)}→${Number(entry.scoreAfter)}`
     : '';
-  return { reasonText, deltaText, deltaClass, scoreRangeText };
+  return { reasonText, outcomeType, deltaText, deltaClass, scoreRangeText };
 }
 
 function resolveCurrentPlayer(players = [], currentPlayerId = null) {
@@ -249,7 +251,7 @@ export function HeaderView({
     settingsLogsListEl.innerHTML = currentScoreLogs.map((entry) => {
       const meta = buildLogMetaParts(entry, { t });
       const hasPill = meta.deltaText || meta.scoreRangeText;
-      const pillText = [meta.deltaText, meta.scoreRangeText].filter(Boolean).join(' · ');
+      const hasRange = !!meta.scoreRangeText;
       return `
       <article class="leaderboard-panel__logItem">
         <p class="leaderboard-panel__logTop">
@@ -257,8 +259,18 @@ export function HeaderView({
           <span class="leaderboard-panel__logTime">${escapeHtml(formatLogTime(entry?.happenedAt))}</span>
         </p>
         <p class="leaderboard-panel__logSub">
-          <span class="leaderboard-panel__logReason">${escapeHtml(meta.reasonText)}</span>
-          ${hasPill ? `<span class="leaderboard-panel__logDeltaPill"><span class="hdr-settings-logDelta ${meta.deltaClass}">${escapeHtml(pillText)}</span></span>` : ''}
+          <span class="leaderboard-panel__logReason">
+            ${escapeHtml(meta.reasonText)}
+            ${meta.outcomeType === 'correct' ? '<span class="leaderboard-panel__logOutcomeMark is-correct" aria-label="Correct" title="Correct">✓</span>' : ''}
+            ${meta.outcomeType === 'incorrect' ? '<span class="leaderboard-panel__logOutcomeMark is-incorrect" aria-label="Incorrect" title="Incorrect">✕</span>' : ''}
+          </span>
+          ${hasPill ? `
+            <span class="leaderboard-panel__logDeltaPill">
+              ${meta.deltaText ? `<span class="hdr-settings-logDelta ${meta.deltaClass}">${escapeHtml(meta.deltaText)}</span>` : ''}
+              ${hasRange ? `<span class="leaderboard-panel__logDeltaSep">·</span>` : ''}
+              ${hasRange ? `<span class="leaderboard-panel__logRange">${escapeHtml(meta.scoreRangeText)}</span>` : ''}
+            </span>
+          ` : ''}
         </p>
       </article>
     `;
