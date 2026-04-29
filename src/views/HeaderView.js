@@ -81,6 +81,7 @@ export function HeaderView({
         >
           <span class="hdr-current-player-kicker">${escapeHtml(t('current_player_label'))}</span>
           <strong class="js-current-player-value"></strong>
+          <span class="js-current-player-score"></span>
           <span class="hdr-current-player-caret" aria-hidden="true">▾</span>
         </button>
         <div class="hdr-current-player-menu" hidden>
@@ -139,6 +140,7 @@ export function HeaderView({
 
   const roundValueEl = el.querySelector('.js-round-value');
   const chooserValueEl = el.querySelector('.js-current-player-value');
+  const chooserScoreEl = el.querySelector('.js-current-player-score');
   const chooserBtnEl = el.querySelector('.hdr-current-player-btn');
   const chooserMenuEl = el.querySelector('.hdr-current-player-menu');
   const chooserListEl = el.querySelector('.hdr-current-player-list');
@@ -210,6 +212,7 @@ export function HeaderView({
   function renderChooserSummary() {
     const currentPlayer = resolveCurrentPlayer(currentPlayers, currentChooserId);
     chooserValueEl.textContent = currentPlayer?.name || t('choose_current_player');
+    chooserScoreEl.textContent = currentPlayer ? String(Number(currentPlayer?.points) || 0) : '—';
     chooserBtnEl.classList.toggle('is-unset', !currentPlayer);
   }
 
