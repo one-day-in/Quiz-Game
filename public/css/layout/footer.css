@@ -17,7 +17,7 @@
 
 .leaderboard-panel--overlayV2 .leaderboard-panel__dock {
   width: 100%;
-  min-height: var(--footer-preview-h);
+  min-height: clamp(104px, 12vh, 144px);
   border-radius: 24px 24px 0 0;
   border: 1px solid var(--border-1);
   border-bottom: 0;
@@ -108,7 +108,7 @@
 .leaderboard-panel__dockItem {
   flex: 1 1 0;
   min-width: 0;
-  min-height: 0;
+  min-height: clamp(52px, 6.2vh, 78px);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -125,9 +125,9 @@
 }
 
 .leaderboard-panel__dockRank {
-  flex: 0 0 clamp(28px, 2.2vw, 36px);
-  width: clamp(28px, 2.2vw, 36px);
-  height: clamp(28px, 2.2vw, 36px);
+  flex: 0 0 clamp(34px, 2.8vw, 44px);
+  width: clamp(34px, 2.8vw, 44px);
+  height: clamp(34px, 2.8vw, 44px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -136,7 +136,7 @@
   background: rgba(255, 255, 255, 0.05);
   color: var(--warning);
   font-family: var(--font-numeric);
-  font-size: clamp(12px, 0.9vw, 15px);
+  font-size: clamp(14px, 1.15vw, 18px);
   font-weight: 900;
   letter-spacing: 0.08em;
 }
@@ -154,21 +154,21 @@
   text-align: center;
   color: var(--text);
   font-family: var(--font-display);
-  font-size: clamp(13px, 1vw, 18px);
+  font-size: clamp(15px, 1.25vw, 21px);
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
 .leaderboard-panel__dockName.is-short {
-  font-size: clamp(15px, 1.2vw, 20px);
+  font-size: clamp(17px, 1.45vw, 24px);
 }
 
 .leaderboard-panel__dockName.is-medium {
-  font-size: clamp(13px, 1.05vw, 17px);
+  font-size: clamp(15px, 1.2vw, 20px);
 }
 
 .leaderboard-panel__dockName.is-long {
-  font-size: clamp(11px, 0.9vw, 15px);
+  font-size: clamp(13px, 1.05vw, 17px);
 }
 
 .leaderboard-panel__dockScore {
