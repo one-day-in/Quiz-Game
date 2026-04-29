@@ -43,6 +43,7 @@ export class ModalService {
     this._isResolvingPressResult = false;
     this._isClosing = false;
     this._currentResolutionValue = 0;
+    this._pressAutoResolveBlocked = false;
     this._mediaInteractionUnlocked = this.isControllerMode();
     this._pendingMediaControl = null;
 
@@ -122,6 +123,7 @@ export class ModalService {
     };
     this._cellValue = Number(cellData.value) || 0;
     this._currentResolutionValue = this._cellValue;
+    this._pressAutoResolveBlocked = false;
     if (!this.isControllerMode()) {
       void this._resetPressRuntime();
     }
@@ -267,7 +269,8 @@ export class ModalService {
       onViewStateChange: ({ mode: nextMode, isAnswerShown }) => {
         this._onModalViewStateChange?.({ mode: nextMode, isAnswerShown });
         if (this.isControllerMode()) return;
-        if (nextMode !== 'view' || isAnswerShown) {
+        this._pressAutoResolveBlocked = nextMode !== 'view' || !!isAnswerShown;
+        if (this._pressAutoResolveBlocked) {
           this._pausePressCountdown();
           return;
         }
@@ -364,6 +367,7 @@ export class ModalService {
       this._pressTimerPaused = false;
       this._isResolvingPressResult = false;
       this._currentResolutionValue = 0;
+      this._pressAutoResolveBlocked = false;
       void this._pressRuntime?.closePress?.();
       if (this.container?.isConnected) this.container.innerHTML = '';
       if (hadOpenModal) {
@@ -377,8 +381,9 @@ export class ModalService {
     }
   }
 
-  async _handleIncorrect() {
+  async _handleIncorrect({ source = 'manual' } = {}) {
     if (!this._pressWinnerId || this._isResolvingPressResult) return;
+    if (source === 'timeout' && this._shouldBlockAutoIncorrect()) return;
     this._isResolvingPressResult = true;
     this._clearPressCountdown();
     const resolutionValue = this._getEffectiveResolutionValue();
@@ -501,6 +506,7 @@ export class ModalService {
 
   _resumePressCountdown() {
     if (!this._pressWinnerId || this._isResolvingPressResult) return;
+    if (this._shouldBlockAutoIncorrect()) return;
     if (!this._pressTimerPaused || !this._pressCountdownRemainingMs || this._pressCountdownTimer) return;
     this._pressTimerPaused = false;
     this._startPressCountdown(this._pressCountdownRemainingMs);
@@ -526,15 +532,15 @@ export class ModalService {
 
     this._pressCountdownTimer = setInterval(() => {
       if (!this._pressCountdownDeadline) return;
+      if (this._shouldBlockAutoIncorrect()) {
+        this._pausePressCountdown();
+        return;
+      }
 
       const remainingMs = this._pressCountdownDeadline - Date.now();
       if (remainingMs <= 0) {
         this._clearPressCountdown();
-        if (typeof this.view?.triggerIncorrect === 'function') {
-          this.view.triggerIncorrect();
-        } else {
-          void this._handleIncorrect();
-        }
+        void this._handleIncorrect({ source: 'timeout' });
         return;
       }
 
@@ -568,6 +574,15 @@ export class ModalService {
       this._pressTimerPaused = false;
       this._startPressCountdown();
     }
+  }
+
+  _shouldBlockAutoIncorrect() {
+    if (this._pressAutoResolveBlocked) return true;
+    if (this._isClosing) return true;
+    if (!this.view) return true;
+    if (this.view?._mode !== 'view') return true;
+    if (this.view?._isAnswerShown) return true;
+    return false;
   }
 
   _bindPressRuntime() {

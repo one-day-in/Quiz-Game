@@ -75,6 +75,8 @@ describe('ModalService press reset', () => {
     service.view = {
       updateWinnerName: vi.fn(),
       updatePressTimer: vi.fn(),
+      _mode: 'view',
+      _isAnswerShown: false,
     };
     service._cellValue = 300;
     service._resetPressRuntime = vi.fn().mockResolvedValue(undefined);
@@ -103,6 +105,8 @@ describe('ModalService press reset', () => {
     service.view = {
       updateWinnerName: vi.fn(),
       updatePressTimer: vi.fn(),
+      _mode: 'view',
+      _isAnswerShown: false,
     };
     service._cellValue = 300;
 
@@ -118,6 +122,29 @@ describe('ModalService press reset', () => {
     await vi.advanceTimersByTimeAsync(18000);
 
     expect(adjustPlayerScoreMock).toHaveBeenCalledWith('game-1', 'player-1', -300);
+  });
+
+  it('does not auto-mark incorrect when answer is shown right before timeout', async () => {
+    const gameService = {
+      getGameId: () => 'game-1',
+    };
+    const service = new ModalService(gameService, {}, {});
+    service.view = {
+      updateWinnerName: vi.fn(),
+      updatePressTimer: vi.fn(),
+      _mode: 'view',
+      _isAnswerShown: false,
+    };
+    service._pressWinnerId = 'player-1';
+    service._cellValue = 300;
+
+    service._startPressCountdown(2000);
+    await vi.advanceTimersByTimeAsync(1900);
+
+    service.view._isAnswerShown = true;
+    await vi.advanceTimersByTimeAsync(2000);
+
+    expect(adjustPlayerScoreMock).not.toHaveBeenCalled();
   });
 
   it('ignores stale winner updates while press reset is in flight', () => {
