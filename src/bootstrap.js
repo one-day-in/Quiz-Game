@@ -203,7 +203,11 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
         const gameService = createGameService(repo);
         const playersService = createPlayersService(gameId);
         const mediaService = createMediaService({ repo, gameService });
-        const pressRuntimeService = createPressRuntimeService({ gameId, role: 'host' });
+        const pressRuntimeService = createPressRuntimeService({
+            gameId,
+            role: hostMode === 'controller' ? 'player' : 'host',
+            controllerId: hostMode === 'controller' ? `host-controller-${gameId}` : null,
+        });
         const hostControlChannel = createHostControlChannelService({
             gameId,
             role: hostMode === 'controller' ? 'controller' : 'host',

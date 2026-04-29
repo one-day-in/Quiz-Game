@@ -291,8 +291,15 @@ class SocketPressRuntimeService {
     }
 
     if (message?.type === 'error') {
-      this._pendingHello?.reject?.(new Error(message.error || 'Buzzer socket error'));
-      console.error('[PressRuntimeService] buzzer socket error:', message.error);
+      const errorText = String(message.error || 'Buzzer socket error');
+      this._pendingHello?.reject?.(new Error(errorText));
+      if (errorText.includes('Host access denied')) {
+        this._destroyed = true;
+        this._ws?.close();
+        this._ws = null;
+        this._connectPromise = null;
+      }
+      console.error('[PressRuntimeService] buzzer socket error:', errorText);
     }
   }
 

@@ -31,6 +31,7 @@ export function HeaderView({
   const canToggleGameMode = typeof onGameModeToggle === 'function';
   const canShowQr = !!showQrInSettings && !!gameId;
   let currentGameMode = String(uiState?.gameMode || 'play').toLowerCase() === 'edit' ? 'edit' : 'play';
+  let lastModeLabel = '';
 
   el.innerHTML = `
     <div class="hdr-left">
@@ -172,7 +173,11 @@ export function HeaderView({
     roundValueEl.textContent = String(displayRound + 1);
     currentGameMode = String(ui?.gameMode || currentGameMode || 'play').toLowerCase() === 'edit' ? 'edit' : 'play';
     if (settingsModeBtnEl) {
-      settingsModeBtnEl.textContent = currentGameMode === 'edit' ? t('mode_edit') : t('mode_play');
+      const nextModeLabel = currentGameMode === 'edit' ? t('mode_edit') : t('mode_play');
+      if (nextModeLabel !== lastModeLabel) {
+        settingsModeBtnEl.textContent = nextModeLabel;
+        lastModeLabel = nextModeLabel;
+      }
     }
     el.classList.toggle('app-header--editMode', currentGameMode === 'edit');
 
