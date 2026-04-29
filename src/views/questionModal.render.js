@@ -219,7 +219,9 @@ export function applyModeUI(view, refs) {
 
   // Toggle mode button: shows current mode and what clicking will do
   if (refs.btnToggleMode) {
-    refs.btnToggleMode.textContent = isEdit ? `👁 ${t('view')}` : `✏ ${t('edit')}`;
+    refs.btnToggleMode.textContent = isEdit
+      ? `👁 ${t('modal_preview_play_mode')}`
+      : `✏ ${t('modal_back_to_edit')}`;
     setHidden(refs.btnToggleMode, isController || !view._allowModeToggle);
   }
 
