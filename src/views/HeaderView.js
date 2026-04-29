@@ -69,22 +69,26 @@ export function HeaderView({
           ${canToggleGameMode ? `
           <button class="hdr-settings-item js-settings-mode" type="button"></button>
           ` : ''}
+          ${canShowQr ? `
+          <div class="hdr-settings-qrRow">
+            <button class="hdr-settings-qrBtn" type="button" data-action="host-qr" title="${escapeHtml(t('host_controller'))}" aria-label="${escapeHtml(t('host_controller'))}">
+              <span aria-hidden="true">QR-H</span>
+            </button>
+            <button class="hdr-settings-qrBtn" type="button" data-action="player-qr" title="${escapeHtml(t('join_from_phone'))}" aria-label="${escapeHtml(t('join_from_phone'))}">
+              <span aria-hidden="true">QR-P</span>
+            </button>
+          </div>
+          ` : ''}
           ${canOpenScoreLogs ? `
           <button class="hdr-settings-item" type="button" data-action="logs">${escapeHtml(t('score_logs'))}</button>
           ` : ''}
-          ${canShowQr ? `
-          <div class="hdr-settings-qrSection">
-            <p class="hdr-settings-qrTitle">${escapeHtml(t('host_controller'))}</p>
-            <img class="hdr-settings-qrImg js-host-qr" alt="${escapeHtml(t('host_controller_qr_alt'))}">
-            <p class="hdr-settings-qrHint">${escapeHtml(t('scan_host_qr'))}</p>
-          </div>
-          <div class="hdr-settings-qrSection">
-            <p class="hdr-settings-qrTitle">${escapeHtml(t('join_from_phone'))}</p>
-            <img class="hdr-settings-qrImg js-player-qr" alt="${escapeHtml(t('player_controller_qr_alt'))}">
-            <p class="hdr-settings-qrHint">${escapeHtml(t('scan_player_qr'))}</p>
-          </div>
-          ` : ''}
         </div>
+      </div>
+    </div>
+    <div class="hdr-qrOverlay" hidden>
+      <div class="hdr-qrOverlayBackdrop"></div>
+      <div class="hdr-qrOverlayCard">
+        <img class="hdr-qrOverlayImg" alt="">
       </div>
     </div>
   `;
@@ -97,8 +101,11 @@ export function HeaderView({
   const settingsBtnEl = el.querySelector('.hdr-settings-btn');
   const settingsMenuEl = el.querySelector('.hdr-settings-menu');
   const settingsModeBtnEl = el.querySelector('.js-settings-mode');
-  const hostQrImgEl = el.querySelector('.js-host-qr');
-  const playerQrImgEl = el.querySelector('.js-player-qr');
+  const qrOverlayEl = el.querySelector('.hdr-qrOverlay');
+  const qrOverlayImgEl = el.querySelector('.hdr-qrOverlayImg');
+  const qrButtons = Array.from(el.querySelectorAll('.hdr-settings-qrBtn'));
+  let hostQrDataUrl = '';
+  let playerQrDataUrl = '';
 
   function closeChooserMenu() {
     isChooserMenuOpen = false;
@@ -217,6 +224,16 @@ export function HeaderView({
     if (action === 'logs') onScoreLogsClick?.();
     closeSettingsMenu();
   });
+  for (const btn of qrButtons) {
+    const kind = btn.dataset.action || '';
+    const show = () => showQrOverlay(kind);
+    const hide = () => hideQrOverlay();
+    btn.addEventListener('mouseenter', show);
+    btn.addEventListener('mouseleave', hide);
+    btn.addEventListener('focus', show);
+    btn.addEventListener('blur', hide);
+  }
+  qrOverlayEl?.addEventListener('click', () => hideQrOverlay());
   el.querySelector('.hdr-lobby-btn')?.addEventListener('click', () => onBackToLobby?.());
   el.querySelector('.round-indicator').addEventListener('click', () => onRoundClick?.());
   document.addEventListener('pointerdown', handleDocumentPointerDown);
@@ -226,7 +243,7 @@ export function HeaderView({
   void renderQrs();
 
   async function renderQrs() {
-    if (!canShowQr || !hostQrImgEl || !playerQrImgEl) return;
+    if (!canShowQr) return;
     const playerUrl = new URL(withLanguageParam(`${import.meta.env.BASE_URL}player.html?gameId=${gameId}`), window.location.origin);
     const hostUrl = new URL(withLanguageParam(`${import.meta.env.BASE_URL}host-controller.html?gameId=${gameId}`), window.location.origin);
     const buzzerUrl = getActiveBuzzerUrl();
@@ -235,12 +252,12 @@ export function HeaderView({
       hostUrl.searchParams.set('buzzer', buzzerUrl);
     }
     try {
-      playerQrImgEl.src = await QRCode.toDataURL(playerUrl.toString(), {
+      playerQrDataUrl = await QRCode.toDataURL(playerUrl.toString(), {
         width: 420,
         margin: 2,
         color: { dark: '#f8fafc', light: '#111827' },
       });
-      hostQrImgEl.src = await QRCode.toDataURL(hostUrl.toString(), {
+      hostQrDataUrl = await QRCode.toDataURL(hostUrl.toString(), {
         width: 420,
         margin: 2,
         color: { dark: '#f8fafc', light: '#111827' },
@@ -250,10 +267,26 @@ export function HeaderView({
     }
   }
 
+  function showQrOverlay(kind) {
+    if (!qrOverlayEl || !qrOverlayImgEl) return;
+    const isHost = kind === 'host-qr';
+    const src = isHost ? hostQrDataUrl : playerQrDataUrl;
+    if (!src) return;
+    qrOverlayImgEl.src = src;
+    qrOverlayImgEl.alt = isHost ? t('host_controller_qr_alt') : t('player_controller_qr_alt');
+    qrOverlayEl.hidden = false;
+  }
+
+  function hideQrOverlay() {
+    if (!qrOverlayEl) return;
+    qrOverlayEl.hidden = true;
+  }
+
   return {
     el,
     update,
     destroy() {
+      hideQrOverlay();
       document.removeEventListener('pointerdown', handleDocumentPointerDown);
       document.removeEventListener('keydown', handleDocumentKeyDown);
     },
