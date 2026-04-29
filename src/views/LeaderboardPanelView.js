@@ -492,7 +492,15 @@ export class LeaderboardPanelView {
     const getPlayerScore = (player) => Number(player?.points ?? player?.score) || 0;
     const leaders = this._players
       .slice()
-      .sort((a, b) => getPlayerScore(b) - getPlayerScore(a))
+      .sort((a, b) => {
+        const scoreDelta = getPlayerScore(b) - getPlayerScore(a);
+        if (scoreDelta) return scoreDelta;
+        const nameA = String(a?.name || '').toLocaleLowerCase();
+        const nameB = String(b?.name || '').toLocaleLowerCase();
+        const nameCmp = nameA.localeCompare(nameB, undefined, { sensitivity: 'base' });
+        if (nameCmp) return nameCmp;
+        return String(a?.id || '').localeCompare(String(b?.id || ''));
+      })
       .slice(0, 5)
       .map((player, index) => ({
         rank: index + 1,
