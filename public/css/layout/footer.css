@@ -6,14 +6,20 @@
   z-index: 20;
 }
 
+.leaderboard-panel.is-expanded {
+  z-index: 5000;
+}
+
 .leaderboard-panel__backdrop {
   position: fixed;
   inset: 0;
+  z-index: 0;
   background: var(--modal-overlay, var(--overlay-medium));
   backdrop-filter: blur(10px) saturate(140%);
   -webkit-backdrop-filter: blur(10px) saturate(140%);
   opacity: 0;
   pointer-events: none;
+  touch-action: none;
   transition: opacity 180ms ease-out;
 }
 
@@ -30,6 +36,7 @@
   left: 0;
   right: 0;
   bottom: 0;
+  z-index: 1;
   height: var(--footer-preview-h);
   display: flex;
   flex-direction: column;
