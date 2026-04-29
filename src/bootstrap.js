@@ -263,9 +263,30 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
             cellLabel: entry?.cellLabel || '',
             outcome: entry?.outcome || null,
             delta: Number(entry?.delta) || 0,
+            scoreBefore: Number.isFinite(Number(entry?.scoreBefore)) ? Number(entry.scoreBefore) : null,
+            scoreAfter: Number.isFinite(Number(entry?.scoreAfter)) ? Number(entry.scoreAfter) : null,
             happenedAt: entry?.happenedAt || new Date().toISOString(),
             kind: entry?.kind || 'manual',
         });
+        const enrichScoreLogWithPoints = (entry = {}) => {
+            const normalized = normalizeScoreLog(entry);
+            if (Number.isFinite(Number(normalized.scoreBefore)) && Number.isFinite(Number(normalized.scoreAfter))) {
+                return normalized;
+            }
+            const playerId = String(normalized?.playerId || '');
+            if (!playerId) return normalized;
+            const players = playersService.getPlayers?.() || [];
+            const player = players.find((row) => String(row?.id || '') === playerId);
+            if (!player) return normalized;
+            const currentScore = Number(player?.points ?? player?.score);
+            if (!Number.isFinite(currentScore)) return normalized;
+            const delta = Number(normalized?.delta) || 0;
+            return {
+                ...normalized,
+                scoreAfter: currentScore,
+                scoreBefore: currentScore - delta,
+            };
+        };
         const dedupeAndSortScoreLogs = (entries = []) => {
             const byId = new Map();
             for (const raw of entries) {
@@ -294,7 +315,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
             appRef?.updateScoreLogs?.(scoreLogs);
         };
         const appendScoreLog = (entry, { broadcast = true, persistRemote = false } = {}) => {
-            const nextEntry = normalizeScoreLog(entry);
+            const nextEntry = enrichScoreLogWithPoints(entry);
             setScoreLogs([nextEntry, ...scoreLogs]);
             if (broadcast) {
                 void hostControlChannel.send('score_log_append', nextEntry);
@@ -310,13 +331,18 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
             const players = playersService.getPlayers?.() || [];
             const player = players.find((entry) => String(entry?.id || '') === String(playerId || ''));
             const amount = Math.abs(Number(delta) || 0);
+            const scoreAfter = Number(player?.points ?? player?.score);
+            const safeScoreAfter = Number.isFinite(scoreAfter) ? scoreAfter : null;
+            const safeDelta = Number(delta) || 0;
             return {
                 kind: 'manual',
                 playerId: playerId || null,
                 playerName: player?.name || t('player_fallback'),
-                cellLabel: `${t('leaderboard')} / ${delta >= 0 ? '+' : '-'}${amount}`,
+                cellLabel: `${t('leaderboard')} / ${safeDelta >= 0 ? '+' : '-'}${amount}`,
                 outcome: null,
-                delta: Number(delta) || 0,
+                delta: safeDelta,
+                scoreBefore: safeScoreAfter === null ? null : safeScoreAfter - safeDelta,
+                scoreAfter: safeScoreAfter,
                 happenedAt: new Date().toISOString(),
             };
         };

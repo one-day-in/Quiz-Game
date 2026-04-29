@@ -13,6 +13,28 @@ function formatLogTime(iso) {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
+function buildLogMetaHtml(entry = {}, { escapeHtml, t }) {
+  const rawLabel = String(entry?.cellLabel || '');
+  const delta = Number(entry?.delta) || 0;
+  const hasDelta = delta !== 0;
+  const deltaText = hasDelta ? `${delta > 0 ? '+' : '-'}${Math.abs(delta)}` : '';
+  const deltaClass = delta > 0 ? 'is-positive' : delta < 0 ? 'is-negative' : '';
+  const labelWithoutDelta = hasDelta
+    ? rawLabel.replace(/\s*\/\s*[+-]\d+\s*$/u, '').trim()
+    : rawLabel;
+  const outcomeText = entry?.outcome
+    ? `, ${entry.outcome === 'correct' ? t('correct') : t('not_correct')}`
+    : '';
+  const scoreRangeText = Number.isFinite(Number(entry?.scoreBefore)) && Number.isFinite(Number(entry?.scoreAfter))
+    ? ` (${Number(entry.scoreBefore)}→${Number(entry.scoreAfter)})`
+    : '';
+  const separator = labelWithoutDelta && deltaText ? ' / ' : '';
+  const deltaHtml = deltaText
+    ? `<span class="hdr-settings-logDelta ${deltaClass}">${escapeHtml(deltaText)}</span>`
+    : '';
+  return `${escapeHtml(labelWithoutDelta)}${separator}${deltaHtml}${escapeHtml(outcomeText + scoreRangeText)}`;
+}
+
 export class LeaderboardPanelView {
   constructor({
     gameId,
@@ -405,7 +427,7 @@ export class LeaderboardPanelView {
       <article class="leaderboard-panel__logItem">
         <p class="leaderboard-panel__logMain">
           <strong>${escapeHtml(entry.playerName || t('player_fallback'))}</strong>
-          <span>${escapeHtml(`${entry.cellLabel || ''}${entry.outcome ? `, ${entry.outcome === 'correct' ? t('correct') : t('not_correct')}` : ''}`)}</span>
+          <span>${buildLogMetaHtml(entry, { escapeHtml, t })}</span>
         </p>
         <p class="leaderboard-panel__logTime">${escapeHtml(formatLogTime(entry.happenedAt))}</p>
       </article>

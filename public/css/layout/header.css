@@ -405,6 +405,18 @@
   flex: 0 0 auto;
 }
 
+.hdr-settings-logDelta {
+  font-weight: 900;
+}
+
+.hdr-settings-logDelta.is-positive {
+  color: #22c55e;
+}
+
+.hdr-settings-logDelta.is-negative {
+  color: #ef4444;
+}
+
 .hdr-qrOverlay {
   position: fixed;
   inset: 0;
