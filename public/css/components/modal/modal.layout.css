@@ -191,6 +191,34 @@
     color: var(--muted);
 }
 
+.qmodal__modifierBar {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--border-2);
+    border-radius: 12px;
+    background: var(--surface-2);
+}
+
+.qmodal__modifierLabel {
+    margin: 0;
+    font-size: var(--fs-6);
+    font-weight: 700;
+    color: var(--muted);
+}
+
+.qmodal__modifierSelect {
+    width: 100%;
+    min-height: 36px;
+    border-radius: 10px;
+    border: 1px solid var(--border-2);
+    background: var(--surface);
+    color: var(--text);
+    padding: 6px 10px;
+}
+
 /* Body */
 .qmodal__body {
     position: relative;

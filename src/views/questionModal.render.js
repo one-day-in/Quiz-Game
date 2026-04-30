@@ -233,6 +233,7 @@ export function applyModeUI(view, refs) {
 
   setHidden(refs.toggleAnswerBtn, isEdit || isController);
   setHidden(refs.answeredToggle, isController);
+  setHidden(refs.modifierBar, !isEdit || isController);
   setHidden(refs.footerLeft, false);
   setHidden(refs.controllerSharedMediaControls, !isController);
   setHidden(refs.btnIncorrect,   isEdit);

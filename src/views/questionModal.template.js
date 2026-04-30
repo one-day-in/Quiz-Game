@@ -47,6 +47,15 @@ export function buildModalDom() {
           <button type="button" class="qmodal__btn qmodal__btn--primary qmodal__directedBetStartBtn">${t('directed_bet_start')}</button>
           <p class="qmodal__directedBetEmpty" hidden>${t('directed_bet_no_active_players')}</p>
         </div>
+        <div class="qmodal__modifierBar" hidden>
+          <label class="qmodal__modifierLabel" for="qmodalModifierSelect">${t('cell_modifier_banner_title')}</label>
+          <select id="qmodalModifierSelect" class="qmodal__modifierSelect">
+            <option value="none">${t('no_modifier')}</option>
+            <option value="flip_score">${t('flip_score_modifier')}</option>
+            <option value="steal_leader_points">${t('steal_leader_points_modifier')}</option>
+            <option value="directed_bet">${t('directed_bet_modifier')}</option>
+          </select>
+        </div>
         <div class="qmodal__emptyState">✏️ is empty</div>
 
           <!-- QUESTION -->

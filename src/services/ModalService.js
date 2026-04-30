@@ -3,7 +3,7 @@ import { Disposer } from '../utils/disposer.js';
 import { showConfirm } from '../utils/confirm.js';
 import { adjustPlayerScore, resolveGamePress, resolveGamePressTimeout } from '../api/gameApi.js';
 import { t } from '../i18n.js';
-import { MODIFIER_TYPES } from '../modifiers/modifierEngine.js';
+import { createCellModifier, MODIFIER_TYPES } from '../modifiers/modifierEngine.js';
 
 const FALLBACK_PRESS_RESPONSE_SECONDS = Number(import.meta?.env?.VITE_PRESS_RESPONSE_SECONDS) > 0
   ? Number(import.meta.env.VITE_PRESS_RESPONSE_SECONDS)
@@ -185,6 +185,7 @@ export class ModalService {
       displayMode: this.isControllerMode() ? 'controller' : 'host',
       headerTitle,
       directedBetState: this._getDirectedBetViewState(),
+      activeModifierType: this._activeModifier?.type || MODIFIER_TYPES.NONE,
 
       isAnswered: shouldMarkAsAnswered ? true : cellData.isAnswered,
       question,
@@ -300,6 +301,16 @@ export class ModalService {
         } finally {
           this.view?.setUploading(target, false);
         }
+      },
+
+      onModifierChange: async (nextType) => {
+        if (this.isControllerMode()) return;
+        const normalizedType = String(nextType || MODIFIER_TYPES.NONE).toLowerCase();
+        this._activeModifier = createCellModifier(normalizedType);
+        this._directedBet = null;
+        this.view?.setDirectedBetState?.(null);
+        this._emitDirectedBetStateChange(null);
+        await this._updateCell({ modifier: this._activeModifier });
       },
 
       onViewStateChange: ({ mode: nextMode, isAnswerShown }) => {

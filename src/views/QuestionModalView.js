@@ -12,6 +12,7 @@ export class QuestionModalView {
         displayMode = 'host',
         headerTitle,
         directedBetState = null,
+        activeModifierType = 'none',
         isAnswered,
         question,
         answer,
@@ -28,6 +29,7 @@ export class QuestionModalView {
         onViewStateChange,
         onControllerMediaControl,
         onDirectedBetAction,
+        onModifierChange,
     }) {
         this._mode          = mode;
         this._allowModeToggle = !!allowModeToggle;
@@ -37,6 +39,7 @@ export class QuestionModalView {
             ? { ...directedBetState }
             : null;
         this._winnerName    = '';
+        this._activeModifierType = String(activeModifierType || 'none');
         this._isAnswered    = !!isAnswered;
         this._question      = { ...(question || {}), audioFiles: question?.audioFiles || [] };
         this._answer        = { ...(answer   || {}), audioFiles: answer?.audioFiles   || [] };
@@ -50,7 +53,7 @@ export class QuestionModalView {
             onClose, onIncorrect, onCorrect,
             onToggleAnswered, onQuestionChange, onAnswerChange,
             onUploadMedia, onDeleteMedia, onAddAudio, onDeleteAudio, onViewStateChange, onControllerMediaControl,
-            onDirectedBetAction,
+            onDirectedBetAction, onModifierChange,
         };
 
         const { root, refs } = buildModalDom();
@@ -166,6 +169,17 @@ export class QuestionModalView {
     setDirectedBetState(nextState) {
         this._directedBetState = nextState && typeof nextState === 'object' ? { ...nextState } : null;
         this._renderDirectedBetPanel();
+    }
+
+    setActiveModifierType(nextType = 'none') {
+        this._activeModifierType = String(nextType || 'none');
+        this._syncModifierSelect();
+    }
+
+    _syncModifierSelect() {
+        const select = this._refs.modifierSelect;
+        if (!select) return;
+        select.value = this._activeModifierType || 'none';
     }
 
     async controlMedia(target, action) {
@@ -405,6 +419,13 @@ export class QuestionModalView {
             overlay: r.overlay,
             onDismiss: () => this._cb.onClose?.(),
             shouldDismissOnEscape: () => !this._isFullscreen(),
+        });
+
+        // ── Modifier selector (edit mode) ─────────────────────────────────────────
+        this._disposer.addEventListener(r.modifierSelect, 'change', (e) => {
+            const nextType = String(e.target?.value || 'none');
+            this._activeModifierType = nextType;
+            this._cb.onModifierChange?.(nextType);
         });
 
         // ── Answered toggle ────────────────────────────────────────────────────
