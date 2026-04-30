@@ -368,7 +368,7 @@ const dictionaries = {
     round: 'Раунд',
     toggle_game_mode: 'Режим игры',
     mode_play: 'РЕЖИМ: ИГРА',
-    mode_edit: 'РЕЖИМ: РЕДАГИРОВАНИЕ',
+    mode_edit: 'РЕЖИМ: РЕДАКТИРОВАНИЕ',
     current_player_label: 'Ход',
     choose_current_player: 'Выбрать игрока',
     leaderboard: 'Лидерборд',
