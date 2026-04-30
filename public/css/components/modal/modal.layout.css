@@ -12,9 +12,9 @@
 
 /* Header — flex: title fills space, Edit button on the right */
 .qmodal__header {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(220px, 32vw) auto;
     align-items: center;
-    justify-content: space-between;
     gap: 12px;
 
     padding: 14px 20px;
@@ -38,14 +38,26 @@
     flex: 0 0 auto;
 }
 
-@media (max-width: 720px) {
+.qmodal__headerModifier {
+    width: 100%;
+    min-width: 0;
+}
+
+
+@media (max-width: 900px) {
     .qmodal__header {
-        align-items: flex-start;
+        grid-template-columns: minmax(0, 1fr);
+        align-items: stretch;
+    }
+
+    .qmodal__headerMain,
+    .qmodal__headerModifier,
+    .qmodal__headerActions {
+        width: 100%;
     }
 
     .qmodal__headerActions {
-        flex-direction: column;
-        align-items: flex-end;
+        justify-content: flex-end;
     }
 }
 
@@ -188,24 +200,6 @@
 
 .qmodal__directedBetEmpty {
     margin: 2px 0 0;
-    color: var(--muted);
-}
-
-.qmodal__modifierBar {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
-    border: 1px solid var(--border-2);
-    border-radius: 12px;
-    background: var(--surface-2);
-}
-
-.qmodal__modifierLabel {
-    margin: 0;
-    font-size: var(--fs-6);
-    font-weight: 700;
     color: var(--muted);
 }
 

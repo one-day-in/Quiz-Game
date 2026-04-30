@@ -12,13 +12,20 @@ export function buildModalDom() {
 
       <!-- HEADER — same in both modes -->
       <header class="qmodal__header">
-        <!-- Center: title -->
         <div class="qmodal__headerMain">
           <div class="qmodal__headerTitle"></div>
         </div>
 
+        <div class="qmodal__headerModifier" hidden>
+          <select id="qmodalModifierSelect" class="qmodal__modifierSelect" aria-label="${t('cell_modifier_banner_title')}">
+            <option value="none">${t('no_modifier')}</option>
+            <option value="flip_score">${t('flip_score_modifier')}</option>
+            <option value="steal_leader_points">${t('steal_leader_points_modifier')}</option>
+            <option value="directed_bet">${t('directed_bet_modifier')}</option>
+          </select>
+        </div>
+
         <div class="qmodal__headerActions">
-          <!-- Right: toggle view/edit mode -->
           <button
             class="qmodal__btn qmodal__btn--ghost qmodal__btnToggleMode"
             type="button"
@@ -46,15 +53,6 @@ export function buildModalDom() {
           </div>
           <button type="button" class="qmodal__btn qmodal__btn--primary qmodal__directedBetStartBtn">${t('directed_bet_start')}</button>
           <p class="qmodal__directedBetEmpty" hidden>${t('directed_bet_no_active_players')}</p>
-        </div>
-        <div class="qmodal__modifierBar" hidden>
-          <label class="qmodal__modifierLabel" for="qmodalModifierSelect">${t('cell_modifier_banner_title')}</label>
-          <select id="qmodalModifierSelect" class="qmodal__modifierSelect">
-            <option value="none">${t('no_modifier')}</option>
-            <option value="flip_score">${t('flip_score_modifier')}</option>
-            <option value="steal_leader_points">${t('steal_leader_points_modifier')}</option>
-            <option value="directed_bet">${t('directed_bet_modifier')}</option>
-          </select>
         </div>
         <div class="qmodal__emptyState">✏️ is empty</div>
 
@@ -237,7 +235,7 @@ export function buildModalDom() {
       directedBetStakes:  qs('.qmodal__directedBetStakes'),
       directedBetStartBtn: qs('.qmodal__directedBetStartBtn'),
       directedBetEmpty:   qs('.qmodal__directedBetEmpty'),
-      modifierBar:       qs('.qmodal__modifierBar'),
+      headerModifier:    qs('.qmodal__headerModifier'),
       modifierSelect:    qs('.qmodal__modifierSelect'),
       btnToggleMode:      qs('.qmodal__btnToggleMode'),
       btnIncorrect:       qs('.qmodal__btnIncorrect'),
