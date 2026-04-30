@@ -81,12 +81,10 @@ export function HeaderView({
           aria-expanded="false"
           title="${escapeHtml(t('choose_current_player'))}"
         >
-          <span class="hdr-current-player-top">
-            <span class="hdr-current-player-kicker">${escapeHtml(t('current_player_label'))}</span>
-            <span class="hdr-current-player-caret" aria-hidden="true">▾</span>
-          </span>
+          <span class="hdr-current-player-kicker">${escapeHtml(t('current_player_label'))}</span>
           <strong class="js-current-player-value"></strong>
           <span class="js-current-player-score"></span>
+          <span class="hdr-current-player-caret" aria-hidden="true">▾</span>
         </button>
         <div class="hdr-current-player-menu" hidden>
           <div class="hdr-current-player-list"></div>

@@ -146,12 +146,14 @@
 .hdr-current-player-btn {
   min-width: 220px;
   min-height: 52px;
-  padding: 10px 16px 12px 16px;
+  padding: 8px 12px;
 
-  display: inline-flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 8px;
+  display: inline-grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  column-gap: 10px;
+  row-gap: 0;
+  justify-items: start;
 
   border-radius: 18px;
   border: 1px solid var(--border-2);
@@ -180,18 +182,15 @@
   max-height: calc(var(--header-h) - 8px);
   min-width: 0;
   max-width: 100%;
-  padding: 8px 14px 8px 14px;
-  position: relative;
-  justify-content: center;
+  padding: 8px 12px;
   overflow: hidden;
 }
 
 .hdr-current-player-btn--center .js-current-player-value {
-  font-size: clamp(24px, 2.15vw, 32px);
-  letter-spacing: 0.08em;
+  font-size: clamp(22px, 2.05vw, 30px);
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  text-align: center;
-  width: 100%;
+  text-align: left;
 }
 
 .hdr-current-player-btn:hover {
@@ -215,28 +214,20 @@
   opacity: 0.9;
 }
 
-.hdr-current-player-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  position: absolute;
-  left: 12px;
-  top: 8px;
-  right: 12px;
-}
-
 .hdr-current-player-kicker {
+  grid-column: 1 / 2;
   font-family: var(--font-label);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 900;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--muted);
-  text-align: left;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .js-current-player-value {
+  grid-column: 2 / 3;
   min-width: 0;
   font-family: var(--font-display);
   font-size: var(--fs-2);
@@ -249,16 +240,16 @@
 }
 
 .js-current-player-score {
-  align-self: flex-end;
-  min-width: 90px;
+  grid-column: 3 / 4;
+  min-width: 78px;
   max-width: 100%;
-  padding: 5px 10px;
+  padding: 6px 10px;
   border-radius: 999px;
   border: 1px solid rgba(96, 165, 250, 0.48);
   background: linear-gradient(180deg, rgba(59, 130, 246, 0.20), rgba(30, 64, 175, 0.30));
   box-shadow: 0 0 16px rgba(59, 130, 246, 0.18);
   font-family: var(--font-numeric);
-  font-size: clamp(14px, 1.2vw, 18px);
+  font-size: clamp(14px, 1.15vw, 17px);
   font-weight: 900;
   letter-spacing: 0.02em;
   text-align: center;
@@ -266,8 +257,10 @@
 }
 
 .hdr-current-player-caret {
-  font-size: 18px;
+  grid-column: 4 / 5;
+  font-size: 16px;
   color: var(--muted);
+  justify-self: end;
 }
 
 .hdr-current-player-menu {
