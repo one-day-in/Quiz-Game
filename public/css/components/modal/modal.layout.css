@@ -13,7 +13,7 @@
 /* Header — flex: title fills space, Edit button on the right */
 .qmodal__header {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(220px, 32vw) auto;
+    grid-template-columns: minmax(0, 1fr) minmax(170px, 23vw) auto;
     align-items: center;
     gap: 12px;
 
@@ -39,8 +39,9 @@
 }
 
 .qmodal__headerModifier {
-    width: 100%;
-    min-width: 0;
+    width: min(100%, 260px);
+    min-width: 170px;
+    justify-self: center;
 }
 
 
@@ -204,13 +205,16 @@
 }
 
 .qmodal__modifierSelect {
+    display: block;
     width: 100%;
-    min-height: 36px;
+    min-height: 38px;
+    line-height: 1.2;
     border-radius: 10px;
     border: 1px solid var(--border-2);
     background: var(--surface);
     color: var(--text);
-    padding: 6px 10px;
+    padding: 7px 30px 7px 10px;
+    text-align: left;
 }
 
 /* Body */
