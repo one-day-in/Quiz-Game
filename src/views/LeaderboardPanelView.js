@@ -62,6 +62,7 @@ export class LeaderboardPanelView {
     this._overlayHost = null;
     this._dockSignature = '';
     this._selectionSignature = '';
+    this._scoreLogsSignature = '';
 
     this._build();
     this._disposer = new ViewDisposer(this._root);
@@ -418,9 +419,16 @@ export class LeaderboardPanelView {
   _renderScoreLogs() {
     if (!this._logsList) return;
     if (!this._scoreLogs.length) {
+      const emptySignature = '__empty__';
+      if (this._scoreLogsSignature === emptySignature) return;
       this._logsList.innerHTML = `<p class="leaderboard-panel__copy">${t('score_logs_empty')}</p>`;
+      this._scoreLogsSignature = emptySignature;
       return;
     }
+
+    const nextSignature = JSON.stringify(this._scoreLogs);
+    if (nextSignature === this._scoreLogsSignature) return;
+    this._scoreLogsSignature = nextSignature;
 
     this._logsList.innerHTML = this._scoreLogs.map((entry) => {
       const meta = buildLogMetaParts(entry, { t });
