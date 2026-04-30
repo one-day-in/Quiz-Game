@@ -141,7 +141,7 @@
 
 .game-grid .cell.cell-topic.is-empty > span {
     /* Keep "add topic" hint visually calmer than real topic titles */
-    font-size: clamp(20px, 2.6vw, 34px);
+    font-size: clamp(14px, 1.7vw, 22px);
     line-height: 1.2;
     letter-spacing: 0;
 }
@@ -215,7 +215,7 @@
 
 .topic-editor::placeholder {
     /* Match empty-topic hint sizing so states look consistent */
-    font-size: clamp(20px, 2.6vw, 34px);
+    font-size: clamp(14px, 1.7vw, 22px);
     line-height: 1.2;
     letter-spacing: 0;
 }
