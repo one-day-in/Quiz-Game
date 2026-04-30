@@ -33,6 +33,20 @@ export function buildModalDom() {
           <div class="qmodal__pressBannerMain"></div>
           <div class="qmodal__pressBannerTimer" hidden>00:30</div>
         </div>
+        <div class="qmodal__directedBetPanel" hidden>
+          <p class="qmodal__directedBetTitle">${t('directed_bet_pick_player')}</p>
+          <p class="qmodal__directedBetSubtitle">${t('directed_bet_pick_subtitle')}</p>
+          <div class="qmodal__directedBetPlayers"></div>
+          <div class="qmodal__directedBetStakes" role="group" aria-label="${t('directed_bet_choose_stake')}">
+            <button type="button" class="qmodal__btn qmodal__btn--secondary qmodal__directedBetStakeBtn" data-stake="100">100</button>
+            <button type="button" class="qmodal__btn qmodal__btn--secondary qmodal__directedBetStakeBtn" data-stake="200">200</button>
+            <button type="button" class="qmodal__btn qmodal__btn--secondary qmodal__directedBetStakeBtn" data-stake="300">300</button>
+            <button type="button" class="qmodal__btn qmodal__btn--secondary qmodal__directedBetStakeBtn" data-stake="400">400</button>
+            <button type="button" class="qmodal__btn qmodal__btn--secondary qmodal__directedBetStakeBtn" data-stake="500">500</button>
+          </div>
+          <button type="button" class="qmodal__btn qmodal__btn--primary qmodal__directedBetStartBtn">${t('directed_bet_start')}</button>
+          <p class="qmodal__directedBetEmpty" hidden>${t('directed_bet_no_active_players')}</p>
+        </div>
         <div class="qmodal__emptyState">✏️ is empty</div>
 
           <!-- QUESTION -->
@@ -209,6 +223,11 @@ export function buildModalDom() {
       pressBanner:        qs('.qmodal__pressBanner'),
       pressBannerMain:    qs('.qmodal__pressBannerMain'),
       pressBannerTimer:   qs('.qmodal__pressBannerTimer'),
+      directedBetPanel:   qs('.qmodal__directedBetPanel'),
+      directedBetPlayers: qs('.qmodal__directedBetPlayers'),
+      directedBetStakes:  qs('.qmodal__directedBetStakes'),
+      directedBetStartBtn: qs('.qmodal__directedBetStartBtn'),
+      directedBetEmpty:   qs('.qmodal__directedBetEmpty'),
       btnToggleMode:      qs('.qmodal__btnToggleMode'),
       btnIncorrect:       qs('.qmodal__btnIncorrect'),
       btnCorrect:         qs('.qmodal__btnCorrect'),

@@ -3,12 +3,17 @@ import { Disposer } from '../utils/disposer.js';
 import { showConfirm } from '../utils/confirm.js';
 import { adjustPlayerScore, resolveGamePress, resolveGamePressTimeout } from '../api/gameApi.js';
 import { t } from '../i18n.js';
+import { MODIFIER_TYPES } from '../modifiers/modifierEngine.js';
 
 const FALLBACK_PRESS_RESPONSE_SECONDS = Number(import.meta?.env?.VITE_PRESS_RESPONSE_SECONDS) > 0
   ? Number(import.meta.env.VITE_PRESS_RESPONSE_SECONDS)
   : 30;
 const PRESS_OPEN_RETRY_ATTEMPTS = 3;
 const PRESS_OPEN_RETRY_DELAY_MS = 220;
+const DIRECTED_BET_MIN_STAKE = 100;
+const DIRECTED_BET_MAX_STAKE = 500;
+const DIRECTED_BET_STEP = 100;
+const DIRECTED_BET_RESPONSE_SECONDS = 40;
 
 export class ModalService {
   constructor(gameService, mediaService, pressRuntime, playersService, options = {}) {
@@ -23,6 +28,7 @@ export class ModalService {
     this._onModalViewStateChange = options.onModalViewStateChange || null;
     this._onMediaPlaybackStateChange = options.onMediaPlaybackStateChange || null;
     this._onScoreLog = options.onScoreLog || null;
+    this._onDirectedBetStateChange = options.onDirectedBetStateChange || null;
 
     this._disposer = new Disposer();
     this.view = null;
@@ -53,6 +59,8 @@ export class ModalService {
     this._globalGameMode = 'play';
     this._mediaInteractionUnlocked = this.isControllerMode();
     this._pendingMediaControl = null;
+    this._activeModifier = null;
+    this._directedBet = null;
 
     if (!this.isControllerMode() && typeof document !== 'undefined') {
       const unlock = () => this._unlockMediaInteraction();
@@ -145,6 +153,8 @@ export class ModalService {
     const effectiveMode = allowModeToggle && mode === 'edit' ? 'edit' : 'view';
     this._modalViewMode = effectiveMode;
     this._modalIsAnswerShown = effectiveMode === 'edit';
+    this._activeModifier = cellData?.modifier ? { ...cellData.modifier } : null;
+    this._directedBet = null;
     this._pressAvailabilityIntent = null;
     if (!this.isControllerMode()) {
       void this._resetPressRuntime();
@@ -166,12 +176,14 @@ export class ModalService {
     answer.audioFiles   = this._media.toViewAudioFiles(answer.audioFiles);
 
     const headerTitle = this._getHeaderTitle(cellData);
+    this._initDirectedBetState();
 
     this.view = new QuestionModalView({
       mode: effectiveMode,
       allowModeToggle,
       displayMode: this.isControllerMode() ? 'controller' : 'host',
       headerTitle,
+      directedBetState: this._getDirectedBetViewState(),
 
       isAnswered: shouldMarkAsAnswered ? true : cellData.isAnswered,
       question,
@@ -304,6 +316,10 @@ export class ModalService {
         this._resumePressCountdown();
         void this._syncPressAvailability();
       },
+      onDirectedBetAction: (action) => {
+        if (this.isControllerMode()) return;
+        this._handleDirectedBetAction(action);
+      },
 
       onControllerMediaControl: ({ target, action }) => {
         if (this.isControllerMode()) {
@@ -323,6 +339,8 @@ export class ModalService {
     this._onModalViewStateChange?.({ mode: this.view?._mode || 'view', isAnswerShown: !!this.view?._isAnswerShown });
 
     this._bindPressRuntime();
+    void this._syncPressAvailability({ force: true });
+    this._emitDirectedBetStateChange(this._getDirectedBetViewState());
     // ESC is handled inside QuestionModalView (properly cleaned up on destroy).
     // Do NOT add a document keydown listener here — ModalService._disposer is
     // long-lived and never destroyed between openings, so listeners would
@@ -399,6 +417,9 @@ export class ModalService {
       this._modalViewMode = 'view';
       this._modalIsAnswerShown = false;
       this._pressAvailabilityIntent = null;
+      this._activeModifier = null;
+      this._directedBet = null;
+      this._emitDirectedBetStateChange(null);
       void this._pressRuntime?.closePress?.();
       if (this.container?.isConnected) this.container.innerHTML = '';
       if (hadOpenModal) {
@@ -437,6 +458,13 @@ export class ModalService {
     } catch (e) {
       console.error('[ModalService] adjustPlayerScore (incorrect) failed:', e);
     }
+
+    if (this._directedBet?.enabled && this._directedBet.phase === 'answering' && !this._directedBet.fallbackActivated) {
+      this._activateDirectedBetFallback();
+      this._isResolvingPressResult = false;
+      return;
+    }
+
     // Reset press — modal stays open, another player can press.
     await this._resetPressRuntime();
     this._isResolvingPressResult = false;
@@ -469,6 +497,9 @@ export class ModalService {
 
   async _acquirePressResolutionLock(winnerPlayerId, { pressEnabled = false, source = 'manual' } = {}) {
     if (!winnerPlayerId) return false;
+    if (this._directedBet?.enabled && this._directedBet.phase === 'answering' && !this._directedBet.fallbackActivated) {
+      return true;
+    }
     try {
       if (source === 'timeout') {
         await resolveGamePressTimeout(this._game.getGameId(), winnerPlayerId, this._pressDeadlineIso);
@@ -502,6 +533,7 @@ export class ModalService {
   }
 
   _isQuestionPressWindowActive() {
+    if (this._isDirectedBetLocked()) return false;
     return !this.isControllerMode()
       && this._globalGameMode === 'play'
       && this._modalViewMode === 'view'
@@ -539,6 +571,121 @@ export class ModalService {
   _setPressWinner(winnerPlayerId = null, winnerName = '') {
     this._pressWinnerId = winnerPlayerId || null;
     this.view?.updateWinnerName?.(winnerName || '');
+  }
+
+  _initDirectedBetState() {
+    if (this._modalViewMode !== 'view') return;
+    if (this._globalGameMode !== 'play') return;
+    if (this.isControllerMode()) return;
+    if (this._activeModifier?.type !== MODIFIER_TYPES.DIRECTED_BET) return;
+
+    const openerId = String(this._game?.getCurrentPlayerId?.() || '').trim();
+    const players = this._getPlayersSnapshot()
+      .filter((player) => {
+        const id = String(player?.id || '').trim();
+        return id && id !== openerId;
+      })
+      .map((player) => ({ id: String(player.id), name: String(player.name || t('player_fallback')) }));
+
+    this._directedBet = {
+      enabled: true,
+      phase: 'select',
+      openerId: openerId || null,
+      selectedPlayerId: null,
+      selectedStake: DIRECTED_BET_MIN_STAKE,
+      players,
+      fallbackActivated: false,
+    };
+    this._pressAutoResolveBlocked = true;
+    this.view?.setPressBannerSuppressed?.(true);
+  }
+
+  _getDirectedBetViewState() {
+    if (!this._directedBet?.enabled) return null;
+    const state = this._directedBet;
+    const isSelectionPhase = state.phase === 'select';
+    return {
+      enabled: isSelectionPhase,
+      phase: state.phase,
+      players: Array.isArray(state.players) ? state.players : [],
+      selectedPlayerId: state.selectedPlayerId || null,
+      selectedStake: Number(state.selectedStake) || DIRECTED_BET_MIN_STAKE,
+      canStart: isSelectionPhase
+        && !!state.selectedPlayerId
+        && Number(state.selectedStake) >= DIRECTED_BET_MIN_STAKE
+        && Number(state.selectedStake) <= DIRECTED_BET_MAX_STAKE,
+    };
+  }
+
+  _syncDirectedBetView() {
+    const nextState = this._getDirectedBetViewState();
+    this.view?.setDirectedBetState?.(nextState);
+    this._emitDirectedBetStateChange(nextState);
+  }
+
+  _emitDirectedBetStateChange(state) {
+    this._onDirectedBetStateChange?.(state ? { ...state } : null);
+  }
+
+  _isDirectedBetLocked() {
+    return !!(this._directedBet?.enabled && !this._directedBet?.fallbackActivated);
+  }
+
+  _activateDirectedBetFallback() {
+    if (!this._directedBet?.enabled) return;
+    this._directedBet.phase = 'fallback';
+    this._directedBet.fallbackActivated = true;
+    this._pressAutoResolveBlocked = false;
+    this.view?.setPressBannerSuppressed?.(false);
+    this._currentResolutionValue = Number(this._cellValue) || 0;
+    this._setPressWinner(null, '');
+    this._syncDirectedBetView();
+    void this._syncPressAvailability({ force: true });
+  }
+
+  _handleDirectedBetAction(action = {}) {
+    if (!this._directedBet?.enabled) return;
+    if (this._directedBet.phase !== 'select') return;
+    const type = String(action?.type || '').trim();
+    if (type === 'select_player') {
+      const playerId = String(action?.playerId || '').trim();
+      if (!playerId) return;
+      const exists = this._directedBet.players.some((player) => String(player.id) === playerId);
+      if (!exists) return;
+      this._directedBet.selectedPlayerId = playerId;
+      this._syncDirectedBetView();
+      return;
+    }
+
+    if (type === 'select_stake') {
+      const stake = Number(action?.stake) || 0;
+      if (!Number.isFinite(stake)) return;
+      if (stake < DIRECTED_BET_MIN_STAKE || stake > DIRECTED_BET_MAX_STAKE) return;
+      if (stake % DIRECTED_BET_STEP !== 0) return;
+      this._directedBet.selectedStake = stake;
+      this._syncDirectedBetView();
+      return;
+    }
+
+    if (type === 'start') {
+      const selectedPlayerId = String(this._directedBet.selectedPlayerId || '').trim();
+      const stake = Number(this._directedBet.selectedStake) || 0;
+      if (!selectedPlayerId) return;
+      if (stake < DIRECTED_BET_MIN_STAKE || stake > DIRECTED_BET_MAX_STAKE) return;
+
+      const selectedPlayer = this._directedBet.players.find((player) => String(player.id) === selectedPlayerId);
+      this._directedBet.phase = 'answering';
+      this._directedBet.fallbackActivated = false;
+      this._currentResolutionValue = stake;
+      this._pressAutoResolveBlocked = false;
+      this._setPressWinner(selectedPlayerId, selectedPlayer?.name || t('player_fallback'));
+      this.view?.setPressBannerSuppressed?.(false);
+      this._syncDirectedBetView();
+      this.view?.setResolutionButtonsEnabled?.(true);
+      this._clearPressCountdown();
+      this._startPressCountdown(DIRECTED_BET_RESPONSE_SECONDS * 1000);
+      void this._syncPressAvailability({ force: true });
+    }
   }
 
   _getPlayersSnapshot() {
@@ -608,6 +755,7 @@ export class ModalService {
   }
 
   _handlePressRuntimeUpdate(runtime) {
+    if (this._isDirectedBetLocked()) return;
     const nextWinnerId = runtime?.winnerPlayerId || null;
     const nextWinnerName = runtime?.winnerName || '';
     const prevWinnerId = this._pressWinnerId;
@@ -758,6 +906,10 @@ export class ModalService {
     if (type === 'modal_media_state') {
       if (payload?.target) this.view?.setControllerMediaTarget?.(payload.target);
       this.view?.setControllerMediaPlaying?.(!!payload?.isPlaying);
+      return;
+    }
+    if (type === 'modal_directed_bet_state') {
+      this.view?.setDirectedBetState?.(payload || null);
     }
   }
 }

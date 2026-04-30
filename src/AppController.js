@@ -83,7 +83,8 @@ export function createAppController({
       value,
       question: { ...(cell.question || {}) },
       answer: { ...(cell.answer || {}) },
-      isAnswered: !!cell.isAnswered
+      isAnswered: !!cell.isAnswered,
+      modifier: cell?.modifier ? { ...cell.modifier } : null,
     };
   }
 

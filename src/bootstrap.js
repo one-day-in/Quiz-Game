@@ -224,6 +224,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
         let roundSyncRetryTimer = null;
         let lastOpenCellPayload = null;
         let lastModalViewState = null;
+        let lastDirectedBetState = null;
         let stopScoreLogsSubscription = null;
         let stopGameSubscription = null;
         let stopGameSnapshotBroadcast = null;
@@ -479,6 +480,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
                 ? () => {
                     lastOpenCellPayload = null;
                     lastModalViewState = null;
+                    lastDirectedBetState = null;
                     void hostControlChannel.send('close_modal');
                 }
                 : null,
@@ -494,6 +496,12 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
                 : null,
             onMediaPlaybackStateChange: hostMode === 'host'
                 ? ({ target, isPlaying }) => { void hostControlChannel.send('modal_media_state', { target, isPlaying }); }
+                : null,
+            onDirectedBetStateChange: hostMode === 'host'
+                ? (state) => {
+                    lastDirectedBetState = state ? { ...state } : null;
+                    void hostControlChannel.send('modal_directed_bet_state', lastDirectedBetState);
+                }
                 : null,
             onScoreLog: hostMode === 'host'
                 ? (entry) => { appendScoreLog(entry, { broadcast: true, persistRemote: true }); }
@@ -601,6 +609,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
                 const gameMode = String(gameService.getState()?.uiState?.gameMode || 'play').toLowerCase() === 'edit' ? 'edit' : 'play';
                 lastOpenCellPayload = payload || null;
                 lastModalViewState = { mode: gameMode === 'edit' ? 'edit' : 'view', isAnswerShown: gameMode === 'edit' };
+                lastDirectedBetState = null;
                 void hostControlChannel.send('open_cell', { ...(payload || {}), modalMode: lastModalViewState.mode });
             },
             onLeaderboardExpandedChange: (isExpanded) => {
@@ -718,6 +727,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
                     if (lastModalViewState) {
                         void hostControlChannel.send('modal_view_state', lastModalViewState);
                     }
+                    void hostControlChannel.send('modal_directed_bet_state', lastDirectedBetState);
                 } else {
                     void hostControlChannel.send('close_modal');
                 }
@@ -790,6 +800,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
                     if (lastModalViewState) {
                         void hostControlChannel.send('modal_view_state', lastModalViewState);
                     }
+                    void hostControlChannel.send('modal_directed_bet_state', lastDirectedBetState);
                 } else {
                     void hostControlChannel.send('close_modal');
                 }
@@ -881,7 +892,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
                 return;
             }
 
-            if (hostMode === 'controller' && (type === 'modal_view_state' || type === 'modal_media_state' || type === 'close_modal')) {
+            if (hostMode === 'controller' && (type === 'modal_view_state' || type === 'modal_media_state' || type === 'modal_directed_bet_state' || type === 'close_modal')) {
                 modalService.runRemoteCommand(type, payload);
                 return;
             }

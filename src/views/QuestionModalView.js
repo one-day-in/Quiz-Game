@@ -11,6 +11,7 @@ export class QuestionModalView {
         allowModeToggle = true,
         displayMode = 'host',
         headerTitle,
+        directedBetState = null,
         isAnswered,
         question,
         answer,
@@ -26,11 +27,15 @@ export class QuestionModalView {
         onDeleteAudio,
         onViewStateChange,
         onControllerMediaControl,
+        onDirectedBetAction,
     }) {
         this._mode          = mode;
         this._allowModeToggle = !!allowModeToggle;
         this._displayMode   = displayMode;
         this._headerTitle   = (headerTitle || '').trim();
+        this._directedBetState = directedBetState && typeof directedBetState === 'object'
+            ? { ...directedBetState }
+            : null;
         this._winnerName    = '';
         this._isAnswered    = !!isAnswered;
         this._question      = { ...(question || {}), audioFiles: question?.audioFiles || [] };
@@ -45,6 +50,7 @@ export class QuestionModalView {
             onClose, onIncorrect, onCorrect,
             onToggleAnswered, onQuestionChange, onAnswerChange,
             onUploadMedia, onDeleteMedia, onAddAudio, onDeleteAudio, onViewStateChange, onControllerMediaControl,
+            onDirectedBetAction,
         };
 
         const { root, refs } = buildModalDom();
@@ -155,6 +161,11 @@ export class QuestionModalView {
     setPressBannerSuppressed(suppressed) {
         this._isPressBannerSuppressed = !!suppressed;
         this.syncPressBannerVisibility();
+    }
+
+    setDirectedBetState(nextState) {
+        this._directedBetState = nextState && typeof nextState === 'object' ? { ...nextState } : null;
+        this._renderDirectedBetPanel();
     }
 
     async controlMedia(target, action) {
@@ -297,6 +308,60 @@ export class QuestionModalView {
         bannerEl.classList.add('is-visible');
     }
 
+    _renderDirectedBetPanel() {
+        const panel = this._refs.directedBetPanel;
+        if (!panel) return;
+
+        const state = this._directedBetState;
+        const enabled = !!(state?.enabled);
+        panel.hidden = !enabled;
+        panel.setAttribute('aria-hidden', enabled ? 'false' : 'true');
+        if (!enabled) return;
+
+        const playersWrap = this._refs.directedBetPlayers;
+        const emptyEl = this._refs.directedBetEmpty;
+        const startBtn = this._refs.directedBetStartBtn;
+        const stakesWrap = this._refs.directedBetStakes;
+        const players = Array.isArray(state?.players) ? state.players : [];
+        const selectedPlayerId = String(state?.selectedPlayerId || '');
+        const selectedStake = Number(state?.selectedStake) || 0;
+        const canStart = !!state?.canStart;
+
+        if (playersWrap) {
+            playersWrap.innerHTML = '';
+            for (const player of players) {
+                const id = String(player?.id || '').trim();
+                if (!id) continue;
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'qmodal__btn qmodal__btn--secondary qmodal__directedBetPlayerBtn';
+                btn.dataset.playerId = id;
+                btn.textContent = String(player?.name || '');
+                if (id === selectedPlayerId) btn.classList.add('is-selected');
+                if (state?.phase !== 'select') btn.disabled = true;
+                playersWrap.appendChild(btn);
+            }
+        }
+
+        if (emptyEl) {
+            const showEmpty = players.length === 0;
+            emptyEl.hidden = !showEmpty;
+            emptyEl.setAttribute('aria-hidden', showEmpty ? 'false' : 'true');
+        }
+
+        if (stakesWrap) {
+            stakesWrap.querySelectorAll('.qmodal__directedBetStakeBtn').forEach((el) => {
+                const stake = Number(el?.dataset?.stake) || 0;
+                el.classList.toggle('is-selected', stake === selectedStake);
+                el.disabled = state?.phase !== 'select';
+            });
+        }
+
+        if (startBtn) {
+            startBtn.disabled = !canStart;
+        }
+    }
+
     _bindFullscreenEvents() {
         const fsEvents = ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'];
         fsEvents.forEach(name => {
@@ -372,6 +437,29 @@ export class QuestionModalView {
                 action: 'toggle_answer',
                 target: this.getMediaControlTarget(),
             });
+        });
+        this._disposer.addEventListener(this._root, 'click', (e) => {
+            const playerBtn = e.target.closest('.qmodal__directedBetPlayerBtn');
+            if (playerBtn) {
+                this._cb.onDirectedBetAction?.({
+                    type: 'select_player',
+                    playerId: playerBtn.dataset.playerId || '',
+                });
+                return;
+            }
+
+            const stakeBtn = e.target.closest('.qmodal__directedBetStakeBtn');
+            if (stakeBtn) {
+                this._cb.onDirectedBetAction?.({
+                    type: 'select_stake',
+                    stake: Number(stakeBtn.dataset.stake) || 0,
+                });
+                return;
+            }
+
+            if (e.target.closest('.qmodal__directedBetStartBtn')) {
+                this._cb.onDirectedBetAction?.({ type: 'start' });
+            }
         });
 
         // ── Media peek buttons (view mode: opens a lightbox overlay) ────────
@@ -470,6 +558,8 @@ export class QuestionModalView {
             if (!btn) return;
             this._cb.onDeleteAudio?.(btn.dataset.filename, btn.dataset.target);
         });
+
+        this._renderDirectedBetPanel();
     }
 
     _updateResolutionButtons() {
