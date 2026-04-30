@@ -39,6 +39,20 @@ function createView(overrides = {}) {
 }
 
 describe('QuestionModalView winner state', () => {
+  it('initializes modifier select from active modifier type', () => {
+    const view = createView({
+      mode: 'edit',
+      activeModifierType: 'steal_leader_points',
+    });
+
+    expect(view._refs.modifierSelect.value).toBe('steal_leader_points');
+
+    view.setActiveModifierType('flip_score');
+    expect(view._refs.modifierSelect.value).toBe('flip_score');
+
+    view.destroy();
+  });
+
   it('keeps result buttons disabled until winner appears', () => {
     const view = createView();
 

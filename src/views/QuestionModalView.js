@@ -72,6 +72,7 @@ export class QuestionModalView {
 
         applyModeUI(this, this._refs);
         renderAll(this, this._refs);
+        this._syncModifierSelect();
         this.setControllerMediaPlaying(false);
 
         // Result buttons start disabled — enabled only when a player claims the press
@@ -424,7 +425,7 @@ export class QuestionModalView {
         // ── Modifier selector (edit mode) ─────────────────────────────────────────
         this._disposer.addEventListener(r.modifierSelect, 'change', (e) => {
             const nextType = String(e.target?.value || 'none');
-            this._activeModifierType = nextType;
+            this.setActiveModifierType(nextType);
             this._cb.onModifierChange?.(nextType);
         });
 

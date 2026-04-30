@@ -11,9 +11,16 @@ const ACTIVE_MODIFIER_TYPES = new Set([
   MODIFIER_TYPES.DIRECTED_BET,
 ]);
 
+const MODIFIER_ALIASES = Object.freeze({
+  'flip-score': MODIFIER_TYPES.FLIP_SCORE,
+  'steal-leader-points': MODIFIER_TYPES.STEAL_LEADER_POINTS,
+  'directed-bet': MODIFIER_TYPES.DIRECTED_BET,
+});
+
 function normalizeType(type) {
   const value = String(type || MODIFIER_TYPES.NONE).trim().toLowerCase();
-  return ACTIVE_MODIFIER_TYPES.has(value) ? value : MODIFIER_TYPES.NONE;
+  const alias = MODIFIER_ALIASES[value] || value;
+  return ACTIVE_MODIFIER_TYPES.has(alias) ? alias : MODIFIER_TYPES.NONE;
 }
 
 function normalizeConfig(config) {
