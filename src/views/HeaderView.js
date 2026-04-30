@@ -199,9 +199,17 @@ export function HeaderView({
       return;
     }
 
+    const sortedPlayers = currentPlayers
+      .slice()
+      .sort((a, b) => {
+        const scoreDiff = (Number(b?.points) || 0) - (Number(a?.points) || 0);
+        if (scoreDiff !== 0) return scoreDiff;
+        return String(a?.name || '').localeCompare(String(b?.name || ''));
+      });
+
     const nextSignature = JSON.stringify({
       currentChooserId: String(currentChooserId || ''),
-      players: currentPlayers.map((player) => ({
+      players: sortedPlayers.map((player) => ({
         id: String(player?.id || ''),
         name: String(player?.name || ''),
         points: Number(player?.points) || 0,
@@ -209,7 +217,7 @@ export function HeaderView({
     });
     if (nextSignature === chooserMenuSignature) return;
 
-    chooserListEl.innerHTML = currentPlayers.map((player) => {
+    chooserListEl.innerHTML = sortedPlayers.map((player) => {
       const isActive = String(player?.id) === String(currentChooserId);
       return `
         <button
