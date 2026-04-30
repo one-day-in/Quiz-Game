@@ -435,9 +435,9 @@ export class LeaderboardPanelView {
         <p class="leaderboard-panel__logSub">
           <span class="leaderboard-panel__logReason">
             ${escapeHtml(meta.reasonText)}
-            ${meta.deltaText ? `<span class="hdr-settings-logDelta ${meta.deltaClass}">${escapeHtml(meta.deltaText)}</span>` : ''}
             ${meta.outcomeType === 'correct' ? '<span class="leaderboard-panel__logOutcomeMark is-correct" aria-label="Correct" title="Correct">✓</span>' : ''}
             ${meta.outcomeType === 'incorrect' ? '<span class="leaderboard-panel__logOutcomeMark is-incorrect" aria-label="Incorrect" title="Incorrect">✕</span>' : ''}
+            ${meta.deltaText ? `<span class="hdr-settings-logDelta ${meta.deltaClass}">${escapeHtml(meta.deltaText)}</span>` : ''}
           </span>
           ${hasPill ? `
             <span class="leaderboard-panel__logDeltaPill">
