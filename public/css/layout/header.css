@@ -124,6 +124,43 @@
   box-sizing: border-box;
 }
 
+.hdr-editBanner {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(251, 191, 36, 0.72);
+  background: linear-gradient(180deg, rgba(217, 119, 6, 0.92), rgba(180, 83, 9, 0.96));
+  color: #fff7ed;
+  font-family: var(--font-label);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: 0 6px 18px rgba(120, 53, 15, 0.45);
+  animation: hdrEditBlink 1s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.hdr-editBanner[hidden] {
+  display: none !important;
+}
+
+@keyframes hdrEditBlink {
+  0%, 100% {
+    opacity: 1;
+    filter: brightness(1);
+  }
+  50% {
+    opacity: 0.36;
+    filter: brightness(1.12);
+  }
+}
+
 .app-title { display: none; }
 
 .hdr-right {

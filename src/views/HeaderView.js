@@ -73,6 +73,7 @@ export function HeaderView({
       </button>
     </div>
     <div class="hdr-center">
+      <div class="hdr-editBanner" hidden>${escapeHtml(t('mode_edit'))}</div>
       <div class="hdr-current-player hdr-current-player--center">
         <button
           class="hdr-current-player-btn hdr-current-player-btn--center"
@@ -143,6 +144,7 @@ export function HeaderView({
   const roundValueEl = el.querySelector('.js-round-value');
   const chooserValueEl = el.querySelector('.js-current-player-value');
   const chooserScoreEl = el.querySelector('.js-current-player-score');
+  const editBannerEl = el.querySelector('.hdr-editBanner');
   const chooserBtnEl = el.querySelector('.hdr-current-player-btn');
   const chooserMenuEl = el.querySelector('.hdr-current-player-menu');
   const chooserListEl = el.querySelector('.hdr-current-player-list');
@@ -263,6 +265,9 @@ export function HeaderView({
       }
     }
     el.classList.toggle('app-header--editMode', currentGameMode === 'edit');
+    if (editBannerEl) {
+      editBannerEl.hidden = currentGameMode !== 'edit';
+    }
 
     if (Array.isArray(next?.players)) currentPlayers = next.players.slice();
     if (Array.isArray(next?.scoreLogs)) currentScoreLogs = next.scoreLogs.slice();
