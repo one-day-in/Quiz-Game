@@ -161,7 +161,7 @@ export class ModalService {
       void this._resetPressRuntime();
     }
 
-    const shouldMarkAsAnswered = !this.isControllerMode() && effectiveMode === 'view' && !cellData.isAnswered;
+    const shouldMarkAsAnswered = !this.isControllerMode() && !cellData.isAnswered;
     if (shouldMarkAsAnswered) {
       void this._updateCell({ isAnswered: true }, { silent: true });
     }
