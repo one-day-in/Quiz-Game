@@ -32,37 +32,29 @@ export async function listScoreLogs(gameId, { limit = 5000 } = {}) {
 }
 
 export async function insertScoreLog(gameId, entry = {}) {
-  const payload = {
-    id: entry?.id || null,
-    game_id: gameId,
-    player_id: entry?.playerId || null,
-    player_name: entry?.playerName || 'Player',
-    cell_label: entry?.cellLabel || '',
-    outcome: entry?.outcome || null,
-    delta: Number(entry?.delta) || 0,
-    score_before: Number.isFinite(Number(entry?.scoreBefore)) ? Number(entry.scoreBefore) : null,
-    score_after: Number.isFinite(Number(entry?.scoreAfter)) ? Number(entry.scoreAfter) : null,
-    kind: entry?.kind || 'manual',
-    happened_at: entry?.happenedAt || new Date().toISOString(),
-  };
-
-  if (!payload.id) delete payload.id;
-
-  const { data, error } = await supabase
-    .from('score_logs')
-    .insert(payload)
-    .select(SCORE_LOG_COLUMNS)
-    .single();
+  const { data, error } = await supabase.rpc('append_score_log', {
+    p_id: entry?.id || null,
+    p_game_id: gameId,
+    p_player_id: entry?.playerId || null,
+    p_player_name: entry?.playerName || 'Player',
+    p_cell_label: entry?.cellLabel || '',
+    p_outcome: entry?.outcome || null,
+    p_delta: Number(entry?.delta) || 0,
+    p_score_before: Number.isFinite(Number(entry?.scoreBefore)) ? Number(entry.scoreBefore) : null,
+    p_score_after: Number.isFinite(Number(entry?.scoreAfter)) ? Number(entry.scoreAfter) : null,
+    p_kind: entry?.kind || 'manual',
+    p_happened_at: entry?.happenedAt || new Date().toISOString(),
+  });
 
   if (error) throw new Error(`[Game] insertScoreLog failed: ${error.message}`);
-  return mapScoreLogRow(data);
+  const row = Array.isArray(data) ? data[0] : data;
+  return mapScoreLogRow(row || {});
 }
 
 export async function clearScoreLogs(gameId) {
-  const { error } = await supabase
-    .from('score_logs')
-    .delete()
-    .eq('game_id', gameId);
+  const { error } = await supabase.rpc('clear_score_logs', {
+    p_game_id: gameId,
+  });
   if (error) throw new Error(`[Game] clearScoreLogs failed: ${error.message}`);
 }
 
