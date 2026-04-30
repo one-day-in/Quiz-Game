@@ -1,6 +1,6 @@
 // src/bootstrap.js
 import { getSession, signOut, onAuthStateChange } from './api/authApi.js';
-import { createGame, subscribeToGame } from './api/gameApi.js';
+import { createGame, getGame, resetAllCellsAnsweredState, saveGame, savePlayers, subscribeToGame } from './api/gameApi.js';
 import { clearScoreLogs, insertScoreLog, listScoreLogs, subscribeToScoreLogs } from './api/scoreLogsApi.js';
 import { syncCurrentUserProfile } from './api/profileApi.js';
 import { escapeHtml } from './utils/utils.js';
@@ -157,6 +157,20 @@ function renderError(error, onRetry) {
     document.getElementById('retryBtn')?.addEventListener('click', onRetry);
 }
 
+async function prepareGameForPlayStart(gameId) {
+    saveScoreLogsToStorage(gameId, []);
+
+    await Promise.all([
+        resetAllCellsAnsweredState(gameId),
+        savePlayers(gameId, []),
+        clearScoreLogs(gameId),
+    ]);
+
+    const game = await getGame(gameId);
+    game.meta = { ...(game.meta || {}), currentPlayerId: null, updatedAt: new Date().toISOString() };
+    await saveGame(gameId, game);
+}
+
 function renderLobby(user, { hostMode = 'host' } = {}) {
     if (hostMode === 'controller') {
         root.innerHTML = `
@@ -172,12 +186,20 @@ function renderLobby(user, { hostMode = 'host' } = {}) {
 
     const lobby = new LobbyView({
         currentUser: user,
-        onOpen: (gameId, gameName) => renderGame(user, gameId, gameName, { hostMode }),
-        onPlay: (gameId, gameName) => renderGame(user, gameId, gameName, { hostMode }),
+        onOpen: (gameId, gameName) => renderGame(user, gameId, gameName, { hostMode, entryMode: 'edit' }),
+        onPlay: async (gameId, gameName) => {
+            try {
+                await prepareGameForPlayStart(gameId);
+                renderGame(user, gameId, gameName, { hostMode, entryMode: 'play' });
+            } catch (err) {
+                console.error('[Bootstrap] play start reset failed:', err);
+                alert(`${t('error_prefix')}: ${err.message}`);
+            }
+        },
         onCreate: async (name) => {
             try {
                 const game = await createGame(name);
-                renderGame(user, game.id, game.name, { hostMode });
+                renderGame(user, game.id, game.name, { hostMode, entryMode: 'edit' });
             } catch (err) {
                 console.error('[Bootstrap] createGame failed:', err);
                 alert(`${t('error_prefix')}: ${err.message}`);
@@ -193,7 +215,7 @@ function renderLobby(user, { hostMode = 'host' } = {}) {
     _currentCleanup = () => lobby.destroy();
 }
 
-async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
+async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode = null } = {}) {
     saveLastGame(gameId, gameName);
     clearRoot();
     renderLoading(t('loading_game'));
@@ -647,6 +669,14 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host' } = {}) {
         });
         appRef = app;
         modalService.setGameMode(gameService.getState()?.uiState?.gameMode || 'play');
+
+        if (entryMode === 'edit') {
+            gameService.setGameMode('edit');
+            modalService.setGameMode('edit');
+        } else if (entryMode === 'play') {
+            gameService.setGameMode('play');
+            modalService.setGameMode('play');
+        }
 
         let stopCurrentPlayerBroadcast = null;
         if (hostMode === 'host') {

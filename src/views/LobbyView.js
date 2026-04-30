@@ -1,5 +1,5 @@
 // src/views/LobbyView.js
-import { listGames, renameGame, resetAllCellsAnsweredState } from '../api/gameApi.js';
+import { listGames, renameGame } from '../api/gameApi.js';
 import { GameRepository } from '../services/GameRepository.js';
 import { escapeHtml } from '../utils/utils.js';
 import { showConfirm, showPrompt } from '../utils/confirm.js';
@@ -280,21 +280,13 @@ export class LobbyView {
                 if (game && nameEl) this._openRenameEditor(nameEl, game);
             });
         });
-
-        // Play game from start (keep content, reset only answered state)
+        // Play game (reset flow is handled in bootstrap for a single source of truth)
         this._root.querySelectorAll('.lobby__rowPlay').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
+            btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const game = this._games.find(g => g.id === btn.dataset.id);
                 if (!game) return;
-
-                try {
-                    await resetAllCellsAnsweredState(game.id);
-                    onPlay?.(game.id, game.name || t('new_game'));
-                } catch (err) {
-                    console.error('[LobbyView] play reset failed:', err);
-                    alert(`${t('error_prefix')}: ${err.message}`);
-                }
+                onPlay?.(game.id, game.name || t('new_game'));
             });
         });
 
