@@ -59,6 +59,7 @@ export class ModalService {
     this._globalGameMode = 'play';
     this._mediaInteractionUnlocked = this.isControllerMode();
     this._pendingMediaControl = null;
+    this._pressResyncTimer = null;
     this._activeModifier = null;
     this._directedBet = null;
 
@@ -340,6 +341,7 @@ export class ModalService {
 
     this._bindPressRuntime();
     void this._syncPressAvailability({ force: true });
+    this._schedulePressAvailabilityResync();
     this._emitDirectedBetStateChange(this._getDirectedBetViewState());
     // ESC is handled inside QuestionModalView (properly cleaned up on destroy).
     // Do NOT add a document keydown listener here — ModalService._disposer is
@@ -417,6 +419,8 @@ export class ModalService {
       this._modalViewMode = 'view';
       this._modalIsAnswerShown = false;
       this._pressAvailabilityIntent = null;
+      clearTimeout(this._pressResyncTimer);
+      this._pressResyncTimer = null;
       this._activeModifier = null;
       this._directedBet = null;
       this._emitDirectedBetStateChange(null);
@@ -545,12 +549,19 @@ export class ModalService {
     const shouldEnable = this._isQuestionPressWindowActive();
     if (!force && this._pressAvailabilityIntent === shouldEnable) return;
 
+    const prevIntent = this._pressAvailabilityIntent;
     this._pressAvailabilityIntent = shouldEnable;
-    if (shouldEnable) {
-      await this._openPressRuntimeWithRetry();
-      return;
+    try {
+      if (shouldEnable) {
+        await this._openPressRuntimeWithRetry();
+        return;
+      }
+      await this._pressRuntime?.closePress?.();
+    } catch (error) {
+      // Do not leave stale intent on transport/socket failures.
+      this._pressAvailabilityIntent = prevIntent;
+      throw error;
     }
-    await this._pressRuntime?.closePress?.();
   }
 
   async _openPressRuntimeWithRetry() {
@@ -769,6 +780,9 @@ export class ModalService {
       this._clearPressCountdown();
       this._pressTimerPaused = false;
       this._setPressWinner(null, '');
+      if (this._isQuestionPressWindowActive() && runtime?.pressEnabled === false) {
+        this._schedulePressAvailabilityResync();
+      }
       return;
     }
 
@@ -821,6 +835,21 @@ export class ModalService {
     this._stopRuntimeSubscription = () => {
       stopSub?.();
     };
+  }
+
+  _schedulePressAvailabilityResync(delayMs = 420) {
+    if (this.isControllerMode()) return;
+    if (!this._isQuestionPressWindowActive()) return;
+    if (this._isResettingPressRuntime) return;
+    clearTimeout(this._pressResyncTimer);
+    this._pressResyncTimer = setTimeout(() => {
+      this._pressResyncTimer = null;
+      if (!this._isQuestionPressWindowActive()) return;
+      if (this._pressWinnerId) return;
+      void this._syncPressAvailability({ force: true }).catch((error) => {
+        console.warn('[ModalService] press availability resync failed:', error?.message || error);
+      });
+    }, delayMs);
   }
 
   _getEffectiveResolutionValue() {
