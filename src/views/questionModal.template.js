@@ -237,6 +237,8 @@ export function buildModalDom() {
       directedBetStakes:  qs('.qmodal__directedBetStakes'),
       directedBetStartBtn: qs('.qmodal__directedBetStartBtn'),
       directedBetEmpty:   qs('.qmodal__directedBetEmpty'),
+      modifierBar:       qs('.qmodal__modifierBar'),
+      modifierSelect:    qs('.qmodal__modifierSelect'),
       btnToggleMode:      qs('.qmodal__btnToggleMode'),
       btnIncorrect:       qs('.qmodal__btnIncorrect'),
       btnCorrect:         qs('.qmodal__btnCorrect'),
