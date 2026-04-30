@@ -21,10 +21,18 @@
  */
 
 /**
+ * @typedef {Object} CellModifier
+ * @property {string} type
+ * @property {Object} config
+ * @property {Object} state
+ */
+
+/**
  * @typedef {Object} Cell
  * @property {boolean} isAnswered
  * @property {Question} question
  * @property {Answer} answer
+ * @property {CellModifier} modifier
  */
 
 /**
@@ -93,7 +101,8 @@ export function isCell(obj) {
         && typeof obj === 'object'
         && typeof obj.isAnswered === 'boolean'
         && isQuestionOrAnswer(obj.question)
-        && isQuestionOrAnswer(obj.answer);
+        && isQuestionOrAnswer(obj.answer)
+        && (!!obj.modifier && typeof obj.modifier === 'object');
 }
 
 /**

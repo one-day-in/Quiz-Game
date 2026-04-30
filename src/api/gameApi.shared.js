@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient.js';
+import { createCellModifier, normalizeCellModifier } from '../modifiers/modifierEngine.js';
 
 export const MAX_PLAYERS = 8;
 export const PUBLIC_PLAYER_COLUMNS = 'id, game_id, name, points, joined_at';
@@ -8,8 +9,41 @@ export const GAME_RUNTIME_COLUMNS = '*';
 export const DEFAULT_CELL = {
     isAnswered: false,
     question: { text: '', media: null, audioFiles: [] },
-    answer:   { text: '', media: null, audioFiles: [] }
+    answer:   { text: '', media: null, audioFiles: [] },
+    modifier: createCellModifier(),
 };
+
+function normalizeCell(cell = {}) {
+    return {
+        isAnswered: !!cell?.isAnswered,
+        question: {
+            text: String(cell?.question?.text || ''),
+            media: cell?.question?.media || null,
+            audioFiles: Array.isArray(cell?.question?.audioFiles) ? cell.question.audioFiles : [],
+        },
+        answer: {
+            text: String(cell?.answer?.text || ''),
+            media: cell?.answer?.media || null,
+            audioFiles: Array.isArray(cell?.answer?.audioFiles) ? cell.answer.audioFiles : [],
+        },
+        modifier: normalizeCellModifier(cell?.modifier),
+    };
+}
+
+function normalizeRow(row = {}) {
+    const cells = Array.isArray(row?.cells) ? row.cells : [];
+    return {
+        topic: String(row?.topic || ''),
+        cells: Array.from({ length: 5 }, (_, index) => normalizeCell(cells[index] || DEFAULT_CELL)),
+    };
+}
+
+function normalizeRound(round = {}) {
+    const rows = Array.isArray(round?.rows) ? round.rows : [];
+    return {
+        rows: Array.from({ length: 5 }, (_, index) => normalizeRow(rows[index] || makeDefaultRow())),
+    };
+}
 
 export function makeDefaultRow() {
     return {
@@ -59,7 +93,10 @@ export function normalizeGame(game = {}) {
             updatedAt: game?.meta?.updatedAt || new Date().toISOString(),
             currentPlayerId: game?.meta?.currentPlayerId ? String(game.meta.currentPlayerId) : null,
         },
-        rounds: Array.isArray(game?.rounds) ? game.rounds : Array.from({ length: 3 }, makeDefaultRound),
+        rounds: Array.from(
+            { length: 3 },
+            (_, index) => normalizeRound((Array.isArray(game?.rounds) ? game.rounds : [])[index] || makeDefaultRound())
+        ),
         players: normalizePlayers(game?.players),
     };
 }

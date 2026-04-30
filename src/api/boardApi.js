@@ -6,6 +6,7 @@ import {
     makeDefaultRound,
     serializeGameForStorage,
 } from './gameApi.shared.js';
+import { normalizeCellModifier } from '../modifiers/modifierEngine.js';
 
 export async function getGame(gameId) {
     if (!gameId) {
@@ -86,6 +87,9 @@ export async function updateCell(gameId, roundId, rowId, cellId, updates) {
     if (typeof updates.isAnswered === 'boolean') cell.isAnswered = updates.isAnswered;
     if (updates.question) Object.assign(cell.question, updates.question);
     if (updates.answer) Object.assign(cell.answer, updates.answer);
+    if (Object.prototype.hasOwnProperty.call(updates || {}, 'modifier')) {
+        cell.modifier = normalizeCellModifier(updates?.modifier);
+    }
 
     game.meta.updatedAt = new Date().toISOString();
     return saveGame(gameId, game);

@@ -1,5 +1,6 @@
 // public/src/services/GameService.js
 import GameModel from '../models/GameModel.js';
+import { normalizeCellModifier } from '../modifiers/modifierEngine.js';
 
 // ─── Filename collectors ──────────────────────────────────────────────────────
 // Used before reset operations to gather all storage paths that will become
@@ -265,13 +266,17 @@ class GameService {
         const prev = {
             isAnswered: cell.isAnswered,
             question: cell.question ? { ...cell.question } : null,
-            answer: cell.answer ? { ...cell.answer } : null
+            answer: cell.answer ? { ...cell.answer } : null,
+            modifier: cell.modifier ? normalizeCellModifier(cell.modifier) : null,
         };
 
         // optimistic local update
         if (typeof patch?.isAnswered === 'boolean') cell.isAnswered = patch.isAnswered;
         if (patch?.question) cell.question = { ...(cell.question || {}), ...patch.question };
         if (patch?.answer) cell.answer = { ...(cell.answer || {}), ...patch.answer };
+        if (Object.prototype.hasOwnProperty.call(patch || {}, 'modifier')) {
+            cell.modifier = normalizeCellModifier(patch?.modifier);
+        }
 
         this.model.meta.updatedAt = new Date().toISOString();
         this._emit();
@@ -285,6 +290,7 @@ class GameService {
             cell.isAnswered = prev.isAnswered;
             cell.question = prev.question;
             cell.answer = prev.answer;
+            cell.modifier = prev.modifier;
             this.model.meta.updatedAt = new Date().toISOString();
             this._emit();
             throw err;

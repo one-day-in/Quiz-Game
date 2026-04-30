@@ -15,6 +15,10 @@ class GameModel {
     return this.rounds[roundIdx]?.rows[rowIdx]?.topic;
   }
 
+  getCellModifier(roundIdx, rowIdx, cellIdx) {
+    return this.rounds[roundIdx]?.rows[rowIdx]?.cells[cellIdx]?.modifier || null;
+  }
+
   updateCell(roundIdx, rowIdx, cellIdx, updates) {
     const cell = this.getCell(roundIdx, rowIdx, cellIdx);
     if (cell) {
