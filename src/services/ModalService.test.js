@@ -164,10 +164,7 @@ describe('ModalService press reset', () => {
     expect(service._resetPressRuntime).toHaveBeenCalledTimes(1);
   });
 
-  it('falls back to generic resolve when timeout resolve RPC fails', async () => {
-    resolveGamePressTimeoutMock.mockRejectedValue(
-      new Error('[Game] resolveGamePressTimeout failed: deadline mismatch')
-    );
+  it('uses generic resolve for timeout flow and still applies incorrect path', async () => {
     resolveGamePressMock.mockResolvedValue({
       gameId: 'game-1',
       winnerPlayerId: null,
@@ -191,6 +188,7 @@ describe('ModalService press reset', () => {
 
     await service._handleIncorrect({ source: 'timeout' });
 
+    expect(resolveGamePressTimeoutMock).not.toHaveBeenCalled();
     expect(resolveGamePressMock).toHaveBeenCalledWith('game-1', 'player-1', { pressEnabled: true });
     expect(adjustPlayerScoreMock).toHaveBeenCalledWith('game-1', 'player-1', -300);
     expect(service._resetPressRuntime).toHaveBeenCalledTimes(1);

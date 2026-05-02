@@ -1,7 +1,7 @@
 import { QuestionModalView } from '../views/QuestionModalView.js';
 import { Disposer } from '../utils/disposer.js';
 import { showConfirm } from '../utils/confirm.js';
-import { adjustPlayerScore, resolveGamePress, resolveGamePressTimeout } from '../api/gameApi.js';
+import { adjustPlayerScore, resolveGamePress } from '../api/gameApi.js';
 import { t } from '../i18n.js';
 import { createCellModifier, MODIFIER_TYPES } from '../modifiers/modifierEngine.js';
 
@@ -537,26 +537,15 @@ export class ModalService {
       return true;
     }
     try {
-      if (source === 'timeout') {
-        await resolveGamePressTimeout(this._game.getGameId(), winnerPlayerId, this._pressDeadlineIso);
-      } else {
-        await resolveGamePress(this._game.getGameId(), winnerPlayerId, { pressEnabled });
-      }
+      // Use one stable resolve path for timeout/manual to avoid strict timeout-RPC
+      // deadline mismatches that surface as noisy 400s in production logs.
+      await resolveGamePress(this._game.getGameId(), winnerPlayerId, {
+        pressEnabled: source === 'timeout' ? true : !!pressEnabled,
+      });
       return true;
     } catch (error) {
       const message = String(error?.message || '');
       if (message.includes('Press already resolved')) return false;
-      if (source === 'timeout') {
-        // Timeout lock can fail on strict deadline mismatch (clock/network drift).
-        // Retry with generic resolve path so score/reset flow still completes.
-        try {
-          await resolveGamePress(this._game.getGameId(), winnerPlayerId, { pressEnabled: true });
-          return true;
-        } catch (fallbackError) {
-          const fallbackMessage = String(fallbackError?.message || '');
-          if (fallbackMessage.includes('Press already resolved')) return false;
-        }
-      }
       // Compatibility fallback while DB function is being rolled out.
       if (message.includes('resolve_game_press')) {
         console.warn('[ModalService] resolve_game_press RPC is unavailable, using legacy local resolution.');
