@@ -40,6 +40,7 @@ let statusHideTimer = null;
 let hostControlChannel = null;
 let hostActivityStaleTimer = null;
 let isMainGameActive = false;
+let isHostModalOpen = false;
 const playerPressAudio = createPlayerPressAudio();
 
 const CONTROLLER_DISABLED_SELECTOR = '.player-controller__input, .player-controller__leaveBtn';
@@ -394,7 +395,7 @@ async function claimPress(statusEl) {
 function syncPressButtonState() {
   const pressBtn = document.getElementById('playerPressBtn');
   if (!pressBtn) return;
-  const isAvailable = isMainGameActive && !!isPressEnabled && !pressWinnerPlayerId && !isClaimingPress;
+  const isAvailable = isMainGameActive && isHostModalOpen && !!isPressEnabled && !pressWinnerPlayerId && !isClaimingPress;
   pressBtn.classList.toggle('is-enabled', isAvailable);
   pressBtn.setAttribute('aria-disabled', isAvailable ? 'false' : 'true');
 }
@@ -410,12 +411,25 @@ function bindMainGameActivity() {
       return;
     }
 
+    if (type === 'open_cell') {
+      isHostModalOpen = true;
+      syncPressButtonState();
+      return;
+    }
+
+    if (type === 'close_modal') {
+      isHostModalOpen = false;
+      syncPressButtonState();
+      return;
+    }
+
     if (type === 'press_confirmed') {
       handleHostPressConfirmed(payload);
       return;
     }
   });
   void hostControlChannel?.send('host_runtime_state_request');
+  void hostControlChannel?.send('modal_sync_request');
 }
 
 function markMainGameActive(active) {
