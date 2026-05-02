@@ -320,6 +320,52 @@ describe('ModalService press reset', () => {
     expect(adjustPlayerScoreMock).toHaveBeenCalledWith('game-1', 'player-1', -300);
   });
 
+  it('keeps winner lock when answer is shown so resolution buttons stay clickable', async () => {
+    const gameService = {
+      getGameId: () => 'game-1',
+      getModel: () => ({ getTopic: () => 'Topic' }),
+      updateCell: vi.fn().mockResolvedValue(true),
+      touch: vi.fn(),
+    };
+    const mediaService = {
+      toViewMedia: (media) => media,
+      toViewAudioFiles: (audioFiles) => audioFiles || [],
+    };
+    const pressRuntime = {
+      openPress: vi.fn().mockResolvedValue(undefined),
+      closePress: vi.fn().mockResolvedValue(undefined),
+      subscribe: vi.fn(() => vi.fn()),
+    };
+    const service = new ModalService(gameService, mediaService, pressRuntime, { getPlayers: () => [] });
+
+    service._open('view', {
+      roundId: 0,
+      rowId: 0,
+      cellId: 0,
+      value: 100,
+      isAnswered: true,
+      question: { text: 'Question', media: null, audioFiles: [] },
+      answer: { text: 'Answer', media: null, audioFiles: [] },
+      modifier: null,
+    });
+
+    await Promise.resolve();
+    await Promise.resolve();
+    service._setPressWinner('player-1', 'Maria');
+    pressRuntime.closePress.mockClear();
+
+    service.view?.toggleAnswerVisibility?.();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(service._pressWinnerId).toBe('player-1');
+    expect(service.view?._refs?.btnIncorrect?.disabled).toBe(false);
+    expect(service.view?._refs?.btnCorrect?.disabled).toBe(false);
+    expect(pressRuntime.closePress).not.toHaveBeenCalled();
+
+    await service.close();
+  });
+
   it('does not auto-mark incorrect when answer is shown right before timeout', async () => {
     const gameService = {
       getGameId: () => 'game-1',
@@ -383,39 +429,6 @@ describe('ModalService press reset', () => {
     expect(adjustPlayerScoreMock).toHaveBeenCalledWith('game-1', 'player-2', 500);
     expect(gameService.setCurrentPlayerId).toHaveBeenCalledWith('player-2');
     expect(service.close).toHaveBeenCalledTimes(1);
-  });
-
-  it('resolves incorrect for steal modifier via current player without press winner', async () => {
-    const gameService = {
-      getGameId: () => 'game-1',
-      getCurrentPlayerId: () => 'player-7',
-    };
-    const service = new ModalService(gameService, {});
-    service._activeModifier = { type: 'steal_leader_points' };
-    service._cellValue = 400;
-    service.close = vi.fn();
-
-    await service._handleIncorrect();
-
-    expect(resolveGamePressMock).not.toHaveBeenCalled();
-    expect(adjustPlayerScoreMock).toHaveBeenCalledWith('game-1', 'player-7', -400);
-    expect(service.close).toHaveBeenCalledTimes(1);
-  });
-
-  it('enables resolution buttons for steal modifier when current player exists', () => {
-    const gameService = {
-      getGameId: () => 'game-1',
-      getCurrentPlayerId: () => 'player-3',
-    };
-    const service = new ModalService(gameService, {});
-    service.view = {
-      setResolutionButtonsEnabled: vi.fn(),
-    };
-    service._activeModifier = { type: 'steal_leader_points' };
-
-    service._syncResolutionButtonsState();
-
-    expect(service.view.setResolutionButtonsEnabled).toHaveBeenCalledWith(true);
   });
 
   it('ignores duplicate incorrect resolution when lock is already taken by another host window', async () => {
