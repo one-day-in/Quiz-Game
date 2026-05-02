@@ -447,6 +447,41 @@ describe('ModalService press reset', () => {
     expect(service._resetPressRuntime).not.toHaveBeenCalled();
   });
 
+  it('applies remote modal press state updates for controller parity', () => {
+    const gameService = {
+      getGameId: () => 'game-1',
+    };
+    const service = new ModalService(gameService, {}, {});
+    service.view = {
+      updateWinnerName: vi.fn(),
+      setResolutionButtonsEnabled: vi.fn(),
+      updatePressTimer: vi.fn(),
+    };
+    service.activeCell = { roundId: 'r1', rowId: 'row-1', cellId: 'cell-1' };
+    service._cellValue = 300;
+
+    service.runRemoteCommand('modal_press_state', {
+      winnerPlayerId: 'player-9',
+      winnerName: 'Nora',
+      pressedAt: new Date().toISOString(),
+      pressEnabled: true,
+    });
+
+    expect(service._pressWinnerId).toBe('player-9');
+    expect(service.view.updateWinnerName).toHaveBeenLastCalledWith('Nora');
+    expect(service.view.setResolutionButtonsEnabled).toHaveBeenCalledWith(null);
+
+    service.runRemoteCommand('modal_press_state', {
+      winnerPlayerId: null,
+      winnerName: '',
+      pressedAt: null,
+      pressEnabled: false,
+    });
+
+    expect(service._pressWinnerId).toBe(null);
+    expect(service.view.updateWinnerName).toHaveBeenLastCalledWith('');
+  });
+
   it('flushes pending text updates as a single close patch', async () => {
     const updateCell = vi.fn().mockResolvedValue(true);
     const gameService = {

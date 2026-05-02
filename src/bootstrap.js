@@ -247,6 +247,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
         let lastOpenCellPayload = null;
         let lastModalViewState = null;
         let lastDirectedBetState = null;
+        let lastModalPressState = null;
         let stopScoreLogsSubscription = null;
         let stopGameSubscription = null;
         let stopGameSnapshotBroadcast = null;
@@ -504,6 +505,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
                     lastOpenCellPayload = null;
                     lastModalViewState = null;
                     lastDirectedBetState = null;
+                    lastModalPressState = null;
                     void hostControlChannel.send('close_modal');
                 }
                 : null,
@@ -631,6 +633,13 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
                 lastOpenCellPayload = payload || null;
                 lastModalViewState = { mode: gameMode === 'edit' ? 'edit' : 'view', isAnswerShown: gameMode === 'edit' };
                 lastDirectedBetState = null;
+                lastModalPressState = {
+                    winnerPlayerId: null,
+                    winnerName: '',
+                    pressedAt: null,
+                    pressExpiresAt: null,
+                    pressEnabled: false,
+                };
                 void hostControlChannel.send('open_cell', { ...(payload || {}), modalMode: lastModalViewState.mode });
             },
             onLeaderboardExpandedChange: (isExpanded) => {
@@ -680,8 +689,26 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
         let stopCurrentPlayerBroadcast = null;
         if (hostMode === 'host') {
             let lastPressConfirmationKey = '';
+            let lastModalPressStateKey = '';
             stopPressConfirmBroadcast = pressRuntimeService.subscribe((runtime) => {
                 const winnerPlayerId = String(runtime?.winnerPlayerId || '').trim();
+                const winnerName = String(runtime?.winnerName || '').trim();
+                const pressedAt = String(runtime?.pressedAt || '').trim();
+                const pressExpiresAt = String(runtime?.pressExpiresAt || '').trim();
+                const pressEnabled = !!runtime?.pressEnabled;
+                const modalPressStateKey = `${winnerPlayerId}|${winnerName}|${pressedAt}|${pressExpiresAt}|${pressEnabled ? 1 : 0}`;
+                if (modalPressStateKey !== lastModalPressStateKey) {
+                    lastModalPressStateKey = modalPressStateKey;
+                    lastModalPressState = {
+                        winnerPlayerId: winnerPlayerId || null,
+                        winnerName: winnerName || '',
+                        pressedAt: pressedAt || null,
+                        pressExpiresAt: pressExpiresAt || null,
+                        pressEnabled,
+                    };
+                    void hostControlChannel.send('modal_press_state', lastModalPressState);
+                }
+
                 if (!winnerPlayerId) {
                     lastPressConfirmationKey = '';
                     return;
@@ -778,6 +805,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
                         void hostControlChannel.send('modal_view_state', lastModalViewState);
                     }
                     void hostControlChannel.send('modal_directed_bet_state', lastDirectedBetState);
+                    void hostControlChannel.send('modal_press_state', lastModalPressState);
                 } else {
                     void hostControlChannel.send('close_modal');
                 }
@@ -851,6 +879,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
                         void hostControlChannel.send('modal_view_state', lastModalViewState);
                     }
                     void hostControlChannel.send('modal_directed_bet_state', lastDirectedBetState);
+                    void hostControlChannel.send('modal_press_state', lastModalPressState);
                 } else {
                     void hostControlChannel.send('close_modal');
                 }
@@ -942,7 +971,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
                 return;
             }
 
-            if (hostMode === 'controller' && (type === 'modal_view_state' || type === 'modal_media_state' || type === 'modal_directed_bet_state' || type === 'close_modal')) {
+            if (hostMode === 'controller' && (type === 'modal_view_state' || type === 'modal_media_state' || type === 'modal_directed_bet_state' || type === 'modal_press_state' || type === 'close_modal')) {
                 modalService.runRemoteCommand(type, payload);
                 return;
             }

@@ -161,6 +161,7 @@ export class ModalService {
     };
     this._cellValue = Number(cellData.value) || 0;
     this._currentResolutionValue = this._cellValue;
+    this._pressWinnerId = null;
     this._pressAutoResolveBlocked = false;
     this._pressDeadlineIso = null;
     const allowModeToggle = !this.isControllerMode() && this._globalGameMode === 'edit';
@@ -1036,6 +1037,42 @@ export class ModalService {
     }
     if (type === 'modal_directed_bet_state') {
       this.view?.setDirectedBetState?.(payload || null);
+      return;
+    }
+    if (type === 'modal_press_state') {
+      if (!this.isOpen()) return;
+      this._applyRemotePressState(payload);
+      return;
+    }
+  }
+
+  _applyRemotePressState(payload = {}) {
+    const nextWinnerId = String(payload?.winnerPlayerId || '').trim() || null;
+    const nextWinnerName = String(payload?.winnerName || '').trim();
+
+    if (!nextWinnerId) {
+      this._clearPressCountdown();
+      this._pressTimerPaused = false;
+      this._setPressWinner(null, '');
+      return;
+    }
+
+    const prevWinnerId = this._pressWinnerId;
+    this._setPressWinner(nextWinnerId, nextWinnerName);
+    this._currentResolutionValue = this._cellValue;
+    this.view?.setResolutionButtonsEnabled?.(null);
+
+    if (nextWinnerId !== prevWinnerId) {
+      this._clearPressCountdown();
+      this._pressTimerPaused = false;
+      const serverDeadlineMs = this._deriveRuntimeDeadlineMs(payload);
+      if (serverDeadlineMs) {
+        const remainingMs = Math.max(0, serverDeadlineMs - Date.now());
+        const serverDeadlineIso = new Date(serverDeadlineMs).toISOString();
+        this._startPressCountdown(remainingMs, serverDeadlineIso);
+      } else {
+        this._startPressCountdown();
+      }
     }
   }
 }
