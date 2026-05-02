@@ -43,7 +43,7 @@ export function buildModalDom() {
         <div class="qmodal__stateBanner qmodal__modifierBanner" hidden aria-live="polite">
           <div class="qmodal__stateBannerMain qmodal__modifierBannerMain"></div>
         </div>
-        <div class="qmodal__directedBetPanel" hidden>
+        <div class="qmodal__stateBanner qmodal__stateBanner--interactive qmodal__directedBetPanel" hidden>
           <p class="qmodal__directedBetTitle">${t('directed_bet_pick_player')}</p>
           <p class="qmodal__directedBetSubtitle">${t('directed_bet_pick_subtitle')}</p>
           <div class="qmodal__directedBetPlayers"></div>
