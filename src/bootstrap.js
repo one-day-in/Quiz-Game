@@ -509,10 +509,8 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
                 : null,
             onModalViewStateChange: hostMode === 'host'
                 ? ({ mode, isAnswerShown }) => {
-                    const nextGameMode = mode === 'edit' ? 'edit' : 'play';
-                    gameService.setGameMode(nextGameMode);
-                    modalService.setGameMode(nextGameMode);
-                    void hostControlChannel.send('game_mode_state', { gameMode: nextGameMode });
+                    // Modal preview/edit toggle is local to the modal and must not
+                    // switch the global game mode for the whole board.
                     lastModalViewState = { mode, isAnswerShown };
                     void hostControlChannel.send('modal_view_state', { mode, isAnswerShown });
                 }
