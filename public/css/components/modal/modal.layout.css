@@ -166,12 +166,16 @@
 
 .qmodal__directedBetPanel {
     z-index: 7;
-    align-items: stretch;
-    justify-content: flex-start;
-    gap: 12px;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
     padding: clamp(14px, 2vw, 20px);
     flex-direction: column;
     overflow: auto;
+}
+
+.qmodal__directedBetPanel > * {
+    width: min(100%, 980px);
 }
 
 .qmodal__directedBetTitle {
@@ -181,42 +185,76 @@
     letter-spacing: 0.03em;
     color: #fffaf0;
     text-transform: uppercase;
+    text-align: center;
 }
 
 .qmodal__directedBetSubtitle {
     margin: 0;
     color: #ffedd5;
+    text-align: center;
 }
 
 .qmodal__directedBetPlayers {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 8px;
+    gap: 10px;
 }
 
 .qmodal__directedBetPlayerBtn {
     width: 100%;
+    min-height: 68px;
+    border-radius: 18px;
+    background: linear-gradient(180deg, rgba(126, 39, 12, 0.88), rgba(91, 33, 15, 0.94));
+    border-color: rgba(254, 215, 170, 0.4);
+    color: #fff7ed;
 }
 
 .qmodal__directedBetStakes {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 8px;
+    gap: 10px;
+}
+
+.qmodal__directedBetStakeBtn {
+    min-height: 72px;
+    border-radius: 18px;
+    background: linear-gradient(180deg, rgba(154, 52, 18, 0.9), rgba(124, 45, 18, 0.96));
+    border-color: rgba(254, 215, 170, 0.46);
+    color: #fff7ed;
+    font-size: clamp(20px, 2.2vw, 30px);
+    font-weight: 900;
+    letter-spacing: 0.04em;
 }
 
 .qmodal__directedBetStakeBtn.is-selected,
 .qmodal__directedBetPlayerBtn.is-selected {
-    border-color: var(--brand-a35);
-    box-shadow: 0 0 0 2px var(--brand-a18) inset;
+    border-color: #fef08a;
+    background: linear-gradient(180deg, rgba(251, 191, 36, 0.96), rgba(245, 158, 11, 0.94));
+    color: #2b1300;
+    box-shadow:
+        0 0 0 3px rgba(254, 240, 138, 0.42) inset,
+        0 0 24px rgba(251, 191, 36, 0.45);
 }
 
 .qmodal__directedBetStartBtn {
-    margin-top: 4px;
+    margin-top: 6px;
+    min-height: 72px;
+    border-radius: 18px;
+    background: linear-gradient(180deg, #fde68a, #f59e0b);
+    border-color: rgba(120, 53, 15, 0.6);
+    color: #2b1300;
+    font-size: clamp(20px, 2vw, 28px);
+    letter-spacing: 0.04em;
 }
 
 .qmodal__directedBetEmpty {
     margin: 2px 0 0;
     color: #ffedd5;
+    text-align: center;
+}
+
+.qmodal__directedBetPanel .qmodal__btn:hover {
+    filter: brightness(1.08);
 }
 
 .qmodal__modifierSelect {
@@ -324,6 +362,12 @@
         padding: 6px 12px;
         font-size: clamp(18px, 2vw, 24px);
     }
+
+    .qmodal__directedBetPlayerBtn,
+    .qmodal__directedBetStakeBtn,
+    .qmodal__directedBetStartBtn {
+        min-height: 62px;
+    }
 }
 
 @media (max-width: 820px), (max-height: 700px) {
@@ -343,6 +387,10 @@
 
     .qmodal__footer {
         padding: 10px;
+    }
+
+    .qmodal__directedBetStakes {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 }
 
@@ -368,6 +416,14 @@
 
     .qmodal__stateBannerMain {
         font-size: clamp(20px, 6vw, 40px);
+    }
+
+    .qmodal__directedBetPlayers {
+        grid-template-columns: 1fr;
+    }
+
+    .qmodal__directedBetStakes {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
