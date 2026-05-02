@@ -111,6 +111,28 @@ describe('ModalService press reset', () => {
     expect(pressRuntime.closePress).toHaveBeenCalledTimes(1);
   });
 
+  it('keeps press closed for steal 1000 modifier in play view mode', async () => {
+    const gameService = {
+      getGameId: () => 'game-1',
+    };
+    const pressRuntime = {
+      openPress: vi.fn().mockResolvedValue(undefined),
+      closePress: vi.fn().mockResolvedValue(undefined),
+    };
+    const service = new ModalService(gameService, {}, pressRuntime);
+    service.view = { updateWinnerName: vi.fn() };
+    service.activeCell = { roundId: 0, rowId: 0, cellId: 0 };
+    service._globalGameMode = 'play';
+    service._modalViewMode = 'view';
+    service._modalIsAnswerShown = false;
+    service._activeModifier = { type: 'steal_leader_points' };
+
+    await service._resetPressRuntime();
+
+    expect(pressRuntime.openPress).not.toHaveBeenCalled();
+    expect(pressRuntime.closePress).toHaveBeenCalledTimes(1);
+  });
+
   it('closes stale openPress after switching to answer view', async () => {
     const gameService = {
       getGameId: () => 'game-1',

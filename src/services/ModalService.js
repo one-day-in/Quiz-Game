@@ -570,11 +570,17 @@ export class ModalService {
 
   _isQuestionPressWindowActive() {
     if (this._isDirectedBetLocked()) return false;
+    if (this._isPressBlockedByModifier()) return false;
     return this.isOpen()
       && !this.isControllerMode()
       && this._globalGameMode === 'play'
       && this._modalViewMode === 'view'
       && !this._modalIsAnswerShown;
+  }
+
+  _isPressBlockedByModifier() {
+    const type = String(this._activeModifier?.type || '').trim().toLowerCase();
+    return type === MODIFIER_TYPES.STEAL_LEADER_POINTS;
   }
 
   _getPressTraceSnapshot() {
