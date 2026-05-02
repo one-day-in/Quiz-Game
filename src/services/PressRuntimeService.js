@@ -335,19 +335,15 @@ class HybridPressRuntimeService {
   }
 
   subscribe(fn) {
-    const entry = { active: null, fallback: null };
+    const entry = { active: null };
     this._subs.set(fn, entry);
     void this.connect();
     if (this._active) {
       entry.active = this._active.subscribe(fn);
     }
-    if (this._shadowFallbackConnected) {
-      entry.fallback = this._fallback.subscribe(fn);
-    }
     return () => {
       const current = this._subs.get(fn);
       current?.active?.();
-      current?.fallback?.();
       this._subs.delete(fn);
     };
   }
@@ -393,7 +389,6 @@ class HybridPressRuntimeService {
   destroy() {
     for (const entry of this._subs.values()) {
       entry?.active?.();
-      entry?.fallback?.();
     }
     this._subs.clear();
     this._primary?.destroy?.();
@@ -435,11 +430,6 @@ class HybridPressRuntimeService {
     try {
       await this._fallback.connect();
       this._shadowFallbackConnected = true;
-      for (const [fn, entry] of this._subs) {
-        if (!entry.fallback) {
-          entry.fallback = this._fallback.subscribe(fn);
-        }
-      }
     } catch (error) {
       if (IS_DEV) {
         console.info('[PressRuntimeService] background fallback subscription failed:', error?.message || error);

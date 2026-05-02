@@ -14,8 +14,6 @@ import { createHostControlChannelService } from './services/HostControlChannelSe
 import { normalizeBuzzerUrl } from './utils/localBuzzerUrl.js';
 import {
   createPlayerPressAudio,
-  getPlayerPressWinnerToneKey,
-  shouldPlayPlayerPressWinnerTone,
 } from './utils/playerPressAudio.js';
 
 const root = document.getElementById('player-controller-app');
@@ -37,7 +35,6 @@ let isPressEnabled = false;
 let pressWinnerPlayerId = null;
 let isClaimingPress = false;
 let pressRuntime = null;
-let hasSeenRuntimeState = false;
 let lastPlayedWinnerToneKey = null;
 let statusHideTimer = null;
 let hostControlChannel = null;
@@ -231,7 +228,6 @@ function renderController(currentPlayer) {
       return;
     }
 
-    void playerPressAudio.unlock();
     void claimPress(statusEl);
   });
 
@@ -325,7 +321,6 @@ function syncControllerFromPlayers(players = []) {
 }
 
 function applyRuntimeState(runtime) {
-  const previousWinnerPlayerId = pressWinnerPlayerId;
   const nextWinnerPlayerId = runtime?.winnerPlayerId || null;
   isPressEnabled = !!runtime?.pressEnabled;
   pressWinnerPlayerId = nextWinnerPlayerId;
@@ -333,22 +328,7 @@ function applyRuntimeState(runtime) {
     isClaimingPress = false;
   }
 
-  const shouldPlayFromTransition = shouldPlayPlayerPressWinnerTone({
-    hasInitializedRuntime: hasSeenRuntimeState,
-    previousWinnerPlayerId,
-    nextWinnerPlayerId,
-    localPlayerId: player?.id || null,
-  });
-  const winnerToneKey = getPlayerPressWinnerToneKey(runtime, player?.id || null);
-
-  if (shouldPlayFromTransition && winnerToneKey && winnerToneKey !== lastPlayedWinnerToneKey) {
-    lastPlayedWinnerToneKey = winnerToneKey;
-    void playerPressAudio.playWinnerTone().catch((error) => {
-      console.warn('[player] winner tone playback failed:', error);
-    });
-  }
-
-  if (!winnerToneKey) {
+  if (!pressWinnerPlayerId) {
     lastPlayedWinnerToneKey = null;
   }
 
@@ -357,8 +337,25 @@ function applyRuntimeState(runtime) {
     hideStatus(statusEl);
   }
 
-  hasSeenRuntimeState = true;
   syncPressButtonState();
+}
+
+function handleHostPressConfirmed(payload = {}) {
+  const winnerPlayerId = String(payload?.winnerPlayerId || '').trim();
+  const localPlayerId = String(player?.id || '').trim();
+  if (!winnerPlayerId || !localPlayerId) return;
+  if (winnerPlayerId !== localPlayerId) return;
+
+  const confirmationKey = String(
+    payload?.confirmationKey
+    || `${winnerPlayerId}:${payload?.pressedAt || payload?.updatedAt || 'no-timestamp'}`
+  );
+  if (!confirmationKey || confirmationKey === lastPlayedWinnerToneKey) return;
+
+  lastPlayedWinnerToneKey = confirmationKey;
+  void playerPressAudio.playWinnerTone().catch((error) => {
+    console.warn('[player] winner tone playback failed:', error);
+  });
 }
 
 async function claimPress(statusEl) {
@@ -405,6 +402,11 @@ function bindMainGameActivity() {
 
     if (type === 'host_runtime_state') {
       markMainGameActive(payload?.active !== false);
+      return;
+    }
+
+    if (type === 'press_confirmed') {
+      handleHostPressConfirmed(payload);
       return;
     }
   });

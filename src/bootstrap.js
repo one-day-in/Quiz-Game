@@ -251,6 +251,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
         let stopGameSubscription = null;
         let stopGameSnapshotBroadcast = null;
         let stopPlayersSnapshotBroadcast = null;
+        let stopPressConfirmBroadcast = null;
         let hasRoundStateSynced = false;
         let gameSnapshotBroadcastTimer = null;
         let playersSnapshotBroadcastTimer = null;
@@ -680,6 +681,27 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
 
         let stopCurrentPlayerBroadcast = null;
         if (hostMode === 'host') {
+            let lastPressConfirmationKey = '';
+            stopPressConfirmBroadcast = pressRuntimeService.subscribe((runtime) => {
+                const winnerPlayerId = String(runtime?.winnerPlayerId || '').trim();
+                if (!winnerPlayerId) {
+                    lastPressConfirmationKey = '';
+                    return;
+                }
+
+                const timestamp = String(runtime?.pressedAt || runtime?.updatedAt || '').trim();
+                const confirmationKey = `${winnerPlayerId}:${timestamp || 'no-timestamp'}`;
+                if (confirmationKey === lastPressConfirmationKey) return;
+                lastPressConfirmationKey = confirmationKey;
+
+                void hostControlChannel.send('press_confirmed', {
+                    winnerPlayerId,
+                    confirmationKey,
+                    pressedAt: runtime?.pressedAt || null,
+                    updatedAt: runtime?.updatedAt || null,
+                });
+            });
+
             let lastCurrentPlayerId = gameService.getCurrentPlayerId();
             stopCurrentPlayerBroadcast = gameService.subscribe((state) => {
                 const nextPlayerId = state?.model?.getCurrentPlayerId?.() ?? null;
@@ -954,6 +976,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
                 });
             }
             stopCurrentPlayerBroadcast?.();
+            stopPressConfirmBroadcast?.();
             stopRoundBroadcast?.();
             stopGameSnapshotBroadcast?.();
             stopPlayersSnapshotBroadcast?.();
