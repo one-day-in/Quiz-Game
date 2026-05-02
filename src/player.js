@@ -64,7 +64,6 @@ async function startPlayerController() {
       role: 'player',
       controllerId,
       wsUrl: buzzerUrl,
-      disableFallback: true,
     });
     await pressRuntime.connect();
     bindRealtimePlayers();
