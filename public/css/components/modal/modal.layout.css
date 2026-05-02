@@ -195,9 +195,13 @@
 }
 
 .qmodal__directedBetPlayers {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
     gap: 10px;
+    max-height: min(46dvh, 520px);
+    overflow-y: auto;
+    padding-right: 4px;
 }
 
 .qmodal__directedBetPlayerBtn {
@@ -392,6 +396,10 @@
     .qmodal__directedBetStakes {
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
+
+    .qmodal__directedBetPlayers {
+        max-height: min(40dvh, 360px);
+    }
 }
 
 /* Narrow screens: stack the two groups vertically */
@@ -416,10 +424,6 @@
 
     .qmodal__stateBannerMain {
         font-size: clamp(20px, 6vw, 40px);
-    }
-
-    .qmodal__directedBetPlayers {
-        grid-template-columns: 1fr;
     }
 
     .qmodal__directedBetStakes {
