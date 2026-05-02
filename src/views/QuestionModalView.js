@@ -332,7 +332,11 @@ export class QuestionModalView {
         const enabled = !!(state?.enabled);
         panel.hidden = !enabled;
         panel.setAttribute('aria-hidden', enabled ? 'false' : 'true');
-        if (!enabled) return;
+        if (!enabled) {
+            panel.classList.remove('is-visible');
+            return;
+        }
+        panel.classList.add('is-visible');
 
         const playersWrap = this._refs.directedBetPlayers;
         const emptyEl = this._refs.directedBetEmpty;
