@@ -385,6 +385,39 @@ describe('ModalService press reset', () => {
     expect(service.close).toHaveBeenCalledTimes(1);
   });
 
+  it('resolves incorrect for steal modifier via current player without press winner', async () => {
+    const gameService = {
+      getGameId: () => 'game-1',
+      getCurrentPlayerId: () => 'player-7',
+    };
+    const service = new ModalService(gameService, {});
+    service._activeModifier = { type: 'steal_leader_points' };
+    service._cellValue = 400;
+    service.close = vi.fn();
+
+    await service._handleIncorrect();
+
+    expect(resolveGamePressMock).not.toHaveBeenCalled();
+    expect(adjustPlayerScoreMock).toHaveBeenCalledWith('game-1', 'player-7', -400);
+    expect(service.close).toHaveBeenCalledTimes(1);
+  });
+
+  it('enables resolution buttons for steal modifier when current player exists', () => {
+    const gameService = {
+      getGameId: () => 'game-1',
+      getCurrentPlayerId: () => 'player-3',
+    };
+    const service = new ModalService(gameService, {});
+    service.view = {
+      setResolutionButtonsEnabled: vi.fn(),
+    };
+    service._activeModifier = { type: 'steal_leader_points' };
+
+    service._syncResolutionButtonsState();
+
+    expect(service.view.setResolutionButtonsEnabled).toHaveBeenCalledWith(true);
+  });
+
   it('ignores duplicate incorrect resolution when lock is already taken by another host window', async () => {
     resolveGamePressMock.mockRejectedValue(new Error('[Game] resolveGamePress failed: Press already resolved'));
     const gameService = {

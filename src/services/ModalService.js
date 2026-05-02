@@ -323,6 +323,7 @@ export class ModalService {
         this._directedBet = null;
         this.view?.setDirectedBetState?.(null);
         this._emitDirectedBetStateChange(null);
+        this._syncResolutionButtonsState();
         await this._updateCell({ modifier: this._activeModifier });
       },
 
@@ -339,6 +340,7 @@ export class ModalService {
         }
 
         this._resumePressCountdown();
+        this._syncResolutionButtonsState();
         void this._syncPressAvailability({ reason: 'view_state_active' });
       },
       onDirectedBetAction: (action) => {
@@ -360,6 +362,7 @@ export class ModalService {
     });
 
     this.container.appendChild(this.view.el);
+    this._syncResolutionButtonsState();
 
     this._onModalViewStateChange?.({ mode: this.view?._mode || 'view', isAnswerShown: !!this.view?._isAnswerShown });
 
@@ -470,12 +473,17 @@ export class ModalService {
   }
 
   async _handleIncorrect({ source = 'manual' } = {}) {
-    if (!this._pressWinnerId || this._isResolvingPressResult) return;
+    const winnerId = this._getResolutionPlayerId();
+    if (!winnerId || this._isResolvingPressResult) {
+      if (!winnerId && this._isPressBlockedByModifier()) {
+        alert(t('modifier_no_current_player'));
+      }
+      return;
+    }
     if (source === 'timeout' && this._shouldBlockAutoIncorrect()) return;
     this._isResolvingPressResult = true;
     this._clearPressCountdown();
     const resolutionValue = this._getEffectiveResolutionValue();
-    const winnerId = this._pressWinnerId;
     const lockAcquired = await this._acquirePressResolutionLock(winnerId, {
       pressEnabled: true,
       source,
@@ -501,16 +509,27 @@ export class ModalService {
       return;
     }
 
+    if (this._isPressBlockedByModifier()) {
+      this._isResolvingPressResult = false;
+      this.close();
+      return;
+    }
+
     // Reset press — modal stays open, another player can press.
     await this._resetPressRuntime();
     this._isResolvingPressResult = false;
   }
 
   async _handleCorrect() {
-    if (!this._pressWinnerId || this._isResolvingPressResult) return;
+    const winnerId = this._getResolutionPlayerId();
+    if (!winnerId || this._isResolvingPressResult) {
+      if (!winnerId && this._isPressBlockedByModifier()) {
+        alert(t('modifier_no_current_player'));
+      }
+      return;
+    }
     this._isResolvingPressResult = true;
     const resolutionValue = this._getEffectiveResolutionValue();
-    const winnerId = this._pressWinnerId;
     const lockAcquired = await this._acquirePressResolutionLock(winnerId, { pressEnabled: false });
     if (!lockAcquired) {
       this._isResolvingPressResult = false;
@@ -533,6 +552,7 @@ export class ModalService {
 
   async _acquirePressResolutionLock(winnerPlayerId, { pressEnabled = false, source = 'manual' } = {}) {
     if (!winnerPlayerId) return false;
+    if (this._isPressBlockedByModifier()) return true;
     if (this._directedBet?.enabled && this._directedBet.phase === 'answering' && !this._directedBet.fallbackActivated) {
       return true;
     }
@@ -581,6 +601,26 @@ export class ModalService {
   _isPressBlockedByModifier() {
     const type = String(this._activeModifier?.type || '').trim().toLowerCase();
     return type === MODIFIER_TYPES.STEAL_LEADER_POINTS;
+  }
+
+  _getFallbackResolutionPlayerId() {
+    const playerId = String(this._game?.getCurrentPlayerId?.() || '').trim();
+    return playerId || null;
+  }
+
+  _getResolutionPlayerId() {
+    if (this._pressWinnerId) return this._pressWinnerId;
+    if (this._isPressBlockedByModifier()) return this._getFallbackResolutionPlayerId();
+    return null;
+  }
+
+  _syncResolutionButtonsState() {
+    if (!this.view) return;
+    if (!this._isPressBlockedByModifier()) {
+      this.view.setResolutionButtonsEnabled?.(null);
+      return;
+    }
+    this.view.setResolutionButtonsEnabled?.(!!this._getFallbackResolutionPlayerId());
   }
 
   _getPressTraceSnapshot() {
