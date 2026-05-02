@@ -40,6 +40,9 @@ export function buildModalDom() {
           <div class="qmodal__pressBannerMain"></div>
           <div class="qmodal__pressBannerTimer" hidden>00:30</div>
         </div>
+        <div class="qmodal__modifierBanner" hidden aria-live="polite">
+          <div class="qmodal__modifierBannerMain"></div>
+        </div>
         <div class="qmodal__directedBetPanel" hidden>
           <p class="qmodal__directedBetTitle">${t('directed_bet_pick_player')}</p>
           <p class="qmodal__directedBetSubtitle">${t('directed_bet_pick_subtitle')}</p>
@@ -230,6 +233,8 @@ export function buildModalDom() {
       pressBanner:        qs('.qmodal__pressBanner'),
       pressBannerMain:    qs('.qmodal__pressBannerMain'),
       pressBannerTimer:   qs('.qmodal__pressBannerTimer'),
+      modifierBanner:     qs('.qmodal__modifierBanner'),
+      modifierBannerMain: qs('.qmodal__modifierBannerMain'),
       directedBetPanel:   qs('.qmodal__directedBetPanel'),
       directedBetPlayers: qs('.qmodal__directedBetPlayers'),
       directedBetStakes:  qs('.qmodal__directedBetStakes'),

@@ -1,6 +1,5 @@
 import { GRID_CONFIG, getCellValueByCol } from '../utils/utils.js';
 import { t } from '../i18n.js';
-import { MODIFIER_TYPES } from '../modifiers/modifierEngine.js';
 
 // ---------- helpers ----------
 
@@ -30,17 +29,6 @@ function renderTopicCellFromModel(el, model, roundId, row) {
 function resetTopicCellContent(el) {
   el.querySelector('.topic-editor')?.remove();
   el.querySelector(':scope > span')?.remove();
-}
-
-function renderCellModifierBanner(cellEl, modifier) {
-  const modifierType = String(modifier?.type || '').trim().toLowerCase();
-  if (modifierType !== MODIFIER_TYPES.STEAL_LEADER_POINTS) return;
-
-  cellEl.classList.add('has-modifier', 'has-modifier--steal');
-  const banner = document.createElement('div');
-  banner.className = 'cell-question__modifierBanner';
-  banner.textContent = `⚠ ${t('steal_leader_points_modifier')}`;
-  cellEl.appendChild(banner);
 }
 
 // ---------- view ----------
@@ -169,7 +157,6 @@ export function GameGridView({ model, uiState, roundId, onCellClick, onTopicChan
       if (cell?.isAnswered) {
         cellEl.classList.add('is-answered');
       }
-      renderCellModifierBanner(cellEl, cell?.modifier);
 
       cellEl.addEventListener('click', (e) => {
         e.stopPropagation();

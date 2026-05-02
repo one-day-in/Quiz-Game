@@ -175,6 +175,7 @@ export class QuestionModalView {
     setActiveModifierType(nextType = 'none') {
         this._activeModifierType = String(nextType || 'none');
         this._syncModifierSelect();
+        renderAll(this, this._refs);
     }
 
     _syncModifierSelect() {

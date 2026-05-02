@@ -53,6 +53,29 @@ describe('QuestionModalView winner state', () => {
     view.destroy();
   });
 
+  it('shows modifier banner in view mode when cell modifier is active', () => {
+    const view = createView({
+      mode: 'view',
+      activeModifierType: 'steal_leader_points',
+    });
+
+    expect(view._refs.modifierBanner.hidden).toBe(false);
+    expect(view._refs.modifierBanner.textContent).toContain('1000');
+
+    view.destroy();
+  });
+
+  it('keeps modifier banner hidden in edit mode', () => {
+    const view = createView({
+      mode: 'edit',
+      activeModifierType: 'steal_leader_points',
+    });
+
+    expect(view._refs.modifierBanner.hidden).toBe(true);
+
+    view.destroy();
+  });
+
   it('keeps result buttons disabled until winner appears', () => {
     const view = createView();
 

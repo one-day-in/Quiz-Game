@@ -186,6 +186,40 @@ function hasText(v) {
   return !!(v && v.trim().length);
 }
 
+function getModifierBannerText(modifierType) {
+  const type = String(modifierType || '').trim().toLowerCase();
+  if (type === 'flip_score') return t('flip_score_modifier');
+  if (type === 'steal_leader_points') return t('steal_leader_points_modifier');
+  if (type === 'directed_bet') return t('directed_bet_modifier');
+  return '';
+}
+
+function renderModifierBanner(view, refs) {
+  const banner = refs.modifierBanner;
+  const bannerMain = refs.modifierBannerMain;
+  if (!banner || !bannerMain) return;
+
+  const bannerLabel = getModifierBannerText(view._activeModifierType);
+  const directedBetVisible = !!view?._directedBetState?.enabled;
+  const shouldShow = view._mode === 'view' && !!bannerLabel && !directedBetVisible;
+
+  if (!shouldShow) {
+    banner.classList.remove('is-visible');
+    setHidden(banner, true);
+    return;
+  }
+
+  const nextText = `⚡ ${bannerLabel}`;
+  const shouldAnimate = banner.hidden || bannerMain.textContent !== nextText;
+  bannerMain.textContent = nextText;
+  setHidden(banner, false);
+  if (shouldAnimate) {
+    banner.classList.remove('is-visible');
+    void banner.offsetWidth;
+  }
+  banner.classList.add('is-visible');
+}
+
 function fitViewText(refs, type) {
   const textEl = refs[`${type}TextView`];
   if (!textEl || textEl.hidden) return;
@@ -384,6 +418,7 @@ export function renderAll(view, refs) {
 
   // Empty state (view mode only)
   const showEmpty = view._mode === 'view' && !(qHasAny || aHasAny);
+  renderModifierBanner(view, refs);
   setHidden(refs.emptyState, !showEmpty);
 
   if (showEmpty) {

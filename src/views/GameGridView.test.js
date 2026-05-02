@@ -25,7 +25,7 @@ function createModelStub() {
 }
 
 describe('GameGridView modifier banner', () => {
-  it('renders a banner on cells with steal 1000 modifier', () => {
+  it('does not render modifier banners on grid cells', () => {
     const view = GameGridView({
       model: createModelStub(),
       uiState: { gameMode: 'play' },
@@ -40,9 +40,8 @@ describe('GameGridView modifier banner', () => {
     const banner = firstCell?.querySelector('.cell-question__modifierBanner');
     const secondBanner = secondCell?.querySelector('.cell-question__modifierBanner');
 
-    expect(firstCell?.classList.contains('has-modifier--steal')).toBe(true);
-    expect(banner).toBeTruthy();
-    expect(banner?.textContent).toContain('1000');
+    expect(firstCell?.classList.contains('has-modifier--steal')).toBe(false);
+    expect(banner).toBeFalsy();
     expect(secondBanner).toBeFalsy();
   });
 });
