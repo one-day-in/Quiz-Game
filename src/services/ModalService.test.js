@@ -482,6 +482,33 @@ describe('ModalService press reset', () => {
     expect(service.view.updateWinnerName).toHaveBeenLastCalledWith('');
   });
 
+  it('applies directed bet actions received through remote command channel', () => {
+    const gameService = {
+      getGameId: () => 'game-1',
+    };
+    const service = new ModalService(gameService, {}, {});
+    service._directedBet = {
+      enabled: true,
+      phase: 'select',
+      players: [{ id: 'p-1', name: 'Nora' }],
+      selectedPlayerId: null,
+      selectedStake: 100,
+      fallbackActivated: false,
+    };
+
+    service.runRemoteCommand('modal_directed_bet_action', {
+      type: 'select_player',
+      playerId: 'p-1',
+    });
+    service.runRemoteCommand('modal_directed_bet_action', {
+      type: 'select_stake',
+      stake: 300,
+    });
+
+    expect(service._directedBet.selectedPlayerId).toBe('p-1');
+    expect(service._directedBet.selectedStake).toBe(300);
+  });
+
   it('flushes pending text updates as a single close patch', async () => {
     const updateCell = vi.fn().mockResolvedValue(true);
     const gameService = {

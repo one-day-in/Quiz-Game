@@ -348,7 +348,10 @@ export class ModalService {
         void this._syncPressAvailability({ reason: 'view_state_active' });
       },
       onDirectedBetAction: (action) => {
-        if (this.isControllerMode()) return;
+        if (this.isControllerMode()) {
+          this._onControllerCommand?.('modal_directed_bet_action', action || {});
+          return;
+        }
         this._handleDirectedBetAction(action);
       },
 
@@ -1037,6 +1040,11 @@ export class ModalService {
     }
     if (type === 'modal_directed_bet_state') {
       this.view?.setDirectedBetState?.(payload || null);
+      return;
+    }
+    if (type === 'modal_directed_bet_action') {
+      if (this.isControllerMode()) return;
+      this._handleDirectedBetAction(payload || {});
       return;
     }
     if (type === 'modal_press_state') {
