@@ -68,6 +68,7 @@ These rules are the operating baseline for future agent work in this repository.
 ## Verification Expectations
 
 - For UI changes, run at least `npm test` and `npm run build` when feasible.
+- After successful verification, push each requested change immediately. The user validates behavior directly in production.
 - For score/leaderboard changes, verify:
   - host correct/incorrect flow
   - player controller score updates

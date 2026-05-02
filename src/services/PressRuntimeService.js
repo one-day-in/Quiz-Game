@@ -438,7 +438,14 @@ class HybridPressRuntimeService {
   }
 }
 
-export function createPressRuntimeService({ gameId, role, controllerId = null, wsUrl = '', disableSocket = false }) {
+export function createPressRuntimeService({
+  gameId,
+  role,
+  controllerId = null,
+  wsUrl = '',
+  disableSocket = false,
+  disableFallback = false,
+}) {
   if (disableSocket) {
     return new ApiPressRuntimeService({ gameId, controllerId });
   }
@@ -460,6 +467,10 @@ export function createPressRuntimeService({ gameId, role, controllerId = null, w
         }
       : null,
   });
+
+  if (disableFallback) {
+    return socketService;
+  }
 
   const fallbackService = new ApiPressRuntimeService({ gameId, controllerId });
   return new HybridPressRuntimeService(socketService, fallbackService);

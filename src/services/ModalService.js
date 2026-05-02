@@ -113,8 +113,10 @@ export class ModalService {
   }
 
   setGameMode(mode = 'play') {
-    this._globalGameMode = String(mode || 'play').toLowerCase() === 'edit' ? 'edit' : 'play';
-    void this._syncPressAvailability({ force: true, reason: 'game_mode_changed' });
+    const nextMode = String(mode || 'play').toLowerCase() === 'edit' ? 'edit' : 'play';
+    if (this._globalGameMode === nextMode) return;
+    this._globalGameMode = nextMode;
+    void this._syncPressAvailability({ reason: 'game_mode_changed' });
   }
 
   isControllerMode() {
@@ -353,7 +355,10 @@ export class ModalService {
     this._onModalViewStateChange?.({ mode: this.view?._mode || 'view', isAnswerShown: !!this.view?._isAnswerShown });
 
     this._bindPressRuntime();
-    void this._syncPressAvailability({ force: true, reason: 'modal_opened' });
+    // _resetPressRuntime already performs forced availability sync when modal opens.
+    if (this.isControllerMode()) {
+      void this._syncPressAvailability({ reason: 'modal_opened_controller' });
+    }
     this._schedulePressAvailabilityResync();
     this._emitDirectedBetStateChange(this._getDirectedBetViewState());
     // ESC is handled inside QuestionModalView (properly cleaned up on destroy).
@@ -595,12 +600,12 @@ export class ModalService {
         this._tracePressAvailability('open:start', { reason, syncVersion, shouldEnable, force });
         await this._openPressRuntimeWithRetry();
         const staleOpen = syncVersion !== this._pressSyncVersion;
-        if (staleOpen || !this._isQuestionPressWindowActive()) {
-          this._tracePressAvailability('open:stale-close', { reason, syncVersion, staleOpen });
+        if (!this._isQuestionPressWindowActive()) {
+          this._tracePressAvailability('open:postcheck-close', { reason, syncVersion, staleOpen });
           await this._pressRuntime?.closePress?.();
           return;
         }
-        this._tracePressAvailability('open:done', { reason, syncVersion });
+        this._tracePressAvailability('open:done', { reason, syncVersion, staleOpen });
         return;
       }
       this._tracePressAvailability('close:start', { reason, syncVersion, shouldEnable, force });

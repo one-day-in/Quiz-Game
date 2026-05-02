@@ -59,7 +59,13 @@ async function startPlayerController() {
     hostControlChannel = createHostControlChannelService({ gameId, role: 'player' });
     await hostControlChannel.connect();
     bindMainGameActivity();
-    pressRuntime = createPressRuntimeService({ gameId, role: 'player', controllerId, wsUrl: buzzerUrl });
+    pressRuntime = createPressRuntimeService({
+      gameId,
+      role: 'player',
+      controllerId,
+      wsUrl: buzzerUrl,
+      disableFallback: true,
+    });
     await pressRuntime.connect();
     bindRealtimePlayers();
     bindRuntimeState();
