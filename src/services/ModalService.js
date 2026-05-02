@@ -14,6 +14,7 @@ const DIRECTED_BET_MIN_STAKE = 100;
 const DIRECTED_BET_MAX_STAKE = 500;
 const DIRECTED_BET_STEP = 100;
 const DIRECTED_BET_RESPONSE_SECONDS = 40;
+const PRESS_TRACE_ENABLED = String(import.meta?.env?.VITE_PRESS_TRACE || '').toLowerCase() === 'true';
 
 export class ModalService {
   constructor(gameService, mediaService, pressRuntime, playersService, options = {}) {
@@ -56,6 +57,7 @@ export class ModalService {
     this._modalViewMode = 'view';
     this._modalIsAnswerShown = false;
     this._pressAvailabilityIntent = null;
+    this._pressSyncVersion = 0;
     this._globalGameMode = 'play';
     this._mediaInteractionUnlocked = this.isControllerMode();
     this._pendingMediaControl = null;
@@ -112,7 +114,7 @@ export class ModalService {
 
   setGameMode(mode = 'play') {
     this._globalGameMode = String(mode || 'play').toLowerCase() === 'edit' ? 'edit' : 'play';
-    void this._syncPressAvailability({ force: true });
+    void this._syncPressAvailability({ force: true, reason: 'game_mode_changed' });
   }
 
   isControllerMode() {
@@ -321,12 +323,12 @@ export class ModalService {
         this._pressAutoResolveBlocked = nextMode !== 'view' || !!isAnswerShown;
         if (this._pressAutoResolveBlocked) {
           this._pausePressCountdown();
-          void this._syncPressAvailability();
+      void this._syncPressAvailability({ reason: 'view_state_blocked' });
           return;
         }
 
         this._resumePressCountdown();
-        void this._syncPressAvailability();
+        void this._syncPressAvailability({ reason: 'view_state_active' });
       },
       onDirectedBetAction: (action) => {
         if (this.isControllerMode()) return;
@@ -351,7 +353,7 @@ export class ModalService {
     this._onModalViewStateChange?.({ mode: this.view?._mode || 'view', isAnswerShown: !!this.view?._isAnswerShown });
 
     this._bindPressRuntime();
-    void this._syncPressAvailability({ force: true });
+    void this._syncPressAvailability({ force: true, reason: 'modal_opened' });
     this._schedulePressAvailabilityResync();
     this._emitDirectedBetStateChange(this._getDirectedBetViewState());
     // ESC is handled inside QuestionModalView (properly cleaned up on destroy).
@@ -435,6 +437,7 @@ export class ModalService {
       this._activeModifier = null;
       this._directedBet = null;
       this._emitDirectedBetStateChange(null);
+      this._tracePressAvailability('close:modal_shutdown', { reason: 'modal_closed' });
       void this._pressRuntime?.closePress?.();
       if (this.container?.isConnected) this.container.innerHTML = '';
       if (hadOpenModal) {
@@ -541,7 +544,7 @@ export class ModalService {
       this._clearPressCountdown();
       this._pressTimerPaused = false;
       this._setPressWinner(null, '');
-      await this._syncPressAvailability({ force: true });
+      await this._syncPressAvailability({ force: true, reason: 'press_runtime_reset' });
     } catch (error) {
       console.error('[ModalService] Failed to reset press runtime:', error);
     }
@@ -549,28 +552,68 @@ export class ModalService {
 
   _isQuestionPressWindowActive() {
     if (this._isDirectedBetLocked()) return false;
-    return !this.isControllerMode()
+    return this.isOpen()
+      && !this.isControllerMode()
       && this._globalGameMode === 'play'
       && this._modalViewMode === 'view'
       && !this._modalIsAnswerShown;
   }
 
-  async _syncPressAvailability({ force = false } = {}) {
+  _getPressTraceSnapshot() {
+    return {
+      isOpen: this.isOpen(),
+      gameMode: this._globalGameMode,
+      modalMode: this._modalViewMode,
+      isAnswerShown: !!this._modalIsAnswerShown,
+      hasWinner: !!this._pressWinnerId,
+      directedBetLocked: this._isDirectedBetLocked(),
+      intent: this._pressAvailabilityIntent,
+    };
+  }
+
+  _tracePressAvailability(event, details = {}) {
+    if (!PRESS_TRACE_ENABLED) return;
+    console.debug('[ModalService][press-trace]', event, {
+      ...details,
+      snapshot: this._getPressTraceSnapshot(),
+    });
+  }
+
+  async _syncPressAvailability({ force = false, reason = 'unspecified' } = {}) {
     if (!this._pressRuntime) return;
+    const syncVersion = ++this._pressSyncVersion;
     const shouldEnable = this._isQuestionPressWindowActive();
-    if (!force && this._pressAvailabilityIntent === shouldEnable) return;
+    if (!force && this._pressAvailabilityIntent === shouldEnable) {
+      this._tracePressAvailability('skip', { reason, syncVersion, shouldEnable, force });
+      return;
+    }
 
     const prevIntent = this._pressAvailabilityIntent;
     this._pressAvailabilityIntent = shouldEnable;
     try {
       if (shouldEnable) {
+        this._tracePressAvailability('open:start', { reason, syncVersion, shouldEnable, force });
         await this._openPressRuntimeWithRetry();
+        const staleOpen = syncVersion !== this._pressSyncVersion;
+        if (staleOpen || !this._isQuestionPressWindowActive()) {
+          this._tracePressAvailability('open:stale-close', { reason, syncVersion, staleOpen });
+          await this._pressRuntime?.closePress?.();
+          return;
+        }
+        this._tracePressAvailability('open:done', { reason, syncVersion });
         return;
       }
+      this._tracePressAvailability('close:start', { reason, syncVersion, shouldEnable, force });
       await this._pressRuntime?.closePress?.();
+      this._tracePressAvailability('close:done', { reason, syncVersion });
     } catch (error) {
       // Do not leave stale intent on transport/socket failures.
       this._pressAvailabilityIntent = prevIntent;
+      this._tracePressAvailability('error', {
+        reason,
+        syncVersion,
+        message: error?.message || String(error),
+      });
       throw error;
     }
   }
@@ -662,7 +705,7 @@ export class ModalService {
     this._currentResolutionValue = Number(this._cellValue) || 0;
     this._setPressWinner(null, '');
     this._syncDirectedBetView();
-    void this._syncPressAvailability({ force: true });
+    void this._syncPressAvailability({ force: true, reason: 'directed_bet_fallback' });
   }
 
   _handleDirectedBetAction(action = {}) {
@@ -706,7 +749,7 @@ export class ModalService {
       this.view?.setResolutionButtonsEnabled?.(true);
       this._clearPressCountdown();
       this._startPressCountdown(DIRECTED_BET_RESPONSE_SECONDS * 1000);
-      void this._syncPressAvailability({ force: true });
+      void this._syncPressAvailability({ force: true, reason: 'directed_bet_start' });
     }
   }
 
@@ -857,7 +900,7 @@ export class ModalService {
       this._pressResyncTimer = null;
       if (!this._isQuestionPressWindowActive()) return;
       if (this._pressWinnerId) return;
-      void this._syncPressAvailability({ force: true }).catch((error) => {
+      void this._syncPressAvailability({ force: true, reason: 'runtime_resync' }).catch((error) => {
         console.warn('[ModalService] press availability resync failed:', error?.message || error);
       });
     }, delayMs);

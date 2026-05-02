@@ -192,7 +192,7 @@ function renderController(currentPlayer) {
         <div class="player-controller__scoreCard">
           <strong id="playerScoreValue" class="player-controller__scoreValue">${formatPoints(currentPlayer.points)}</strong>
         </div>
-        <button id="playerPressBtn" class="player-controller__pressBtn" data-main-game-lock type="button">PRESS</button>
+        <button id="playerPressBtn" class="player-controller__pressBtn" type="button">PRESS</button>
       </section>
     </main>
   `;
@@ -394,7 +394,7 @@ function syncPressButtonState() {
   if (!pressBtn) return;
   const isAvailable = isMainGameActive && !!isPressEnabled && !pressWinnerPlayerId && !isClaimingPress;
   pressBtn.classList.toggle('is-enabled', isAvailable);
-  pressBtn.disabled = !isAvailable;
+  pressBtn.setAttribute('aria-disabled', isAvailable ? 'false' : 'true');
 }
 
 function bindMainGameActivity() {
