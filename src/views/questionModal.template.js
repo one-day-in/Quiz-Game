@@ -36,12 +36,12 @@ export function buildModalDom() {
       <!-- BODY -->
       <section class="qmodal__body">
         <!-- PRESS WINNER BANNER — absolute overlay over body content -->
-        <div class="qmodal__pressBanner" hidden aria-live="polite">
-          <div class="qmodal__pressBannerMain"></div>
-          <div class="qmodal__pressBannerTimer" hidden>00:30</div>
+        <div class="qmodal__stateBanner qmodal__pressBanner" hidden aria-live="polite">
+          <div class="qmodal__stateBannerMain qmodal__pressBannerMain"></div>
+          <div class="qmodal__stateBannerTimer qmodal__pressBannerTimer" hidden>00:30</div>
         </div>
-        <div class="qmodal__modifierBanner" hidden aria-live="polite">
-          <div class="qmodal__modifierBannerMain"></div>
+        <div class="qmodal__stateBanner qmodal__modifierBanner" hidden aria-live="polite">
+          <div class="qmodal__stateBannerMain qmodal__modifierBannerMain"></div>
         </div>
         <div class="qmodal__directedBetPanel" hidden>
           <p class="qmodal__directedBetTitle">${t('directed_bet_pick_player')}</p>

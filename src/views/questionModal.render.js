@@ -206,45 +206,8 @@ function renderModifierBanner(view, refs) {
 
   if (!shouldShow) {
     banner.classList.remove('is-visible');
-    banner.style.removeProperty('top');
-    banner.style.removeProperty('left');
-    banner.style.removeProperty('right');
-    banner.style.removeProperty('width');
-    banner.style.removeProperty('height');
     setHidden(banner, true);
     return;
-  }
-
-  const emptyStateVisible = !!refs.emptyState && !refs.emptyState.hidden;
-  const visibleTextEl = emptyStateVisible
-    ? refs.emptyState
-    : (view._isAnswerShown ? refs.answerTextView : refs.questionTextView);
-  const bodyEl = refs.body;
-  if (visibleTextEl && bodyEl && !visibleTextEl.hidden) {
-    const textRect = visibleTextEl.getBoundingClientRect();
-    const bodyRect = bodyEl.getBoundingClientRect();
-    const hasGeometry = textRect.width > 0 && textRect.height > 0 && bodyRect.width > 0 && bodyRect.height > 0;
-    if (hasGeometry) {
-      const top = textRect.top - bodyRect.top + bodyEl.scrollTop;
-      const left = textRect.left - bodyRect.left + bodyEl.scrollLeft;
-      banner.style.top = `${Math.max(0, top)}px`;
-      banner.style.left = `${Math.max(0, left)}px`;
-      banner.style.right = 'auto';
-      banner.style.width = `${Math.max(0, textRect.width)}px`;
-      banner.style.height = `${Math.max(0, textRect.height)}px`;
-    } else {
-      banner.style.removeProperty('width');
-      banner.style.removeProperty('height');
-      banner.style.removeProperty('top');
-      banner.style.removeProperty('left');
-      banner.style.removeProperty('right');
-    }
-  } else {
-    banner.style.removeProperty('width');
-    banner.style.removeProperty('height');
-    banner.style.removeProperty('top');
-    banner.style.removeProperty('left');
-    banner.style.removeProperty('right');
   }
 
   const nextText = `⚡ ${bannerLabel}`;
