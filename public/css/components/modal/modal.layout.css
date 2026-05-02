@@ -377,9 +377,8 @@
 
 /* =========================================
    VIEW MODE — no body scroll; section fills body height;
-   text shrinks with internal scroll if too long;
-   media fills remaining space; JS collapses media to a button
-   if available height would be < 150 px
+   text shrinks to fit without internal scroll;
+   media keeps visual priority in the section
 ========================================= */
 
 /* Body is a bounded container — no scroll, content is clipped at boundary */
@@ -399,11 +398,11 @@
     min-height: 0;
 }
 
-/* Text: natural height, shrinks when space is tight, scrolls internally */
+/* Text: natural height, shrinks when space is tight, no internal scroll */
 .qmodal:not(.qmodal--edit) .qmodal__text {
     overflow-wrap: anywhere;
     flex: 0 1 auto;
-    overflow-y: auto;
+    overflow-y: hidden;
     min-height: 0;
 }
 

@@ -2,10 +2,7 @@
 import { t } from '../i18n.js';
 import { fitTextToBox } from '../utils/fitText.js';
 
-// ─── Media collapse threshold ────────────────────────────────────────────────
-// If the space available for media (after text + audio fill their natural height)
-// is less than this many px, media is hidden and replaced by a peek button.
-const MEDIA_COLLAPSE_THRESHOLD = 150; // px
+const VIEW_TEXT_RATIO_WITH_MEDIA = 0.2;
 
 const PLAY_ICON = `
   <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -192,15 +189,18 @@ function hasText(v) {
 function fitViewText(refs, type) {
   const textEl = refs[`${type}TextView`];
   if (!textEl || textEl.hidden) return;
+  const mediaWrap = refs[`${type}MediaHostWrap`];
+  const sectionContent = textEl.closest('.qmodal__sectionContent');
+  const hasVisibleMedia = !!mediaWrap && !mediaWrap.hidden;
 
   textEl.style.fontSize = '';
-  const box = textEl.parentElement || textEl;
+  const box = sectionContent || textEl;
   fitTextToBox(box, textEl, {
     widthRatio: 1,
-    heightRatio: 1,
+    heightRatio: hasVisibleMedia ? VIEW_TEXT_RATIO_WITH_MEDIA : 1,
     noWrap: false,
-    minSize: 12,
-    step: 1,
+    minSize: 10,
+    step: 0.5,
     startFromComputedSize: true,
     respectMinSizeOnStart: true,
   });
@@ -330,57 +330,6 @@ export function renderAudioList(view, refs, type) {
   }
 }
 
-/* ─── Media collapse check (view mode) ─────────────────────────────────────
- * Called via requestAnimationFrame after renderAll so we can measure real
- * layout heights. If the available vertical space for the media is less than
- * MEDIA_COLLAPSE_THRESHOLD, the media row is hidden and a peek button is
- * shown in its place. The user can click the button to reveal media inline.
- * ─────────────────────────────────────────────────────────────────────────── */
-
-function checkMediaCollapse(view, refs, type) {
-  if (view._mode !== 'view') return;
-
-  const data      = view[`_${type}`];
-  const mediaWrap = refs[`${type}MediaHostWrap`];
-  const peekBtn   = refs[`${type}MediaPeekBtn`];
-  if (!mediaWrap || !peekBtn) return;
-
-  // Find the containing mediaRow (to hide/show it as a unit)
-  const mediaRow = mediaWrap.closest('.qmodal__mediaRow');
-  if (!mediaRow) return;
-
-  // Always reset to uncollapsed first, then re-evaluate
-  mediaRow.hidden = false;
-  peekBtn.hidden  = true;
-
-  // Nothing to collapse if there is no media
-  if (!data?.media?.src) return;
-
-  const bodyEl    = refs.body;
-  const textEl    = refs[`${type}TextView`];
-  const audioList = refs[`${type}AudioList`];
-  if (!bodyEl) return;
-
-  // Measure available space for media
-  // bodyEl has 24px top + 24px bottom padding = 48px vertical
-  const bodyH   = bodyEl.clientHeight;
-  const bodyPad = 48;
-  const textH   = (textEl  && !textEl.hidden)   ? textEl.offsetHeight   : 0;
-  const audioH  = (audioList && !audioList.hidden) ? audioList.offsetHeight : 0;
-
-  // 16px gap between each pair of visible flex siblings in sectionContent
-  const gapAboveMedia = textH  > 0 ? 16 : 0; // gap: text → media
-  const gapBelowMedia = audioH > 0 ? 16 : 0; // gap: media → audio
-
-  const available = bodyH - bodyPad - textH - audioH - gapAboveMedia - gapBelowMedia;
-
-  if (available < MEDIA_COLLAPSE_THRESHOLD) {
-    mediaRow.hidden     = true;
-    peekBtn.hidden      = false;
-    peekBtn.textContent = `📷 ${t('show_media')}`;
-  }
-}
-
 function applyAudioLayoutState(refs, type, { isHero = false, trackCount = 0 } = {}) {
   const listEl = refs[`${type}AudioList`];
   if (!listEl) return;
@@ -483,8 +432,8 @@ export function renderAll(view, refs) {
     setHidden(refs.questionMediaHostWrap, isController || !qHasMedia);
     setHidden(refs.answerTextView,        !aHasText);
     setHidden(refs.answerMediaHostWrap,   isController || !aHasMedia);
-    setHidden(refs.questionMediaPeekBtn, isController || !qHasMedia);
-    setHidden(refs.answerMediaPeekBtn, isController || !aHasMedia);
+    setHidden(refs.questionMediaPeekBtn, true);
+    setHidden(refs.answerMediaPeekBtn, true);
     setHidden(refs.controllerSharedMediaControls, !isController || !hasAnyPlayableMedia);
     if (refs.controllerAnswerToggleBtn) {
       const showAnswer = !view._isAnswerShown;
@@ -509,15 +458,9 @@ export function renderAll(view, refs) {
 
   applyAnswerVisibility(view, refs);
 
-  // Post-render: check whether media needs to collapse to a peek button.
-  // Must run in a requestAnimationFrame so layout is settled and offsetHeight
-  // values reflect the actual rendered dimensions.
+  // Post-render: fit question/answer text to available layout.
   if (view._mode === 'view') {
     requestAnimationFrame(() => {
-      if (!isController) {
-        checkMediaCollapse(view, refs, 'question');
-        checkMediaCollapse(view, refs, 'answer');
-      }
       fitViewText(refs, 'question');
       fitViewText(refs, 'answer');
     });

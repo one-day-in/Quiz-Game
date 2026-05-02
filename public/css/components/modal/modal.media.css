@@ -129,6 +129,12 @@
     gap: 0;
 }
 
+/* If section has only text + media (no visible audio list), keep media at >= 80% */
+.qmodal:not(.qmodal--edit) .qmodal__mediaRow:has(.qmodal__mediaHostWrap:not([hidden])):not([hidden]):not(:has(+ .qmodal__audioList:not([hidden]))) {
+    flex-basis: 80%;
+    min-height: 80%;
+}
+
 /* mediaHostWrap and mediaHost fill the row height */
 .qmodal:not(.qmodal--edit) .qmodal__mediaRow .qmodal__mediaHostWrap {
     height: 100%;
