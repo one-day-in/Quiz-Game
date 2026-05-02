@@ -64,6 +64,7 @@ export class ModalService {
     this._pressResyncTimer = null;
     this._activeModifier = null;
     this._directedBet = null;
+    this._openRequestId = 0;
 
     if (!this.isControllerMode() && typeof document !== 'undefined') {
       const unlock = () => this._unlockMediaInteraction();
@@ -105,11 +106,20 @@ export class ModalService {
   }
 
   showQuestionView(cellData) {
-    this._open('view', cellData);
+    void this._openQueued('view', cellData);
   }
 
   showEditView(cellData) {
-    this._open('edit', cellData);
+    void this._openQueued('edit', cellData);
+  }
+
+  async _openQueued(mode, cellData) {
+    const requestId = ++this._openRequestId;
+    if (this.isOpen() || this._isClosing) {
+      await this.close();
+    }
+    if (requestId !== this._openRequestId) return;
+    this._open(mode, cellData);
   }
 
   setGameMode(mode = 'play') {
@@ -142,7 +152,6 @@ export class ModalService {
   }
 
   _open(mode, cellData) {
-    if (this.isOpen()) this.close();
     this._ensureContainer();
 
     this.activeCell = {
@@ -443,7 +452,11 @@ export class ModalService {
       this._directedBet = null;
       this._emitDirectedBetStateChange(null);
       this._tracePressAvailability('close:modal_shutdown', { reason: 'modal_closed' });
-      void this._pressRuntime?.closePress?.();
+      try {
+        await this._pressRuntime?.closePress?.();
+      } catch (error) {
+        console.warn('[ModalService] closePress during modal shutdown failed:', error?.message || error);
+      }
       if (this.container?.isConnected) this.container.innerHTML = '';
       if (hadOpenModal) {
         this._onModalClose?.();
@@ -835,11 +848,19 @@ export class ModalService {
     }
 
     if (!nextWinnerId) {
+      const waitingForOpenAck = this._isResettingPressRuntime
+        && this._pressAvailabilityIntent === true
+        && runtime?.pressEnabled !== true;
+      if (waitingForOpenAck) {
+        return;
+      }
+
+      const wasResetting = this._isResettingPressRuntime;
       this._isResettingPressRuntime = false;
       this._clearPressCountdown();
       this._pressTimerPaused = false;
       this._setPressWinner(null, '');
-      if (this._isQuestionPressWindowActive() && runtime?.pressEnabled === false) {
+      if (!wasResetting && this._isQuestionPressWindowActive() && runtime?.pressEnabled === false) {
         this._schedulePressAvailabilityResync();
       }
       return;
