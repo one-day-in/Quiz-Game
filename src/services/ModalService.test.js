@@ -188,6 +188,46 @@ describe('ModalService press reset', () => {
     expect(service._resetPressRuntime).toHaveBeenCalledTimes(1);
   });
 
+  it('starts countdown when winner arrives immediately during reset handshake', async () => {
+    let runtimeHandler = null;
+    const gameService = {
+      getGameId: () => 'game-1',
+    };
+    const pressRuntime = {
+      subscribe: vi.fn((handler) => {
+        runtimeHandler = handler;
+        return vi.fn();
+      }),
+    };
+    const service = new ModalService(gameService, {}, pressRuntime);
+    service.activeCell = { roundId: 'r1', rowId: 'row1', cellId: 'c1' };
+    service._globalGameMode = 'play';
+    service._modalViewMode = 'view';
+    service._modalIsAnswerShown = false;
+    service._pressAvailabilityIntent = true;
+    service._isResettingPressRuntime = true;
+    service.view = {
+      updateWinnerName: vi.fn(),
+      updatePressTimer: vi.fn(),
+      setResolutionButtonsEnabled: vi.fn(),
+      _mode: 'view',
+      _isAnswerShown: false,
+    };
+    service._cellValue = 300;
+    service._resetPressRuntime = vi.fn().mockResolvedValue(undefined);
+
+    service._bindPressRuntime();
+    runtimeHandler?.({
+      pressEnabled: true,
+      winnerPlayerId: 'player-1',
+      winnerName: 'Maria',
+    });
+    await vi.advanceTimersByTimeAsync(30000);
+
+    expect(service.view.updatePressTimer).toHaveBeenCalledWith(30);
+    expect(adjustPlayerScoreMock).toHaveBeenCalledWith('game-1', 'player-1', -300);
+  });
+
   it('pauses the countdown in answer view and resumes from the same point when returning', async () => {
     let runtimeHandler = null;
     const gameService = {

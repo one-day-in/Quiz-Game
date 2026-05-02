@@ -844,7 +844,13 @@ export class ModalService {
     const prevWinnerId = this._pressWinnerId;
 
     if (this._isResettingPressRuntime && nextWinnerId) {
-      return;
+      // If winner arrived while reset/open handshake is still marked in flight,
+      // accept it once press is actually open in an active question window.
+      if (runtime?.pressEnabled === true && this._isQuestionPressWindowActive()) {
+        this._isResettingPressRuntime = false;
+      } else {
+        return;
+      }
     }
 
     if (!nextWinnerId) {
