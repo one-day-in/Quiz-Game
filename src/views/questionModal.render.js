@@ -215,7 +215,10 @@ function renderModifierBanner(view, refs) {
     return;
   }
 
-  const visibleTextEl = view._isAnswerShown ? refs.answerTextView : refs.questionTextView;
+  const emptyStateVisible = !!refs.emptyState && !refs.emptyState.hidden;
+  const visibleTextEl = emptyStateVisible
+    ? refs.emptyState
+    : (view._isAnswerShown ? refs.answerTextView : refs.questionTextView);
   const bodyEl = refs.body;
   if (visibleTextEl && bodyEl && !visibleTextEl.hidden) {
     const textRect = visibleTextEl.getBoundingClientRect();
