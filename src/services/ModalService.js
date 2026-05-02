@@ -546,6 +546,17 @@ export class ModalService {
     } catch (error) {
       const message = String(error?.message || '');
       if (message.includes('Press already resolved')) return false;
+      if (source === 'timeout') {
+        // Timeout lock can fail on strict deadline mismatch (clock/network drift).
+        // Retry with generic resolve path so score/reset flow still completes.
+        try {
+          await resolveGamePress(this._game.getGameId(), winnerPlayerId, { pressEnabled: true });
+          return true;
+        } catch (fallbackError) {
+          const fallbackMessage = String(fallbackError?.message || '');
+          if (fallbackMessage.includes('Press already resolved')) return false;
+        }
+      }
       // Compatibility fallback while DB function is being rolled out.
       if (message.includes('resolve_game_press')) {
         console.warn('[ModalService] resolve_game_press RPC is unavailable, using legacy local resolution.');

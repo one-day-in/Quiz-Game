@@ -149,9 +149,47 @@ describe('ModalService press reset', () => {
     const service = new ModalService(gameService, {});
     service._pressWinnerId = 'player-1';
     service._cellValue = 300;
+    service.view = {
+      updateWinnerName: vi.fn(),
+      updatePressTimer: vi.fn(),
+      _mode: 'view',
+      _isAnswerShown: false,
+    };
     service._resetPressRuntime = vi.fn().mockResolvedValue(undefined);
 
     await service._handleIncorrect();
+
+    expect(resolveGamePressMock).toHaveBeenCalledWith('game-1', 'player-1', { pressEnabled: true });
+    expect(adjustPlayerScoreMock).toHaveBeenCalledWith('game-1', 'player-1', -300);
+    expect(service._resetPressRuntime).toHaveBeenCalledTimes(1);
+  });
+
+  it('falls back to generic resolve when timeout resolve RPC fails', async () => {
+    resolveGamePressTimeoutMock.mockRejectedValue(
+      new Error('[Game] resolveGamePressTimeout failed: deadline mismatch')
+    );
+    resolveGamePressMock.mockResolvedValue({
+      gameId: 'game-1',
+      winnerPlayerId: null,
+      pressEnabled: true,
+      pressedAt: null,
+    });
+
+    const gameService = {
+      getGameId: () => 'game-1',
+    };
+    const service = new ModalService(gameService, {});
+    service._pressWinnerId = 'player-1';
+    service._cellValue = 300;
+    service.view = {
+      updateWinnerName: vi.fn(),
+      updatePressTimer: vi.fn(),
+      _mode: 'view',
+      _isAnswerShown: false,
+    };
+    service._resetPressRuntime = vi.fn().mockResolvedValue(undefined);
+
+    await service._handleIncorrect({ source: 'timeout' });
 
     expect(resolveGamePressMock).toHaveBeenCalledWith('game-1', 'player-1', { pressEnabled: true });
     expect(adjustPlayerScoreMock).toHaveBeenCalledWith('game-1', 'player-1', -300);
