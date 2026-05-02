@@ -204,6 +204,7 @@
 
     /* щоб текст був такий самий великий як topic */
     font: inherit;
+    font-size: 16px;
     text-align: center;
     line-height: 1.1;
     white-space: pre-wrap;
