@@ -201,12 +201,47 @@ function renderModifierBanner(view, refs) {
 
   const bannerLabel = getModifierBannerText(view._activeModifierType);
   const directedBetVisible = !!view?._directedBetState?.enabled;
-  const shouldShow = view._mode === 'view' && !!bannerLabel && !directedBetVisible;
+  const isController = view._displayMode === 'controller';
+  const shouldShow = view._mode === 'view' && !isController && !!bannerLabel && !directedBetVisible;
 
   if (!shouldShow) {
     banner.classList.remove('is-visible');
+    banner.style.removeProperty('top');
+    banner.style.removeProperty('left');
+    banner.style.removeProperty('right');
+    banner.style.removeProperty('width');
+    banner.style.removeProperty('height');
     setHidden(banner, true);
     return;
+  }
+
+  const visibleTextEl = view._isAnswerShown ? refs.answerTextView : refs.questionTextView;
+  const bodyEl = refs.body;
+  if (visibleTextEl && bodyEl && !visibleTextEl.hidden) {
+    const textRect = visibleTextEl.getBoundingClientRect();
+    const bodyRect = bodyEl.getBoundingClientRect();
+    const hasGeometry = textRect.width > 0 && textRect.height > 0 && bodyRect.width > 0 && bodyRect.height > 0;
+    if (hasGeometry) {
+      const top = textRect.top - bodyRect.top + bodyEl.scrollTop;
+      const left = textRect.left - bodyRect.left + bodyEl.scrollLeft;
+      banner.style.top = `${Math.max(0, top)}px`;
+      banner.style.left = `${Math.max(0, left)}px`;
+      banner.style.right = 'auto';
+      banner.style.width = `${Math.max(0, textRect.width)}px`;
+      banner.style.height = `${Math.max(0, textRect.height)}px`;
+    } else {
+      banner.style.removeProperty('width');
+      banner.style.removeProperty('height');
+      banner.style.removeProperty('top');
+      banner.style.removeProperty('left');
+      banner.style.removeProperty('right');
+    }
+  } else {
+    banner.style.removeProperty('width');
+    banner.style.removeProperty('height');
+    banner.style.removeProperty('top');
+    banner.style.removeProperty('left');
+    banner.style.removeProperty('right');
   }
 
   const nextText = `⚡ ${bannerLabel}`;
@@ -418,7 +453,6 @@ export function renderAll(view, refs) {
 
   // Empty state (view mode only)
   const showEmpty = view._mode === 'view' && !(qHasAny || aHasAny);
-  renderModifierBanner(view, refs);
   setHidden(refs.emptyState, !showEmpty);
 
   if (showEmpty) {
@@ -431,6 +465,7 @@ export function renderAll(view, refs) {
       refs.toggleAnswerBtn.disabled    = true;
       refs.toggleAnswerBtn.textContent = `👁️ ${t('show_answer')}`;
     }
+    renderModifierBanner(view, refs);
     return;
   }
 
@@ -492,12 +527,14 @@ export function renderAll(view, refs) {
   }
 
   applyAnswerVisibility(view, refs);
+  renderModifierBanner(view, refs);
 
   // Post-render: fit question/answer text to available layout.
   if (view._mode === 'view') {
     requestAnimationFrame(() => {
       fitViewText(refs, 'question');
       fitViewText(refs, 'answer');
+      renderModifierBanner(view, refs);
     });
   }
 }
