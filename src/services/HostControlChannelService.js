@@ -4,6 +4,20 @@ function randomId(prefix = 'hostctl') {
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}-${Date.now().toString(36)}`;
 }
 
+function isTransientChannelError(error) {
+  const message = String(error?.message || error || '').toLowerCase();
+  if (!message) return false;
+  return (
+    message.includes('unauthorized')
+    || message.includes('failed to fetch')
+    || message.includes('network')
+    || message.includes('internet disconnected')
+    || message.includes('name not resolved')
+    || message.includes('quic')
+    || message.includes('timeout')
+  );
+}
+
 export class HostControlChannelService {
   constructor({ gameId, role = 'host' } = {}) {
     this._gameId = gameId;
@@ -12,6 +26,7 @@ export class HostControlChannelService {
     this._subs = new Set();
     this._channel = null;
     this._isConnected = false;
+    this._lastSendWarningAt = 0;
   }
 
   async connect() {
@@ -39,9 +54,17 @@ export class HostControlChannelService {
   }
 
   async send(type, payload = {}) {
-    if (!this._gameId) return;
-    await this.connect();
-    if (!this._channel) return;
+    if (!this._gameId) return false;
+    try {
+      await this.connect();
+    } catch (error) {
+      if (isTransientChannelError(error)) {
+        this._warnTransientSendError(type, error);
+        return false;
+      }
+      throw error;
+    }
+    if (!this._channel) return false;
 
     const broadcastPayload = {
       type,
@@ -51,15 +74,52 @@ export class HostControlChannelService {
       sentAt: new Date().toISOString(),
     };
 
-    if (typeof this._channel.httpSend === 'function') {
-      await this._channel.httpSend('host-command', broadcastPayload);
-      return;
-    }
+    try {
+      if (typeof this._channel.httpSend === 'function') {
+        await this._channel.httpSend('host-command', broadcastPayload);
+        return true;
+      }
 
-    await this._channel.send({
-      type: 'broadcast',
-      event: 'host-command',
-      payload: broadcastPayload,
+      await this._channel.send({
+        type: 'broadcast',
+        event: 'host-command',
+        payload: broadcastPayload,
+      });
+      return true;
+    } catch (error) {
+      // If REST broadcast fails (401/network), best-effort fallback to WS send.
+      if (typeof this._channel.send === 'function') {
+        try {
+          await this._channel.send({
+            type: 'broadcast',
+            event: 'host-command',
+            payload: broadcastPayload,
+          });
+          return true;
+        } catch (fallbackError) {
+          if (isTransientChannelError(fallbackError)) {
+            this._warnTransientSendError(type, fallbackError);
+            return false;
+          }
+          throw fallbackError;
+        }
+      }
+
+      if (isTransientChannelError(error)) {
+        this._warnTransientSendError(type, error);
+        return false;
+      }
+      throw error;
+    }
+  }
+
+  _warnTransientSendError(type, error) {
+    const now = Date.now();
+    if (now - this._lastSendWarningAt < 5000) return;
+    this._lastSendWarningAt = now;
+    console.warn('[HostControlChannel] transient send failure, will continue in degraded mode:', {
+      type,
+      message: String(error?.message || error),
     });
   }
 
