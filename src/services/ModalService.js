@@ -3,17 +3,24 @@ import { Disposer } from '../utils/disposer.js';
 import { showConfirm } from '../utils/confirm.js';
 import { adjustPlayerScore, resolveGamePress } from '../api/gameApi.js';
 import { t } from '../i18n.js';
-import { createCellModifier, MODIFIER_TYPES } from '../modifiers/modifierEngine.js';
+import {
+  createCellModifier,
+  DIRECTED_BET_STAKE_CONFIG,
+  MODIFIER_TYPES,
+  isAutoApplyModifierType,
+} from '../modifiers/modifierEngine.js';
 
 const FALLBACK_PRESS_RESPONSE_SECONDS = Number(import.meta?.env?.VITE_PRESS_RESPONSE_SECONDS) > 0
   ? Number(import.meta.env.VITE_PRESS_RESPONSE_SECONDS)
   : 30;
 const PRESS_OPEN_RETRY_ATTEMPTS = 3;
 const PRESS_OPEN_RETRY_DELAY_MS = 220;
-const DIRECTED_BET_MIN_STAKE = 100;
-const DIRECTED_BET_MAX_STAKE = 500;
-const DIRECTED_BET_STEP = 100;
-const DIRECTED_BET_RESPONSE_SECONDS = 40;
+const DIRECTED_BET_MIN_STAKE = DIRECTED_BET_STAKE_CONFIG.min;
+const DIRECTED_BET_MAX_STAKE = DIRECTED_BET_STAKE_CONFIG.max;
+const DIRECTED_BET_STEP = DIRECTED_BET_STAKE_CONFIG.step;
+const DIRECTED_BET_RESPONSE_SECONDS = DIRECTED_BET_STAKE_CONFIG.responseSeconds;
+const STEAL_LEADER_POINTS_VALUE = 1000;
+const AUTO_MODIFIER_BANNER_MS = 900;
 const PRESS_TRACE_ENABLED = String(import.meta?.env?.VITE_PRESS_TRACE || '').toLowerCase() === 'true';
 
 export class ModalService {
@@ -171,7 +178,7 @@ export class ModalService {
     this._activeModifier = cellData?.modifier ? { ...cellData.modifier } : null;
     this._directedBet = null;
     this._pressAvailabilityIntent = null;
-    if (!this.isControllerMode()) {
+    if (!this.isControllerMode() && !this._shouldAutoApplyModifierOnOpen()) {
       void this._resetPressRuntime();
     }
 
@@ -371,6 +378,11 @@ export class ModalService {
     this.container.appendChild(this.view.el);
 
     this._onModalViewStateChange?.({ mode: this.view?._mode || 'view', isAnswerShown: !!this.view?._isAnswerShown });
+
+    if (this._shouldAutoApplyModifierOnOpen()) {
+      void this._runAutoApplyModifierFlow();
+      return;
+    }
 
     this._bindPressRuntime();
     // _resetPressRuntime already performs forced availability sync when modal opens.
@@ -589,7 +601,131 @@ export class ModalService {
 
   _isPressBlockedByModifier() {
     const type = String(this._activeModifier?.type || '').trim().toLowerCase();
-    return type === MODIFIER_TYPES.STEAL_LEADER_POINTS;
+    return isAutoApplyModifierType(type);
+  }
+
+  _shouldAutoApplyModifierOnOpen() {
+    if (this.isControllerMode()) return false;
+    if (this._globalGameMode !== 'play') return false;
+    if (this._modalViewMode !== 'view') return false;
+    return isAutoApplyModifierType(this._activeModifier?.type);
+  }
+
+  _createModifierUserError(key) {
+    const error = new Error(String(key || 'modifier_error'));
+    error.userMessage = t(String(key || 'save_failed'));
+    return error;
+  }
+
+  _getCurrentChooserPlayerId() {
+    const chooserId = String(this._game?.getCurrentPlayerId?.() || '').trim();
+    return chooserId || null;
+  }
+
+  async _runAutoApplyModifierFlow() {
+    if (!this._shouldAutoApplyModifierOnOpen()) return;
+    const modifierType = String(this._activeModifier?.type || '').trim().toLowerCase();
+    this._isResolvingPressResult = true;
+    try {
+      if (modifierType === MODIFIER_TYPES.FLIP_SCORE) {
+        await this._applyFlipScoreModifier();
+      } else if (modifierType === MODIFIER_TYPES.STEAL_LEADER_POINTS) {
+        await this._applyStealLeaderPointsModifier();
+      }
+    } catch (error) {
+      console.error('[ModalService] auto modifier apply failed:', error);
+      alert(error?.userMessage || t('save_failed'));
+    } finally {
+      await new Promise((resolve) => setTimeout(resolve, AUTO_MODIFIER_BANNER_MS));
+      this._isResolvingPressResult = false;
+      await this.close();
+    }
+  }
+
+  async _applyFlipScoreModifier() {
+    const chooserId = this._getCurrentChooserPlayerId();
+    if (!chooserId) throw this._createModifierUserError('modifier_no_current_player');
+
+    const chooser = this._getPlayersSnapshot().find((player) => String(player?.id || '') === chooserId);
+    if (!chooser) throw this._createModifierUserError('modifier_no_current_player');
+
+    const currentPoints = Number(chooser.points) || 0;
+    const delta = -2 * currentPoints;
+    if (delta === 0) return;
+
+    await adjustPlayerScore(this._game.getGameId(), chooserId, delta);
+    this._emitScoreLog({
+      playerId: chooserId,
+      delta,
+      outcome: 'modifier_flip_score',
+    });
+  }
+
+  async _applyStealLeaderPointsModifier() {
+    const chooserId = this._getCurrentChooserPlayerId();
+    if (!chooserId) throw this._createModifierUserError('modifier_no_current_player');
+
+    const players = this._getPlayersSnapshot().filter((player) => String(player?.id || '').trim());
+    const chooser = players.find((player) => String(player?.id || '') === chooserId);
+    if (!chooser) throw this._createModifierUserError('modifier_no_current_player');
+
+    const others = players.filter((player) => String(player?.id || '') !== chooserId);
+    if (!others.length) throw this._createModifierUserError('modifier_not_available');
+
+    const chooserPoints = Number(chooser.points) || 0;
+    const byPointsAsc = [...others].sort((a, b) => (Number(a?.points) || 0) - (Number(b?.points) || 0));
+    const byPointsDesc = [...others].sort((a, b) => (Number(b?.points) || 0) - (Number(a?.points) || 0));
+    const lowestOther = byPointsAsc[0];
+    const highestOther = byPointsDesc[0];
+    const highestOtherPoints = Number(highestOther?.points) || 0;
+
+    if (chooserPoints >= highestOtherPoints) {
+      await this._applyScoreTransfer(chooserId, String(lowestOther?.id || ''), STEAL_LEADER_POINTS_VALUE, {
+        fromOutcome: 'modifier_steal_give',
+        toOutcome: 'modifier_steal_receive',
+      });
+      return;
+    }
+
+    await this._applyScoreTransfer(String(highestOther?.id || ''), chooserId, STEAL_LEADER_POINTS_VALUE, {
+      fromOutcome: 'modifier_steal_give',
+      toOutcome: 'modifier_steal_receive',
+    });
+  }
+
+  async _applyScoreTransfer(fromPlayerId, toPlayerId, amount, { fromOutcome, toOutcome } = {}) {
+    const fromId = String(fromPlayerId || '').trim();
+    const toId = String(toPlayerId || '').trim();
+    if (!fromId || !toId || fromId === toId) {
+      throw this._createModifierUserError('modifier_not_available');
+    }
+
+    const transfer = Math.abs(Number(amount) || 0);
+    if (!transfer) return;
+
+    const gameId = this._game.getGameId();
+    await adjustPlayerScore(gameId, fromId, -transfer);
+    try {
+      await adjustPlayerScore(gameId, toId, transfer);
+    } catch (error) {
+      try {
+        await adjustPlayerScore(gameId, fromId, transfer);
+      } catch (rollbackError) {
+        console.error('[ModalService] score transfer rollback failed:', rollbackError);
+      }
+      throw error;
+    }
+
+    this._emitScoreLog({
+      playerId: fromId,
+      delta: -transfer,
+      outcome: fromOutcome || 'modifier_transfer_out',
+    });
+    this._emitScoreLog({
+      playerId: toId,
+      delta: transfer,
+      outcome: toOutcome || 'modifier_transfer_in',
+    });
   }
 
   _getPressTraceSnapshot() {

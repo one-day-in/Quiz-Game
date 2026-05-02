@@ -11,10 +11,38 @@ const ACTIVE_MODIFIER_TYPES = new Set([
   MODIFIER_TYPES.DIRECTED_BET,
 ]);
 
+const SUPPORTED_MODIFIER_TYPES = Object.freeze([
+  MODIFIER_TYPES.FLIP_SCORE,
+  MODIFIER_TYPES.STEAL_LEADER_POINTS,
+  MODIFIER_TYPES.DIRECTED_BET,
+]);
+
 const MODIFIER_ALIASES = Object.freeze({
   'flip-score': MODIFIER_TYPES.FLIP_SCORE,
   'steal-leader-points': MODIFIER_TYPES.STEAL_LEADER_POINTS,
   'directed-bet': MODIFIER_TYPES.DIRECTED_BET,
+});
+
+const DIRECTED_BET_STAKE_CONFIG = Object.freeze({
+  min: 100,
+  max: 500,
+  step: 100,
+  responseSeconds: 40,
+});
+
+const AUTO_APPLY_MODIFIER_TYPES = new Set([
+  MODIFIER_TYPES.FLIP_SCORE,
+  MODIFIER_TYPES.STEAL_LEADER_POINTS,
+]);
+
+const INTERACTIVE_MODIFIER_TYPES = new Set([
+  MODIFIER_TYPES.DIRECTED_BET,
+]);
+
+const MODIFIER_LABEL_KEYS = Object.freeze({
+  [MODIFIER_TYPES.FLIP_SCORE]: 'flip_score_modifier',
+  [MODIFIER_TYPES.STEAL_LEADER_POINTS]: 'steal_leader_points_modifier',
+  [MODIFIER_TYPES.DIRECTED_BET]: 'directed_bet_modifier',
 });
 
 function normalizeType(type) {
@@ -45,6 +73,27 @@ export function normalizeCellModifier(rawModifier) {
 
 export function hasActiveModifier(rawModifier) {
   return normalizeCellModifier(rawModifier).type !== MODIFIER_TYPES.NONE;
+}
+
+export function isAutoApplyModifierType(rawType) {
+  return AUTO_APPLY_MODIFIER_TYPES.has(normalizeType(rawType));
+}
+
+export function isInteractiveModifierType(rawType) {
+  return INTERACTIVE_MODIFIER_TYPES.has(normalizeType(rawType));
+}
+
+export function getModifierLabelKey(rawType) {
+  const normalized = normalizeType(rawType);
+  return MODIFIER_LABEL_KEYS[normalized] || null;
+}
+
+export function getDirectedBetStakeValues() {
+  const values = [];
+  for (let stake = DIRECTED_BET_STAKE_CONFIG.min; stake <= DIRECTED_BET_STAKE_CONFIG.max; stake += DIRECTED_BET_STAKE_CONFIG.step) {
+    values.push(stake);
+  }
+  return values;
 }
 
 export function getModifierPresentation(rawModifier, context = {}) {
@@ -82,4 +131,4 @@ export function getModifierPresentation(rawModifier, context = {}) {
   };
 }
 
-export { MODIFIER_TYPES };
+export { MODIFIER_TYPES, SUPPORTED_MODIFIER_TYPES, DIRECTED_BET_STAKE_CONFIG };

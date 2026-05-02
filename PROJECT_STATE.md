@@ -1,6 +1,6 @@
 # PROJECT_STATE
 
-Last updated: 2026-04-26
+Last updated: 2026-05-02
 
 ## Real Project Overview
 
@@ -823,3 +823,18 @@ Ordered refactor and improvement steps. Do not treat all items as immediate.
 - `claim_game_press(...)` was hardened again after production exposed PostgreSQL ambiguity around `RETURNS TABLE(...)`.
 - The function now returns `jsonb` instead of a table row, which removes output-column name collisions while keeping the JS API contract simple.
 - The repo SQL and remote Supabase function were brought back into sync.
+
+### 2026-05-02
+
+- Modifier runtime was re-aligned with the documented behavior:
+  - `flip_score` and `steal_leader_points` now have explicit host-side auto-apply flow in `ModalService`.
+  - Auto-apply runs only in host play-mode question view, shows the modifier banner, applies score mutations, and then closes the modal.
+  - `steal_leader_points` now executes deterministic transfer rules:
+    - chooser steals `1000` from the highest-scoring opponent when not leading
+    - chooser gives `1000` to the lowest-scoring opponent when tied/leading
+  - Transfer flow now includes a best-effort rollback if the second score mutation fails.
+- Modifier metadata was partially centralized in `modifierEngine`:
+  - shared label-key lookup
+  - auto/interactive type classifiers
+  - shared directed-bet stake config and generated stake values
+- Modal template/render now read modifier labels and stake values from shared modifier metadata instead of hardcoded duplicated lists.

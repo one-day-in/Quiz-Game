@@ -1,6 +1,7 @@
 // src/views/questionModal.render.js
 import { t } from '../i18n.js';
 import { fitTextToBox } from '../utils/fitText.js';
+import { getModifierLabelKey } from '../modifiers/modifierEngine.js';
 
 const VIEW_TEXT_RATIO_WITH_MEDIA = 0.2;
 
@@ -187,11 +188,8 @@ function hasText(v) {
 }
 
 function getModifierBannerText(modifierType) {
-  const type = String(modifierType || '').trim().toLowerCase();
-  if (type === 'flip_score') return t('flip_score_modifier');
-  if (type === 'steal_leader_points') return t('steal_leader_points_modifier');
-  if (type === 'directed_bet') return t('directed_bet_modifier');
-  return '';
+  const labelKey = getModifierLabelKey(modifierType);
+  return labelKey ? t(labelKey) : '';
 }
 
 function renderModifierBanner(view, refs) {

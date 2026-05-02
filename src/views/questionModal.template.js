@@ -1,9 +1,24 @@
 // src/views/questionModal.template.js
 import { t } from '../i18n.js';
+import {
+  SUPPORTED_MODIFIER_TYPES,
+  getDirectedBetStakeValues,
+  getModifierLabelKey,
+} from '../modifiers/modifierEngine.js';
 
 export function buildModalDom() {
   const root = document.createElement('div');
   root.className = 'qmodal';
+  const modifierOptionsHtml = [
+    `<option value="none">${t('no_modifier')}</option>`,
+    ...SUPPORTED_MODIFIER_TYPES.map((type) => {
+      const labelKey = getModifierLabelKey(type);
+      return `<option value="${type}">${labelKey ? t(labelKey) : type}</option>`;
+    }),
+  ].join('');
+  const directedBetStakeButtonsHtml = getDirectedBetStakeValues()
+    .map((stake) => `<button type="button" class="qmodal__btn qmodal__btn--secondary qmodal__directedBetStakeBtn" data-stake="${stake}">${stake}</button>`)
+    .join('');
 
   root.innerHTML = `
     <div class="qmodal__overlay"></div>
@@ -18,10 +33,7 @@ export function buildModalDom() {
 
         <div class="qmodal__headerModifier" hidden>
           <select id="qmodalModifierSelect" class="qmodal__modifierSelect" aria-label="${t('cell_modifier_banner_title')}">
-            <option value="none">${t('no_modifier')}</option>
-            <option value="flip_score">${t('flip_score_modifier')}</option>
-            <option value="steal_leader_points">${t('steal_leader_points_modifier')}</option>
-            <option value="directed_bet">${t('directed_bet_modifier')}</option>
+            ${modifierOptionsHtml}
           </select>
         </div>
 
@@ -48,11 +60,7 @@ export function buildModalDom() {
           <p class="qmodal__directedBetSubtitle">${t('directed_bet_pick_subtitle')}</p>
           <div class="qmodal__directedBetPlayers"></div>
           <div class="qmodal__directedBetStakes" role="group" aria-label="${t('directed_bet_choose_stake')}">
-            <button type="button" class="qmodal__btn qmodal__btn--secondary qmodal__directedBetStakeBtn" data-stake="100">100</button>
-            <button type="button" class="qmodal__btn qmodal__btn--secondary qmodal__directedBetStakeBtn" data-stake="200">200</button>
-            <button type="button" class="qmodal__btn qmodal__btn--secondary qmodal__directedBetStakeBtn" data-stake="300">300</button>
-            <button type="button" class="qmodal__btn qmodal__btn--secondary qmodal__directedBetStakeBtn" data-stake="400">400</button>
-            <button type="button" class="qmodal__btn qmodal__btn--secondary qmodal__directedBetStakeBtn" data-stake="500">500</button>
+            ${directedBetStakeButtonsHtml}
           </div>
           <button type="button" class="qmodal__btn qmodal__btn--primary qmodal__directedBetStartBtn">${t('directed_bet_start')}</button>
           <p class="qmodal__directedBetEmpty" hidden>${t('directed_bet_no_active_players')}</p>

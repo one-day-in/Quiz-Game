@@ -216,6 +216,80 @@ describe('ModalService press reset', () => {
     expect(service._resetPressRuntime).toHaveBeenCalledTimes(1);
   });
 
+  it('auto-applies flip_score modifier for current chooser and closes modal', async () => {
+    const gameService = {
+      getGameId: () => 'game-1',
+      getCurrentPlayerId: () => 'player-1',
+    };
+    const playersService = {
+      getPlayers: () => [{ id: 'player-1', name: 'Maria', points: 200 }],
+    };
+    const service = new ModalService(gameService, {}, {}, playersService);
+    service._globalGameMode = 'play';
+    service._modalViewMode = 'view';
+    service._activeModifier = { type: 'flip_score' };
+    service.close = vi.fn().mockResolvedValue(undefined);
+
+    const flowPromise = service._runAutoApplyModifierFlow();
+    await vi.advanceTimersByTimeAsync(900);
+    await flowPromise;
+
+    expect(adjustPlayerScoreMock).toHaveBeenCalledWith('game-1', 'player-1', -400);
+    expect(service.close).toHaveBeenCalledTimes(1);
+  });
+
+  it('auto-applies steal_leader_points by taking from the highest-scoring opponent', async () => {
+    const gameService = {
+      getGameId: () => 'game-1',
+      getCurrentPlayerId: () => 'player-1',
+    };
+    const playersService = {
+      getPlayers: () => [
+        { id: 'player-1', name: 'Maria', points: 500 },
+        { id: 'player-2', name: 'Nora', points: 700 },
+        { id: 'player-3', name: 'Alex', points: 300 },
+      ],
+    };
+    const service = new ModalService(gameService, {}, {}, playersService);
+    service._globalGameMode = 'play';
+    service._modalViewMode = 'view';
+    service._activeModifier = { type: 'steal_leader_points' };
+    service.close = vi.fn().mockResolvedValue(undefined);
+
+    const flowPromise = service._runAutoApplyModifierFlow();
+    await vi.advanceTimersByTimeAsync(900);
+    await flowPromise;
+
+    expect(adjustPlayerScoreMock).toHaveBeenNthCalledWith(1, 'game-1', 'player-2', -1000);
+    expect(adjustPlayerScoreMock).toHaveBeenNthCalledWith(2, 'game-1', 'player-1', 1000);
+  });
+
+  it('auto-applies steal_leader_points by giving to the lowest-scoring opponent when chooser leads', async () => {
+    const gameService = {
+      getGameId: () => 'game-1',
+      getCurrentPlayerId: () => 'player-1',
+    };
+    const playersService = {
+      getPlayers: () => [
+        { id: 'player-1', name: 'Maria', points: 700 },
+        { id: 'player-2', name: 'Nora', points: 700 },
+        { id: 'player-3', name: 'Alex', points: 100 },
+      ],
+    };
+    const service = new ModalService(gameService, {}, {}, playersService);
+    service._globalGameMode = 'play';
+    service._modalViewMode = 'view';
+    service._activeModifier = { type: 'steal_leader_points' };
+    service.close = vi.fn().mockResolvedValue(undefined);
+
+    const flowPromise = service._runAutoApplyModifierFlow();
+    await vi.advanceTimersByTimeAsync(900);
+    await flowPromise;
+
+    expect(adjustPlayerScoreMock).toHaveBeenNthCalledWith(1, 'game-1', 'player-1', -1000);
+    expect(adjustPlayerScoreMock).toHaveBeenNthCalledWith(2, 'game-1', 'player-3', 1000);
+  });
+
   it('starts a 30-second countdown for the winner and auto-marks incorrect on timeout', async () => {
     let runtimeHandler = null;
     const gameService = {
