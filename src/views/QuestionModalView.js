@@ -170,6 +170,7 @@ export class QuestionModalView {
     setDirectedBetState(nextState) {
         this._directedBetState = nextState && typeof nextState === 'object' ? { ...nextState } : null;
         this._renderDirectedBetPanel();
+        this.syncPressBannerVisibility();
     }
 
     setActiveModifierType(nextType = 'none') {
@@ -302,6 +303,12 @@ export class QuestionModalView {
     syncPressBannerVisibility({ animate = false } = {}) {
         const bannerEl = this._refs.pressBanner;
         if (!bannerEl) return;
+
+        const isDirectedBetAnswering = String(this._directedBetState?.phase || '').trim().toLowerCase() === 'answering';
+        bannerEl.classList.toggle(
+            'qmodal__pressBanner--compact',
+            this._displayMode !== 'controller' && this._mode === 'view' && isDirectedBetAnswering
+        );
 
         if (this._displayMode === 'controller') {
             bannerEl.hidden = true;

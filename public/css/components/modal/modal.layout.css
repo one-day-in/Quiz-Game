@@ -148,6 +148,43 @@
     transform: scale(1);
 }
 
+.qmodal__pressBanner--compact {
+    position: sticky;
+    inset: auto;
+    top: 0;
+    width: min(100%, 980px);
+    margin: 0 auto 10px;
+    padding: 10px 14px;
+    min-height: 0;
+    border-radius: 14px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    transform: none;
+    z-index: 8;
+}
+
+.qmodal__pressBanner--compact .qmodal__stateBannerMain {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: clamp(16px, 1.9vw, 24px);
+    letter-spacing: 0.03em;
+    text-transform: none;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.qmodal__pressBanner--compact .qmodal__stateBannerTimer {
+    min-width: 92px;
+    min-height: 40px;
+    padding: 6px 12px;
+    font-size: clamp(15px, 1.5vw, 20px);
+    letter-spacing: 0.08em;
+}
+
 .qmodal__stateBanner--interactive {
     pointer-events: auto;
 }
@@ -403,6 +440,11 @@
 
     .qmodal__directedBetPlayers {
         max-height: min(40dvh, 360px);
+    }
+
+    .qmodal__pressBanner--compact {
+        margin-bottom: 8px;
+        padding: 8px 10px;
     }
 }
 

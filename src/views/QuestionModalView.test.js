@@ -159,4 +159,19 @@ describe('QuestionModalView winner state', () => {
     view.destroy();
   });
 
+  it('uses compact press banner layout during directed bet answering phase', () => {
+    const view = createView();
+
+    view.setDirectedBetState({ enabled: false, phase: 'answering' });
+    view.updateWinnerName('Maria');
+
+    expect(view._refs.pressBanner.hidden).toBe(false);
+    expect(view._refs.pressBanner.classList.contains('qmodal__pressBanner--compact')).toBe(true);
+
+    view.setDirectedBetState({ enabled: false, phase: 'fallback' });
+    expect(view._refs.pressBanner.classList.contains('qmodal__pressBanner--compact')).toBe(false);
+
+    view.destroy();
+  });
+
 });
