@@ -523,8 +523,7 @@ export class ModalService {
       return;
     }
     try {
-      await adjustPlayerScore(this._game.getGameId(), winnerId, -resolutionValue);
-      this._emitScoreLog({
+      await this._applyScoreDeltaWithLog({
         playerId: winnerId,
         delta: -resolutionValue,
         outcome: 'incorrect',
@@ -556,13 +555,12 @@ export class ModalService {
       return;
     }
     try {
-      await adjustPlayerScore(this._game.getGameId(), winnerId, resolutionValue);
-      await this._game?.setCurrentPlayerId?.(winnerId);
-      this._emitScoreLog({
+      await this._applyScoreDeltaWithLog({
         playerId: winnerId,
         delta: resolutionValue,
         outcome: 'correct',
       });
+      await this._game?.setCurrentPlayerId?.(winnerId);
     } catch (e) {
       console.error('[ModalService] correct resolution failed:', e);
     }
@@ -670,11 +668,11 @@ export class ModalService {
     const delta = -2 * currentPoints;
     if (delta === 0) return;
 
-    await adjustPlayerScore(this._game.getGameId(), chooserId, delta);
-    this._emitScoreLog({
+    await this._applyScoreDeltaWithLog({
       playerId: chooserId,
       delta,
       outcome: 'modifier_flip_score',
+      kind: 'cell_resolution',
     });
   }
 
@@ -719,29 +717,65 @@ export class ModalService {
 
     const transfer = Math.abs(Number(amount) || 0);
     if (!transfer) return;
+    const fromDelta = -transfer;
+    const toDelta = transfer;
+    const happenedAt = new Date().toISOString();
+    const fromLabel = this._buildScoreLogCellLabel(fromDelta);
+    const toLabel = this._buildScoreLogCellLabel(toDelta);
 
-    const gameId = this._game.getGameId();
-    await adjustPlayerScore(gameId, fromId, -transfer);
-    try {
-      await adjustPlayerScore(gameId, toId, transfer);
-    } catch (error) {
-      try {
-        await adjustPlayerScore(gameId, fromId, transfer);
-      } catch (rollbackError) {
-        console.error('[ModalService] score transfer rollback failed:', rollbackError);
-      }
-      throw error;
+    if (typeof this._players?.transferPlayerScoreWithLogs === 'function') {
+      const result = await this._players.transferPlayerScoreWithLogs({
+        fromPlayerId: fromId,
+        toPlayerId: toId,
+        amount: transfer,
+        fromLog: {
+          cellLabel: fromLabel,
+          outcome: fromOutcome || 'modifier_transfer_out',
+          kind: 'cell_resolution',
+          happenedAt,
+        },
+        toLog: {
+          cellLabel: toLabel,
+          outcome: toOutcome || 'modifier_transfer_in',
+          kind: 'cell_resolution',
+          happenedAt,
+        },
+      });
+      this._emitScoreLog(result?.fromScoreLog || {
+        playerId: fromId,
+        delta: fromDelta,
+        cellLabel: fromLabel,
+        outcome: fromOutcome || 'modifier_transfer_out',
+        kind: 'cell_resolution',
+        happenedAt,
+      });
+      this._emitScoreLog(result?.toScoreLog || {
+        playerId: toId,
+        delta: toDelta,
+        cellLabel: toLabel,
+        outcome: toOutcome || 'modifier_transfer_in',
+        kind: 'cell_resolution',
+        happenedAt,
+      });
+      return;
     }
 
-    this._emitScoreLog({
+    // Compatibility fallback for older runtime without atomic transfer helper.
+    await this._applyScoreDeltaWithLog({
       playerId: fromId,
-      delta: -transfer,
+      delta: fromDelta,
       outcome: fromOutcome || 'modifier_transfer_out',
+      kind: 'cell_resolution',
+      cellLabel: fromLabel,
+      happenedAt,
     });
-    this._emitScoreLog({
+    await this._applyScoreDeltaWithLog({
       playerId: toId,
-      delta: transfer,
+      delta: toDelta,
       outcome: toOutcome || 'modifier_transfer_in',
+      kind: 'cell_resolution',
+      cellLabel: toLabel,
+      happenedAt,
     });
   }
 
@@ -1112,24 +1146,115 @@ export class ModalService {
     return Number(this._cellValue) || 0;
   }
 
-  _emitScoreLog({ playerId, delta, outcome }) {
-    if (!this._onScoreLog) return;
-    const player = this._getPlayersSnapshot().find((entry) => String(entry?.id || '') === String(playerId || ''));
+  _buildScoreLogCellLabel(delta, fallbackLabel = null) {
+    if (typeof fallbackLabel === 'string' && fallbackLabel.trim()) return fallbackLabel.trim();
     const activeCell = this.activeCell || null;
     const topic = activeCell
       ? this._game?.getModel?.()?.getTopic?.(activeCell.roundId, activeCell.rowId) || t('no_topic')
       : t('no_topic');
     const absoluteValue = Math.abs(Number(delta) || 0);
-    const cellLabel = `${topic} / ${delta >= 0 ? '+' : '-'}${absoluteValue}`;
+    return `${topic} / ${delta >= 0 ? '+' : '-'}${absoluteValue}`;
+  }
+
+  async _applyScoreDeltaWithLog({
+    playerId,
+    delta,
+    outcome = null,
+    kind = 'cell_resolution',
+    cellLabel = null,
+    happenedAt = null,
+  } = {}) {
+    const safePlayerId = String(playerId || '').trim();
+    const safeDelta = Number(delta) || 0;
+    if (!safePlayerId) throw new Error('Player id is required');
+    const nextHappenedAt = happenedAt || new Date().toISOString();
+    const nextCellLabel = this._buildScoreLogCellLabel(safeDelta, cellLabel);
+    const knownPlayer = this._getPlayersSnapshot().find((entry) => String(entry?.id || '') === safePlayerId);
+    const fallbackPlayerName = knownPlayer?.name || t('player_fallback');
+
+    if (typeof this._players?.adjustPlayerScoreWithLog === 'function') {
+      const result = await this._players.adjustPlayerScoreWithLog(safePlayerId, safeDelta, {
+        playerName: fallbackPlayerName,
+        cellLabel: nextCellLabel,
+        outcome,
+        kind,
+        happenedAt: nextHappenedAt,
+      });
+      this._emitScoreLog(result?.scoreLog || {
+        playerId: safePlayerId,
+        playerName: fallbackPlayerName,
+        cellLabel: nextCellLabel,
+        outcome,
+        delta: safeDelta,
+        kind,
+        happenedAt: nextHappenedAt,
+      });
+      return result;
+    }
+
+    const updatedPlayer = typeof this._players?.adjustPlayerScore === 'function'
+      ? await this._players.adjustPlayerScore(safePlayerId, safeDelta)
+      : await adjustPlayerScore(this._game.getGameId(), safePlayerId, safeDelta);
+    const scoreAfter = Number(updatedPlayer?.points ?? updatedPlayer?.score);
+    const safeScoreAfter = Number.isFinite(scoreAfter) ? scoreAfter : null;
+    const scoreBefore = safeScoreAfter === null ? null : safeScoreAfter - safeDelta;
+    this._emitScoreLog({
+      playerId: safePlayerId,
+      playerName: updatedPlayer?.name || fallbackPlayerName,
+      cellLabel: nextCellLabel,
+      outcome,
+      delta: safeDelta,
+      scoreBefore,
+      scoreAfter: safeScoreAfter,
+      kind,
+      happenedAt: nextHappenedAt,
+    });
+    return {
+      player: updatedPlayer,
+      scoreLog: {
+        playerId: safePlayerId,
+        playerName: updatedPlayer?.name || fallbackPlayerName,
+        cellLabel: nextCellLabel,
+        outcome,
+        delta: safeDelta,
+        scoreBefore,
+        scoreAfter: safeScoreAfter,
+        kind,
+        happenedAt: nextHappenedAt,
+      },
+    };
+  }
+
+  _emitScoreLog({
+    id = null,
+    playerId,
+    playerName = '',
+    cellLabel = '',
+    delta,
+    outcome,
+    scoreBefore = null,
+    scoreAfter = null,
+    kind = 'cell_resolution',
+    happenedAt = null,
+  }) {
+    if (!this._onScoreLog) return;
+    const safeDelta = Number(delta) || 0;
+    const player = this._getPlayersSnapshot().find((entry) => String(entry?.id || '') === String(playerId || ''));
+    const resolvedPlayerName = String(playerName || player?.name || t('player_fallback'));
+    const resolvedLabel = this._buildScoreLogCellLabel(safeDelta, cellLabel);
+    const resolvedHappenedAt = happenedAt || new Date().toISOString();
 
     this._onScoreLog({
-      kind: 'cell_resolution',
+      id: id || null,
+      kind,
       playerId: playerId || null,
-      playerName: player?.name || t('player_fallback'),
-      cellLabel,
+      playerName: resolvedPlayerName,
+      cellLabel: resolvedLabel,
       outcome,
-      delta: Number(delta) || 0,
-      happenedAt: new Date().toISOString(),
+      delta: safeDelta,
+      scoreBefore: Number.isFinite(Number(scoreBefore)) ? Number(scoreBefore) : null,
+      scoreAfter: Number.isFinite(Number(scoreAfter)) ? Number(scoreAfter) : null,
+      happenedAt: resolvedHappenedAt,
     });
   }
 

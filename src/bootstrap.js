@@ -1,7 +1,7 @@
 // src/bootstrap.js
 import { getSession, signOut, onAuthStateChange } from './api/authApi.js';
 import { createGame, getGame, resetAllCellsAnsweredState, saveGame, savePlayers, subscribeToGame } from './api/gameApi.js';
-import { clearScoreLogs, insertScoreLog, listScoreLogs, subscribeToScoreLogs } from './api/scoreLogsApi.js';
+import { clearScoreLogs, listScoreLogs, subscribeToScoreLogs } from './api/scoreLogsApi.js';
 import { syncCurrentUserProfile } from './api/profileApi.js';
 import { escapeHtml } from './utils/utils.js';
 import { createAppController } from './AppController.js';
@@ -357,16 +357,11 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
             }
             appRef?.updateScoreLogs?.(scoreLogs);
         };
-        const appendScoreLog = (entry, { broadcast = true, persistRemote = false } = {}) => {
+        const appendScoreLog = (entry, { broadcast = true } = {}) => {
             const nextEntry = enrichScoreLogWithPoints(entry);
             setScoreLogs([nextEntry, ...scoreLogs]);
             if (broadcast) {
                 void hostControlChannel.send('score_log_append', nextEntry);
-            }
-            if (persistRemote && hostMode === 'host') {
-                void insertScoreLog(gameId, nextEntry).catch((error) => {
-                    console.warn('[Bootstrap] score log remote insert skipped:', error?.message || error);
-                });
             }
             return nextEntry;
         };
@@ -545,7 +540,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
                 }
                 : null,
             onScoreLog: hostMode === 'host'
-                ? (entry) => { appendScoreLog(entry, { broadcast: true, persistRemote: true }); }
+                ? (entry) => { appendScoreLog(entry, { broadcast: true }); }
                 : null,
             onControllerMediaControl: ({ target, action }) => {
                 if (action === 'toggle_answer') {
@@ -596,7 +591,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
 
         if (hostMode === 'controller') {
             stopScoreLogsSubscription = subscribeToScoreLogs(gameId, (entry) => {
-                appendScoreLog(entry, { broadcast: false, persistRemote: false });
+                appendScoreLog(entry, { broadcast: false });
             });
         }
 
@@ -636,8 +631,17 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
                     void hostControlChannel.send('leaderboard_adjust_score', { playerId, delta });
                     return;
                 }
-                await playersService.adjustPlayerScore(playerId, delta);
-                appendScoreLog(makeManualScoreLog({ playerId, delta }), { broadcast: true, persistRemote: true });
+                const amount = Number(delta) || 0;
+                const player = (playersService.getPlayers?.() || []).find((entry) => String(entry?.id || '') === String(playerId || ''));
+                const playerName = player?.name || t('player_fallback');
+                const scoreMutation = await playersService.adjustPlayerScoreWithLog(playerId, amount, {
+                    kind: 'manual',
+                    playerName,
+                    cellLabel: `${t('leaderboard')} / ${amount >= 0 ? '+' : '-'}${Math.abs(amount)}`,
+                    outcome: null,
+                    happenedAt: new Date().toISOString(),
+                });
+                appendScoreLog(scoreMutation?.scoreLog || makeManualScoreLog({ playerId, delta: amount }), { broadcast: true });
             },
             onCurrentPlayerChange: async (playerId) => {
                 if (hostMode === 'controller') {
@@ -940,7 +944,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
             }
 
             if (type === 'score_log_append') {
-                appendScoreLog(payload, { broadcast: false, persistRemote: false });
+                appendScoreLog(payload, { broadcast: false });
                 return;
             }
 
@@ -1002,8 +1006,17 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
             }
 
             if (type === 'leaderboard_adjust_score' && hostMode === 'host') {
-                void playersService.adjustPlayerScore(payload?.playerId, payload?.delta).then(() => {
-                    appendScoreLog(makeManualScoreLog({ playerId: payload?.playerId, delta: payload?.delta }), { broadcast: true, persistRemote: true });
+                const amount = Number(payload?.delta) || 0;
+                const player = (playersService.getPlayers?.() || []).find((entry) => String(entry?.id || '') === String(payload?.playerId || ''));
+                const playerName = player?.name || t('player_fallback');
+                void playersService.adjustPlayerScoreWithLog(payload?.playerId, amount, {
+                    kind: 'manual',
+                    playerName,
+                    cellLabel: `${t('leaderboard')} / ${amount >= 0 ? '+' : '-'}${Math.abs(amount)}`,
+                    outcome: null,
+                    happenedAt: new Date().toISOString(),
+                }).then((scoreMutation) => {
+                    appendScoreLog(scoreMutation?.scoreLog || makeManualScoreLog({ playerId: payload?.playerId, delta: amount }), { broadcast: true });
                 });
                 return;
             }

@@ -1,6 +1,6 @@
 # PROJECT_STATE
 
-Last updated: 2026-05-02
+Last updated: 2026-05-03
 
 ## Real Project Overview
 
@@ -62,6 +62,7 @@ The app is realtime, but not purely realtime. It mixes:
   - now retries `openPress()` on transient runtime failures, reducing stuck `PRESS` states that previously required reopening the modal
   - now supports `directed-bet` modifier flow: host picks a non-active target player and custom stake (`100..500`), then starts a 40-second dedicated answer window
   - now resolves auto-apply cell modifiers against the current chooser through one shared modifier pipeline
+  - score-changing paths now prefer backend-atomic mutations (`adjust_game_player_score_with_log`, `transfer_game_player_score_with_logs`) so `score_before/score_after` are sourced from DB transactions
   - now supports controller-mode presentation (`question + answer` visible together, no inline edit controls)
   - can now process remote host-controller commands (`open/close`, `correct/incorrect`, directed-bet start, media control)
 - `services/HostControlChannelService.js`
@@ -80,6 +81,7 @@ The app is realtime, but not purely realtime. It mixes:
 - `services/PlayersService.js`
   - owns host-side live player state
   - performs initial fetch, realtime subscription, and fallback refresh
+  - now exposes backend-atomic score mutation helpers with score-log payloads (`adjustPlayerScoreWithLog`, `transferPlayerScoreWithLogs`)
 - `services/PressRuntimeService.js`
   - owns press-race transport selection
   - prefers dedicated WebSocket buzzer transport
@@ -106,6 +108,7 @@ The app is realtime, but not purely realtime. It mixes:
   - board CRUD, board subscriptions, board-level audio/reset helpers
 - `api/playersApi.js`
   - player CRUD, score mutation, player subscriptions
+  - now includes backend-atomic score+log mutation RPC clients with compatibility fallback when RPCs are not yet deployed
 - `api/runtimeApi.js`
   - fallback press-race reads/writes and runtime subscriptions
   - now includes `resolve_game_press(...)` RPC integration for atomic host-side press resolution

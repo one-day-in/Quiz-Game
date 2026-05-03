@@ -86,6 +86,8 @@ The project expects:
   - `resolved_by text`
 - RPC `resolve_game_press_timeout(...)` for atomic timeout resolution
 - a `score_logs` table for score-change history sync between host/controller
+- RPC `adjust_game_player_score_with_log(...)` for atomic "score update + score log insert" per player
+- RPC `transfer_game_player_score_with_logs(...)` for atomic two-player transfer + both score logs (used by `steal_leader_points`)
 - a `media` storage bucket
 - a `service_role` key for the dedicated buzzer server
 

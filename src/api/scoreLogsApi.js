@@ -2,7 +2,7 @@ import { supabase } from './supabaseClient.js';
 
 const SCORE_LOG_COLUMNS = 'id, game_id, player_id, player_name, cell_label, outcome, delta, score_before, score_after, kind, happened_at, created_at';
 
-function mapScoreLogRow(row) {
+export function mapScoreLogRow(row) {
   return {
     id: row?.id || null,
     gameId: row?.game_id || null,
