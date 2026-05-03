@@ -151,9 +151,12 @@
 .qmodal__pressBanner--compact {
     position: sticky;
     inset: auto;
-    top: 0;
+    top: auto;
+    bottom: 0;
+    order: 999;
+    align-self: center;
     width: min(100%, 980px);
-    margin: 0 auto 10px;
+    margin: auto auto 0;
     padding: 10px 14px;
     min-height: 0;
     border-radius: 14px;
@@ -443,7 +446,7 @@
     }
 
     .qmodal__pressBanner--compact {
-        margin-bottom: 8px;
+        margin-top: auto;
         padding: 8px 10px;
     }
 }

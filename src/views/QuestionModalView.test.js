@@ -65,6 +65,17 @@ describe('QuestionModalView winner state', () => {
     view.destroy();
   });
 
+  it('keeps modifier banner hidden for directed bet modifier', () => {
+    const view = createView({
+      mode: 'view',
+      activeModifierType: 'directed_bet',
+    });
+
+    expect(view._refs.modifierBanner.hidden).toBe(true);
+
+    view.destroy();
+  });
+
   it('keeps modifier banner hidden in edit mode', () => {
     const view = createView({
       mode: 'edit',
