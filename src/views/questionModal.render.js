@@ -272,7 +272,8 @@ export function applyModeUI(view, refs) {
   setHidden(refs.answeredToggle, isController);
   setHidden(refs.headerModifier, !isEdit || isController);
   setHidden(refs.footerLeft, false);
-  setHidden(refs.controllerSharedMediaControls, !isController);
+  // Start hidden and reveal only when playable media is present.
+  setHidden(refs.controllerSharedMediaControls, true);
   setHidden(refs.btnIncorrect,   isEdit);
   setHidden(refs.btnCorrect,     isEdit);
 }
@@ -433,6 +434,9 @@ export function renderAll(view, refs) {
       refs.toggleAnswerBtn.disabled    = true;
       refs.toggleAnswerBtn.textContent = `👁️ ${t('show_answer')}`;
     }
+    setHidden(refs.controllerSharedMediaControls, true);
+    setHidden(refs.controllerAnswerToggleBtn, true);
+    if (isController) view.setControllerMediaPlaying?.(false);
     renderModifierBanner(view, refs);
     return;
   }
