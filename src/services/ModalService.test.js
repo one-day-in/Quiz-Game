@@ -55,6 +55,29 @@ describe('ModalService press reset', () => {
     expect(pressRuntime.closePress).toHaveBeenCalledTimes(1);
   });
 
+  it('blocks app-shell interaction while modal layer is active', () => {
+    const gameService = {
+      getGameId: () => 'game-1',
+    };
+    const appShell = document.createElement('div');
+    appShell.className = 'app-shell';
+    document.body.appendChild(appShell);
+
+    const service = new ModalService(gameService, {});
+    service._setBackgroundInteractionBlocked(true);
+
+    expect(document.body.classList.contains('qmodal-open')).toBe(true);
+    expect(appShell.classList.contains('app-shell--modalBlocked')).toBe(true);
+    expect(appShell.hasAttribute('inert')).toBe(true);
+
+    service._setBackgroundInteractionBlocked(false);
+    expect(document.body.classList.contains('qmodal-open')).toBe(false);
+    expect(appShell.classList.contains('app-shell--modalBlocked')).toBe(false);
+    expect(appShell.hasAttribute('inert')).toBe(false);
+
+    appShell.remove();
+  });
+
   it('keeps press closed when switching from edit to play with no open modal', async () => {
     const gameService = {
       getGameId: () => 'game-1',

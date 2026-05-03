@@ -431,7 +431,7 @@ export class QuestionModalView {
             disposer: this._disposer,
             overlay: r.overlay,
             onDismiss: () => this._cb.onClose?.(),
-            shouldDismissOnEscape: () => !this._isFullscreen(),
+            closeOnEscape: false,
         });
 
         // ── Modifier selector (edit mode) ─────────────────────────────────────────

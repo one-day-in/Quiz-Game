@@ -107,6 +107,21 @@ export class ModalService {
     return c;
   }
 
+  _setBackgroundInteractionBlocked(blocked) {
+    if (typeof document === 'undefined') return;
+    const body = document.body;
+    const appShell = document.querySelector('.app-shell');
+    if (blocked) {
+      body?.classList?.add('qmodal-open');
+      appShell?.classList?.add('app-shell--modalBlocked');
+      appShell?.setAttribute?.('inert', '');
+      return;
+    }
+    body?.classList?.remove('qmodal-open');
+    appShell?.classList?.remove('app-shell--modalBlocked');
+    appShell?.removeAttribute?.('inert');
+  }
+
   // True from the moment activeCell is set (opening) until it's cleared (closed)
   isOpen() {
     return !!this.activeCell;
@@ -160,6 +175,7 @@ export class ModalService {
 
   _open(mode, cellData) {
     this._ensureContainer();
+    this._setBackgroundInteractionBlocked(true);
 
     this.activeCell = {
       roundId: cellData.roundId,
@@ -486,6 +502,7 @@ export class ModalService {
       // Targeted patch — only the closed cell's is-answered state updates
       this._game.touch(lastCell);
     } finally {
+      this._setBackgroundInteractionBlocked(false);
       this._isClosing = false;
     }
   }

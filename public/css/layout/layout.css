@@ -49,6 +49,10 @@
   filter: saturate(0.82) blur(2px);
 }
 
+.app-shell.app-shell--modalBlocked {
+  pointer-events: none !important;
+}
+
 @media (hover: none) and (pointer: coarse) {
   .game-grid,
   .app-footer {

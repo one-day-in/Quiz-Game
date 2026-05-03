@@ -5,11 +5,22 @@
 .qmodal {
     position: fixed;
     inset: 0;
-    z-index: 1000;
+    z-index: 1;
 
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.modal-container {
+    position: fixed;
+    inset: 0;
+    z-index: 7000;
+    pointer-events: none;
+}
+
+.modal-container > .qmodal {
+    pointer-events: auto;
 }
 
 .qmodal__overlay {

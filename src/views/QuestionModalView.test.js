@@ -185,4 +185,17 @@ describe('QuestionModalView winner state', () => {
     view.destroy();
   });
 
+  it('dismisses on overlay click but not on Escape key', () => {
+    const onClose = vi.fn();
+    const view = createView({ onClose });
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(onClose).toHaveBeenCalledTimes(0);
+
+    view._refs.overlay.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+
+    view.destroy();
+  });
+
 });
