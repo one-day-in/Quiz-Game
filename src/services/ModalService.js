@@ -110,16 +110,29 @@ export class ModalService {
   _setBackgroundInteractionBlocked(blocked) {
     if (typeof document === 'undefined') return;
     const body = document.body;
-    const appShell = document.querySelector('.app-shell');
+    const appShells = Array.from(document.querySelectorAll('.app-shell'));
     if (blocked) {
       body?.classList?.add('qmodal-open');
-      appShell?.classList?.add('app-shell--modalBlocked');
-      appShell?.setAttribute?.('inert', '');
+      for (const appShell of appShells) {
+        appShell?.classList?.add('app-shell--modalBlocked');
+        appShell?.setAttribute?.('inert', '');
+      }
       return;
     }
     body?.classList?.remove('qmodal-open');
-    appShell?.classList?.remove('app-shell--modalBlocked');
-    appShell?.removeAttribute?.('inert');
+    for (const appShell of appShells) {
+      appShell?.classList?.remove('app-shell--modalBlocked');
+      appShell?.removeAttribute?.('inert');
+    }
+  }
+
+  _resetModalInteractionLayer() {
+    if (typeof document === 'undefined') return;
+    this._setBackgroundInteractionBlocked(false);
+    const container = document.getElementById('modal-container');
+    if (!container) return;
+    if (this.activeCell || this.view) return;
+    container.innerHTML = '';
   }
 
   // True from the moment activeCell is set (opening) until it's cleared (closed)
@@ -174,49 +187,50 @@ export class ModalService {
   }
 
   _open(mode, cellData) {
-    this._ensureContainer();
-    this._setBackgroundInteractionBlocked(true);
+    try {
+      this._ensureContainer();
+      this._setBackgroundInteractionBlocked(true);
 
-    this.activeCell = {
-      roundId: cellData.roundId,
-      rowId: cellData.rowId,
-      cellId: cellData.cellId
-    };
-    this._cellValue = Number(cellData.value) || 0;
-    this._currentResolutionValue = this._cellValue;
-    this._pressWinnerId = null;
-    this._pressAutoResolveBlocked = false;
-    this._pressDeadlineIso = null;
-    const allowModeToggle = !this.isControllerMode() && this._globalGameMode === 'edit';
-    const effectiveMode = allowModeToggle && mode === 'edit' ? 'edit' : 'view';
-    this._modalViewMode = effectiveMode;
-    this._modalIsAnswerShown = effectiveMode === 'edit';
-    this._activeModifier = cellData?.modifier ? { ...cellData.modifier } : null;
-    this._directedBet = null;
-    this._pressAvailabilityIntent = null;
-    if (!this.isControllerMode() && !this._shouldAutoApplyModifierOnOpen()) {
-      void this._resetPressRuntime();
-    }
+      this.activeCell = {
+        roundId: cellData.roundId,
+        rowId: cellData.rowId,
+        cellId: cellData.cellId
+      };
+      this._cellValue = Number(cellData.value) || 0;
+      this._currentResolutionValue = this._cellValue;
+      this._pressWinnerId = null;
+      this._pressAutoResolveBlocked = false;
+      this._pressDeadlineIso = null;
+      const allowModeToggle = !this.isControllerMode() && this._globalGameMode === 'edit';
+      const effectiveMode = allowModeToggle && mode === 'edit' ? 'edit' : 'view';
+      this._modalViewMode = effectiveMode;
+      this._modalIsAnswerShown = effectiveMode === 'edit';
+      this._activeModifier = cellData?.modifier ? { ...cellData.modifier } : null;
+      this._directedBet = null;
+      this._pressAvailabilityIntent = null;
+      if (!this.isControllerMode() && !this._shouldAutoApplyModifierOnOpen()) {
+        void this._resetPressRuntime();
+      }
 
-    const shouldMarkAsAnswered = !this.isControllerMode() && !cellData.isAnswered;
-    if (shouldMarkAsAnswered) {
-      void this._updateCell({ isAnswered: true }, { silent: true });
-    }
+      const shouldMarkAsAnswered = !this.isControllerMode() && !cellData.isAnswered;
+      if (shouldMarkAsAnswered) {
+        void this._updateCell({ isAnswered: true }, { silent: true });
+      }
 
-    const question = { ...(cellData.question || {}) };
-    const answer = { ...(cellData.answer || {}) };
+      const question = { ...(cellData.question || {}) };
+      const answer = { ...(cellData.answer || {}) };
 
-    if (question.media) question.media = this._media.toViewMedia(question.media);
-    if (answer.media)   answer.media   = this._media.toViewMedia(answer.media);
+      if (question.media) question.media = this._media.toViewMedia(question.media);
+      if (answer.media)   answer.media   = this._media.toViewMedia(answer.media);
 
-    // Convert raw audioFiles arrays to view format (adds .src)
-    question.audioFiles = this._media.toViewAudioFiles(question.audioFiles);
-    answer.audioFiles   = this._media.toViewAudioFiles(answer.audioFiles);
+      // Convert raw audioFiles arrays to view format (adds .src)
+      question.audioFiles = this._media.toViewAudioFiles(question.audioFiles);
+      answer.audioFiles   = this._media.toViewAudioFiles(answer.audioFiles);
 
-    const headerTitle = this._getHeaderTitle(cellData);
-    this._initDirectedBetState();
+      const headerTitle = this._getHeaderTitle(cellData);
+      this._initDirectedBetState();
 
-    this.view = new QuestionModalView({
+      this.view = new QuestionModalView({
       mode: effectiveMode,
       allowModeToggle,
       displayMode: this.isControllerMode() ? 'controller' : 'host',
@@ -391,26 +405,46 @@ export class ModalService {
       },
     });
 
-    this.container.appendChild(this.view.el);
+      this.container.appendChild(this.view.el);
 
-    this._onModalViewStateChange?.({ mode: this.view?._mode || 'view', isAnswerShown: !!this.view?._isAnswerShown });
+      this._onModalViewStateChange?.({ mode: this.view?._mode || 'view', isAnswerShown: !!this.view?._isAnswerShown });
 
-    if (this._shouldAutoApplyModifierOnOpen()) {
-      void this._runAutoApplyModifierFlow();
-      return;
+      if (this._shouldAutoApplyModifierOnOpen()) {
+        void this._runAutoApplyModifierFlow();
+        return;
+      }
+
+      this._bindPressRuntime();
+      // _resetPressRuntime already performs forced availability sync when modal opens.
+      if (this.isControllerMode()) {
+        void this._syncPressAvailability({ reason: 'modal_opened_controller' });
+      }
+      this._schedulePressAvailabilityResync();
+      this._emitDirectedBetStateChange(this._getDirectedBetViewState());
+      // ESC is handled inside QuestionModalView (properly cleaned up on destroy).
+      // Do NOT add a document keydown listener here — ModalService._disposer is
+      // long-lived and never destroyed between openings, so listeners would
+      // accumulate and call close() / touch() N times per ESC press.
+    } catch (error) {
+      console.error('[ModalService] open failed, cleaning modal layer:', error);
+      if (this.view) {
+        this.view.destroy();
+        this.view = null;
+      }
+      this.activeCell = null;
+      this._pressWinnerId = null;
+      this._cellValue = 0;
+      this._currentResolutionValue = 0;
+      this._pressAutoResolveBlocked = false;
+      this._pressDeadlineIso = null;
+      this._modalViewMode = 'view';
+      this._modalIsAnswerShown = false;
+      this._pressAvailabilityIntent = null;
+      this._activeModifier = null;
+      this._directedBet = null;
+      this._emitDirectedBetStateChange(null);
+      this._resetModalInteractionLayer();
     }
-
-    this._bindPressRuntime();
-    // _resetPressRuntime already performs forced availability sync when modal opens.
-    if (this.isControllerMode()) {
-      void this._syncPressAvailability({ reason: 'modal_opened_controller' });
-    }
-    this._schedulePressAvailabilityResync();
-    this._emitDirectedBetStateChange(this._getDirectedBetViewState());
-    // ESC is handled inside QuestionModalView (properly cleaned up on destroy).
-    // Do NOT add a document keydown listener here — ModalService._disposer is
-    // long-lived and never destroyed between openings, so listeners would
-    // accumulate and call close() / touch() N times per ESC press.
   }
 
   async _updateCell(update, { silent = false } = {}) {
@@ -502,7 +536,7 @@ export class ModalService {
       // Targeted patch — only the closed cell's is-answered state updates
       this._game.touch(lastCell);
     } finally {
-      this._setBackgroundInteractionBlocked(false);
+      this._resetModalInteractionLayer();
       this._isClosing = false;
     }
   }
