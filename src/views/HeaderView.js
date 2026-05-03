@@ -42,6 +42,7 @@ export function HeaderView({
   players = [],
   scoreLogs = [],
   currentPlayerId = null,
+  hostControllerConnected = false,
   onBackToLobby,
   onRoundClick,
   onCurrentPlayerChange,
@@ -56,6 +57,7 @@ export function HeaderView({
   let isChooserMenuOpen = false;
   let isSettingsOpen = false;
   let currentScoreLogs = Array.isArray(scoreLogs) ? scoreLogs.slice() : [];
+  let isHostControllerConnected = !!hostControllerConnected;
   let scoreLogsSignature = '';
   const canBackToLobby = typeof onBackToLobby === 'function';
   const canToggleGameMode = typeof onGameModeToggle === 'function';
@@ -110,6 +112,7 @@ export function HeaderView({
             <div class="hdr-settings-qrRow">
               <button class="hdr-settings-qrBtn" type="button" data-action="host-qr" title="${escapeHtml(t('connect_host'))}" aria-label="${escapeHtml(t('connect_host'))}">
                 <span>${escapeHtml(t('connect_host'))}</span>
+                <span class="hdr-settings-connDot js-host-controller-dot" aria-hidden="true"></span>
               </button>
               <button class="hdr-settings-qrBtn" type="button" data-action="player-qr" title="${escapeHtml(t('connect_player'))}" aria-label="${escapeHtml(t('connect_player'))}">
                 <span>${escapeHtml(t('connect_player'))}</span>
@@ -157,6 +160,8 @@ export function HeaderView({
   const qrOverlayImgEl = el.querySelector('.hdr-qrOverlayImg');
   const qrOverlayHintEl = el.querySelector('.hdr-qrOverlayHint');
   const qrButtons = Array.from(el.querySelectorAll('.hdr-settings-qrBtn'));
+  const hostControllerDotEl = el.querySelector('.js-host-controller-dot');
+  const hostControllerBtnEl = el.querySelector('[data-action="host-qr"]');
   let hostQrDataUrl = '';
   let playerQrDataUrl = '';
   let settingsOverlayController = null;
@@ -250,6 +255,12 @@ export function HeaderView({
     chooserSummarySignature = nextSignature;
   }
 
+  function renderHostControllerStatus() {
+    if (!hostControllerDotEl || !hostControllerBtnEl) return;
+    hostControllerDotEl.classList.toggle('is-active', isHostControllerConnected);
+    hostControllerBtnEl.classList.toggle('is-connected', isHostControllerConnected);
+  }
+
   function update(next = {}) {
     const ui = next?.uiState ?? uiState;
     const displayRound = ui?.isRoundTransitioning
@@ -274,10 +285,14 @@ export function HeaderView({
     if (Object.prototype.hasOwnProperty.call(next, 'currentPlayerId')) {
       currentChooserId = next.currentPlayerId ? String(next.currentPlayerId) : null;
     }
+    if (Object.prototype.hasOwnProperty.call(next, 'hostControllerConnected')) {
+      isHostControllerConnected = !!next.hostControllerConnected;
+    }
 
     renderChooserSummary();
     renderChooserMenu();
     renderScoreLogs();
+    renderHostControllerStatus();
   }
 
   function renderScoreLogs() {

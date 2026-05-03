@@ -26,6 +26,7 @@ export function createAppController({
   onRoundChangeRequest = null,
   onGameModeChange = null,
   onClearScoreLogs = null,
+  hostControllerConnected = false,
 }) {
   let appViewRef = null; // { el, update } — kept alive across state changes
   const disposer = new Disposer();
@@ -173,6 +174,7 @@ export function createAppController({
           gameService.setGameMode?.(nextMode);
         },
         onClearScoreLogs,
+        hostControllerConnected,
       });
       root.appendChild(appViewRef.el);
       return;
@@ -215,6 +217,7 @@ export function createAppController({
     updateScoreLogs: (nextLogs) => appViewRef?.updateScoreLogs?.(nextLogs),
     setLeaderboardExpanded: (expanded, options = {}) => appViewRef?.setLeaderboardExpanded?.(expanded, options),
     setScoreLogsOpen: (isOpen, options = {}) => appViewRef?.setScoreLogsOpen?.(isOpen, options),
+    setHostControllerConnected: (connected) => appViewRef?.setHostControllerConnected?.(connected),
     destroy: () => disposer.destroy()
   };
 }

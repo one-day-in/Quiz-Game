@@ -424,6 +424,38 @@
     background var(--t-fast) var(--ease);
 }
 
+.hdr-settings-qrBtn[data-action="host-qr"] {
+  position: relative;
+  padding-right: 34px;
+}
+
+.hdr-settings-connDot {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  width: 10px;
+  height: 10px;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.95);
+  box-shadow:
+    0 0 0 2px rgba(2, 6, 23, 0.7),
+    0 0 10px rgba(239, 68, 68, 0.35);
+  transition: background var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
+}
+
+.hdr-settings-connDot.is-active {
+  background: #22c55e;
+  box-shadow:
+    0 0 0 2px rgba(2, 6, 23, 0.7),
+    0 0 14px rgba(34, 197, 94, 0.8);
+}
+
+.hdr-settings-qrBtn[data-action="host-qr"].is-connected {
+  border-color: rgba(34, 197, 94, 0.55);
+  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.22) inset;
+}
+
 .hdr-settings-logs {
   display: flex;
   flex-direction: column;

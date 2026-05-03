@@ -30,4 +30,23 @@ describe('HeaderView current player picker', () => {
 
     expect(onCurrentPlayerChange).toHaveBeenCalledWith('player-2');
   });
+
+  it('shows host controller connection indicator in settings host button', () => {
+    const view = HeaderView({
+      uiState: { activeRoundId: 0 },
+      gameId: 'game-1',
+      showQrInSettings: true,
+      hostControllerConnected: false,
+      players: [],
+      currentPlayerId: null,
+    });
+
+    document.body.appendChild(view.el);
+    const dot = document.body.querySelector('.js-host-controller-dot');
+    expect(dot).toBeTruthy();
+    expect(dot?.classList.contains('is-active')).toBe(false);
+
+    view.update({ hostControllerConnected: true });
+    expect(dot?.classList.contains('is-active')).toBe(true);
+  });
 });

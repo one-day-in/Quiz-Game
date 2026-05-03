@@ -25,6 +25,7 @@ export function AppView({
   onScoreLogsOpenChange = null,
   onGameModeToggle = null,
   onClearScoreLogs = null,
+  hostControllerConnected = false,
 }) {
   const container = document.createElement('div');
   container.className = 'app-shell';
@@ -36,6 +37,7 @@ export function AppView({
   let leaderboardPanel = null;
   let leaderboardPlayers = Array.isArray(players) ? players : [];
   let leaderboardScoreLogs = Array.isArray(scoreLogs) ? scoreLogs : [];
+  let isHostControllerConnected = !!hostControllerConnected;
 
   // ResizeObserver — recalculate fitText on resize
   const ro = new ResizeObserver(() => {
@@ -56,6 +58,7 @@ export function AppView({
     players: leaderboardPlayers,
     scoreLogs: leaderboardScoreLogs,
     currentPlayerId: model?.getCurrentPlayerId?.() ?? null,
+    hostControllerConnected: isHostControllerConnected,
     onBackToLobby: isReadOnly ? null : onBackToLobby,
     onRoundClick,
     onCurrentPlayerChange: (isReadOnly && !allowCurrentPlayerControl) ? null : (playerId) => actions.setCurrentPlayer?.(playerId),
@@ -118,6 +121,7 @@ export function AppView({
       players: leaderboardPlayers,
       scoreLogs: leaderboardScoreLogs,
       currentPlayerId: m?.getCurrentPlayerId?.() ?? null,
+      hostControllerConnected: isHostControllerConnected,
     });
     renderGrid(m, ui);
     renderLeaderboard(leaderboardPlayers);
@@ -132,6 +136,7 @@ export function AppView({
       players: leaderboardPlayers,
       scoreLogs: leaderboardScoreLogs,
       currentPlayerId: m?.getCurrentPlayerId?.() ?? null,
+      hostControllerConnected: isHostControllerConnected,
     });
     renderLeaderboard(leaderboardPlayers);
   }
@@ -144,6 +149,7 @@ export function AppView({
       players: leaderboardPlayers,
       scoreLogs: leaderboardScoreLogs,
       currentPlayerId: currentModel?.getCurrentPlayerId?.() ?? null,
+      hostControllerConnected: isHostControllerConnected,
     });
   }
 
@@ -154,6 +160,7 @@ export function AppView({
       players: leaderboardPlayers,
       scoreLogs: leaderboardScoreLogs,
       currentPlayerId: currentModel?.getCurrentPlayerId?.() ?? null,
+      hostControllerConnected: isHostControllerConnected,
     });
     renderLeaderboard(nextPlayers);
   }
@@ -165,8 +172,20 @@ export function AppView({
       players: leaderboardPlayers,
       scoreLogs: leaderboardScoreLogs,
       currentPlayerId: currentModel?.getCurrentPlayerId?.() ?? null,
+      hostControllerConnected: isHostControllerConnected,
     });
     leaderboardPanel?.updateScoreLogs?.(leaderboardScoreLogs);
+  }
+
+  function setHostControllerConnected(connected = false) {
+    isHostControllerConnected = !!connected;
+    header.update({
+      uiState: currentUiState,
+      players: leaderboardPlayers,
+      scoreLogs: leaderboardScoreLogs,
+      currentPlayerId: currentModel?.getCurrentPlayerId?.() ?? null,
+      hostControllerConnected: isHostControllerConnected,
+    });
   }
 
   function setLeaderboardExpanded(expanded, options = {}) {
@@ -189,5 +208,16 @@ export function AppView({
   renderLeaderboard(leaderboardPlayers);
   disposer.add(() => leaderboardPanel?.destroy?.());
 
-  return { el: container, update, updatePlayers, updateScoreLogs, setLeaderboardExpanded, setScoreLogsOpen, patchCell, syncLive, setRoundTransition };
+  return {
+    el: container,
+    update,
+    updatePlayers,
+    updateScoreLogs,
+    setLeaderboardExpanded,
+    setScoreLogsOpen,
+    patchCell,
+    syncLive,
+    setRoundTransition,
+    setHostControllerConnected,
+  };
 }

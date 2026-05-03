@@ -243,11 +243,14 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
         let scoreLogsOpen = false;
         let hostActivityPingTimer = null;
         let hostActivityStaleTimer = null;
+        let controllerActivityPingTimer = null;
+        let controllerActivityStaleTimer = null;
         let roundSyncRetryTimer = null;
         let lastOpenCellPayload = null;
         let lastModalViewState = null;
         let lastDirectedBetState = null;
         let lastModalPressState = null;
+        let isHostControllerConnected = false;
         let stopScoreLogsSubscription = null;
         let stopGameSubscription = null;
         let stopGameSnapshotBroadcast = null;
@@ -279,6 +282,21 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
             if (!active) return;
             hostActivityStaleTimer = window.setTimeout(() => {
                 setControllerAvailability(false);
+            }, HOST_ACTIVITY_STALE_MS);
+        };
+        const setHostControllerConnected = (connected) => {
+            if (hostMode !== 'host') return;
+            const nextConnected = !!connected;
+            if (isHostControllerConnected === nextConnected) return;
+            isHostControllerConnected = nextConnected;
+            appRef?.setHostControllerConnected?.(nextConnected);
+        };
+        const markHostControllerActiveFromPing = (active) => {
+            setHostControllerConnected(!!active);
+            window.clearTimeout(controllerActivityStaleTimer);
+            if (!active) return;
+            controllerActivityStaleTimer = window.setTimeout(() => {
+                setHostControllerConnected(false);
             }, HOST_ACTIVITY_STALE_MS);
         };
         const normalizeScoreLog = (entry = {}) => ({
@@ -674,8 +692,10 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
                 }
                 await clearAllScoreLogs();
             },
+            hostControllerConnected: isHostControllerConnected,
         });
         appRef = app;
+        appRef?.setHostControllerConnected?.(isHostControllerConnected);
         modalService.setGameMode(gameService.getState()?.uiState?.gameMode || 'play');
 
         if (entryMode === 'edit') {
@@ -768,8 +788,17 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
             };
             sendHostActivity();
             hostActivityPingTimer = window.setInterval(sendHostActivity, HOST_ACTIVITY_PING_MS);
+            void hostControlChannel.send('controller_runtime_state_request');
         } else {
             setControllerAvailability(false);
+            const sendControllerActivity = (active = true) => {
+                void hostControlChannel.send('controller_runtime_state', {
+                    active: !!active,
+                    sentAt: new Date().toISOString(),
+                });
+            };
+            sendControllerActivity(true);
+            controllerActivityPingTimer = window.setInterval(() => sendControllerActivity(true), HOST_ACTIVITY_PING_MS);
         }
         const stopHostControlSubscription = hostControlChannel.subscribe((message) => {
             const type = message?.type;
@@ -784,6 +813,11 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
                 } else if (!hasRoundStateSynced) {
                     startRoundSyncRetry();
                 }
+                return;
+            }
+
+            if (type === 'controller_runtime_state' && hostMode === 'host') {
+                markHostControllerActiveFromPing(payload?.active !== false);
                 return;
             }
 
@@ -809,6 +843,14 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
                 } else {
                     void hostControlChannel.send('close_modal');
                 }
+                return;
+            }
+
+            if (type === 'controller_runtime_state_request' && hostMode === 'controller') {
+                void hostControlChannel.send('controller_runtime_state', {
+                    active: true,
+                    sentAt: new Date().toISOString(),
+                });
                 return;
             }
 
@@ -991,6 +1033,10 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
             hostActivityPingTimer = null;
             window.clearTimeout(hostActivityStaleTimer);
             hostActivityStaleTimer = null;
+            window.clearInterval(controllerActivityPingTimer);
+            controllerActivityPingTimer = null;
+            window.clearTimeout(controllerActivityStaleTimer);
+            controllerActivityStaleTimer = null;
             window.clearTimeout(gameSnapshotBroadcastTimer);
             gameSnapshotBroadcastTimer = null;
             window.clearTimeout(playersSnapshotBroadcastTimer);
@@ -998,6 +1044,12 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
             stopRoundSyncRetry();
             if (hostMode === 'host') {
                 void hostControlChannel.send('host_runtime_state', {
+                    active: false,
+                    sentAt: new Date().toISOString(),
+                });
+                setHostControllerConnected(false);
+            } else {
+                void hostControlChannel.send('controller_runtime_state', {
                     active: false,
                     sentAt: new Date().toISOString(),
                 });
