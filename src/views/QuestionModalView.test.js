@@ -78,6 +78,23 @@ describe('QuestionModalView winner state', () => {
     view.destroy();
   });
 
+  it('shows modifier banner on controller after switching modal state to view mode', () => {
+    const view = createView({
+      mode: 'edit',
+      displayMode: 'controller',
+      activeModifierType: 'steal_leader_points',
+    });
+
+    expect(view._refs.modifierBanner.hidden).toBe(true);
+
+    view.setViewState({ mode: 'view', isAnswerShown: false });
+
+    expect(view._refs.modifierBanner.hidden).toBe(false);
+    expect(view._refs.modifierBanner.textContent).toContain('⚡');
+
+    view.destroy();
+  });
+
   it('keeps modifier banner hidden for directed bet modifier', () => {
     const view = createView({
       mode: 'view',

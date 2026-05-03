@@ -76,6 +76,8 @@ export class ModalService {
     this._hasPendingRemoteDirectedBetState = false;
     this._pendingRemotePressState = null;
     this._hasPendingRemotePressState = false;
+    this._pendingRemoteModalViewState = null;
+    this._hasPendingRemoteModalViewState = false;
 
     if (!this.isControllerMode() && typeof document !== 'undefined') {
       const unlock = () => this._unlockMediaInteraction();
@@ -413,6 +415,17 @@ export class ModalService {
 
       this._onModalViewStateChange?.({ mode: this.view?._mode || 'view', isAnswerShown: !!this.view?._isAnswerShown });
       if (this.isControllerMode()) {
+        if (this._hasPendingRemoteModalViewState) {
+          const pendingViewState = this._pendingRemoteModalViewState || {};
+          const nextMode = pendingViewState?.mode === 'edit' ? 'edit' : 'view';
+          this.view?.setViewState?.({
+            mode: nextMode,
+            isAnswerShown: !!pendingViewState?.isAnswerShown,
+          });
+          this.view?.setControllerMediaTarget?.(pendingViewState?.isAnswerShown ? 'answer' : 'question');
+          this._hasPendingRemoteModalViewState = false;
+          this._pendingRemoteModalViewState = null;
+        }
         if (this._hasPendingRemoteDirectedBetState) {
           this.view?.setDirectedBetState?.(this._pendingRemoteDirectedBetState);
           this._hasPendingRemoteDirectedBetState = false;
@@ -541,6 +554,8 @@ export class ModalService {
       this._hasPendingRemoteDirectedBetState = false;
       this._pendingRemotePressState = null;
       this._hasPendingRemotePressState = false;
+      this._pendingRemoteModalViewState = null;
+      this._hasPendingRemoteModalViewState = false;
       this._emitDirectedBetStateChange(null);
       this._tracePressAvailability('close:modal_shutdown', { reason: 'modal_closed' });
       try {
@@ -1360,9 +1375,18 @@ export class ModalService {
       return;
     }
     if (type === 'modal_view_state') {
-      const nextTarget = payload?.isAnswerShown ? 'answer' : 'question';
-      this.view?.setControllerMediaTarget?.(nextTarget);
-      this.view?.setAnswerShown?.(!!payload?.isAnswerShown);
+      if (this.view) {
+        const nextMode = payload?.mode === 'edit' ? 'edit' : 'view';
+        const nextIsAnswerShown = !!payload?.isAnswerShown;
+        this.view?.setViewState?.({
+          mode: nextMode,
+          isAnswerShown: nextIsAnswerShown,
+        });
+        this.view?.setControllerMediaTarget?.(nextIsAnswerShown ? 'answer' : 'question');
+      } else if (this.isControllerMode()) {
+        this._pendingRemoteModalViewState = payload ? { ...payload } : { mode: 'view', isAnswerShown: false };
+        this._hasPendingRemoteModalViewState = true;
+      }
       return;
     }
     if (type === 'modal_media_state') {

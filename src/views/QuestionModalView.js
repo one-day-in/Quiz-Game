@@ -248,6 +248,18 @@ export class QuestionModalView {
         this.syncPressBannerVisibility();
     }
 
+    setViewState({ mode = 'view', isAnswerShown = false } = {}) {
+        this._mode = String(mode || 'view').toLowerCase() === 'edit' ? 'edit' : 'view';
+        if (this._mode === 'edit') {
+            this._isAnswerShown = true;
+        } else {
+            this._isAnswerShown = !!isAnswerShown;
+        }
+        applyModeUI(this, this._refs);
+        renderAll(this, this._refs);
+        this.syncPressBannerVisibility();
+    }
+
     toggleAnswerVisibility() {
         if (this._mode !== 'view') return;
         this._isAnswerShown = !this._isAnswerShown;

@@ -579,6 +579,39 @@ describe('ModalService press reset', () => {
     expect(service.view.updateWinnerName).toHaveBeenLastCalledWith('');
   });
 
+  it('applies remote modal view state mode on controller parity channel', () => {
+    const gameService = {
+      getGameId: () => 'game-1',
+    };
+    const service = new ModalService(gameService, {}, {}, {}, {
+      presentationMode: 'controller',
+    });
+    service.view = {
+      setViewState: vi.fn(),
+      setControllerMediaTarget: vi.fn(),
+    };
+
+    service.runRemoteCommand('modal_view_state', {
+      mode: 'view',
+      isAnswerShown: false,
+    });
+    service.runRemoteCommand('modal_view_state', {
+      mode: 'edit',
+      isAnswerShown: true,
+    });
+
+    expect(service.view.setViewState).toHaveBeenNthCalledWith(1, {
+      mode: 'view',
+      isAnswerShown: false,
+    });
+    expect(service.view.setControllerMediaTarget).toHaveBeenNthCalledWith(1, 'question');
+    expect(service.view.setViewState).toHaveBeenNthCalledWith(2, {
+      mode: 'edit',
+      isAnswerShown: true,
+    });
+    expect(service.view.setControllerMediaTarget).toHaveBeenNthCalledWith(2, 'answer');
+  });
+
   it('applies directed bet actions received through remote command channel', () => {
     const gameService = {
       getGameId: () => 'game-1',
