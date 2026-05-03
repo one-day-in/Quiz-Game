@@ -703,8 +703,11 @@ export class ModalService {
   }
 
   _createModifierUserError(key) {
-    const error = new Error(String(key || 'modifier_error'));
+    const code = String(key || 'modifier_error');
+    const error = new Error(code);
     error.userMessage = t(String(key || 'save_failed'));
+    error.modifierErrorCode = code;
+    error.isModifierUserError = true;
     return error;
   }
 
@@ -724,8 +727,16 @@ export class ModalService {
         await this._applyStealLeaderPointsModifier();
       }
     } catch (error) {
-      console.error('[ModalService] auto modifier apply failed:', error);
-      alert(error?.userMessage || t('save_failed'));
+      const errorCode = String(error?.modifierErrorCode || error?.message || '').trim();
+      const isExpectedAvailabilitySkip =
+        errorCode === 'modifier_no_current_player'
+        || errorCode === 'modifier_not_available';
+      if (isExpectedAvailabilitySkip) {
+        console.info('[ModalService] auto modifier skipped:', errorCode);
+      } else {
+        console.error('[ModalService] auto modifier apply failed:', error);
+        alert(error?.userMessage || t('save_failed'));
+      }
     } finally {
       await new Promise((resolve) => setTimeout(resolve, AUTO_MODIFIER_BANNER_MS));
       this._isResolvingPressResult = false;
