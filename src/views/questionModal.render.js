@@ -200,10 +200,8 @@ function renderModifierBanner(view, refs) {
   const activeModifierType = String(view?._activeModifierType || '').trim().toLowerCase();
   const bannerLabel = getModifierBannerText(view._activeModifierType);
   const directedBetVisible = !!view?._directedBetState?.enabled;
-  const isController = view._displayMode === 'controller';
   const isDirectedBetModifier = activeModifierType === 'directed_bet';
   const shouldShow = view._mode === 'view'
-    && !isController
     && !!bannerLabel
     && !directedBetVisible
     && !isDirectedBetModifier;

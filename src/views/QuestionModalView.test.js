@@ -65,6 +65,19 @@ describe('QuestionModalView winner state', () => {
     view.destroy();
   });
 
+  it('shows modifier banner in controller mode when non-directed modifier is active', () => {
+    const view = createView({
+      mode: 'view',
+      displayMode: 'controller',
+      activeModifierType: 'flip_score',
+    });
+
+    expect(view._refs.modifierBanner.hidden).toBe(false);
+    expect(view._refs.modifierBanner.textContent).toContain('⚡');
+
+    view.destroy();
+  });
+
   it('keeps modifier banner hidden for directed bet modifier', () => {
     const view = createView({
       mode: 'view',
@@ -194,6 +207,42 @@ describe('QuestionModalView winner state', () => {
 
     view._refs.overlay.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     expect(onClose).toHaveBeenCalledTimes(1);
+
+    view.destroy();
+  });
+
+  it('emits directed bet actions from controller panel controls', () => {
+    const onDirectedBetAction = vi.fn();
+    const view = createView({
+      mode: 'view',
+      displayMode: 'controller',
+      activeModifierType: 'directed_bet',
+      onDirectedBetAction,
+    });
+
+    view.setDirectedBetState({
+      enabled: true,
+      phase: 'select',
+      players: [
+        { id: 'p-1', name: 'Maria' },
+        { id: 'p-2', name: 'Artem' },
+      ],
+      selectedPlayerId: null,
+      selectedStake: 100,
+      canStart: true,
+    });
+
+    const playerBtn = view._refs.directedBetPlayers.querySelector('.qmodal__directedBetPlayerBtn[data-player-id="p-1"]');
+    const stakeBtn = view._refs.directedBetStakes.querySelector('.qmodal__directedBetStakeBtn[data-stake="300"]');
+    const startBtn = view._refs.directedBetStartBtn;
+
+    playerBtn?.click();
+    stakeBtn?.click();
+    startBtn?.click();
+
+    expect(onDirectedBetAction).toHaveBeenNthCalledWith(1, { type: 'select_player', playerId: 'p-1' });
+    expect(onDirectedBetAction).toHaveBeenNthCalledWith(2, { type: 'select_stake', stake: 300 });
+    expect(onDirectedBetAction).toHaveBeenNthCalledWith(3, { type: 'start' });
 
     view.destroy();
   });

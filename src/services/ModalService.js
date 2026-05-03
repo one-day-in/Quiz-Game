@@ -72,6 +72,10 @@ export class ModalService {
     this._activeModifier = null;
     this._directedBet = null;
     this._openRequestId = 0;
+    this._pendingRemoteDirectedBetState = null;
+    this._hasPendingRemoteDirectedBetState = false;
+    this._pendingRemotePressState = null;
+    this._hasPendingRemotePressState = false;
 
     if (!this.isControllerMode() && typeof document !== 'undefined') {
       const unlock = () => this._unlockMediaInteraction();
@@ -408,6 +412,18 @@ export class ModalService {
       this.container.appendChild(this.view.el);
 
       this._onModalViewStateChange?.({ mode: this.view?._mode || 'view', isAnswerShown: !!this.view?._isAnswerShown });
+      if (this.isControllerMode()) {
+        if (this._hasPendingRemoteDirectedBetState) {
+          this.view?.setDirectedBetState?.(this._pendingRemoteDirectedBetState);
+          this._hasPendingRemoteDirectedBetState = false;
+          this._pendingRemoteDirectedBetState = null;
+        }
+        if (this._hasPendingRemotePressState) {
+          this._applyRemotePressState(this._pendingRemotePressState || {});
+          this._hasPendingRemotePressState = false;
+          this._pendingRemotePressState = null;
+        }
+      }
 
       if (this._shouldAutoApplyModifierOnOpen()) {
         void this._runAutoApplyModifierFlow();
@@ -521,6 +537,10 @@ export class ModalService {
       this._pressResyncTimer = null;
       this._activeModifier = null;
       this._directedBet = null;
+      this._pendingRemoteDirectedBetState = null;
+      this._hasPendingRemoteDirectedBetState = false;
+      this._pendingRemotePressState = null;
+      this._hasPendingRemotePressState = false;
       this._emitDirectedBetStateChange(null);
       this._tracePressAvailability('close:modal_shutdown', { reason: 'modal_closed' });
       try {
@@ -1351,7 +1371,12 @@ export class ModalService {
       return;
     }
     if (type === 'modal_directed_bet_state') {
-      this.view?.setDirectedBetState?.(payload || null);
+      if (this.view) {
+        this.view?.setDirectedBetState?.(payload || null);
+      } else if (this.isControllerMode()) {
+        this._pendingRemoteDirectedBetState = payload || null;
+        this._hasPendingRemoteDirectedBetState = true;
+      }
       return;
     }
     if (type === 'modal_directed_bet_action') {
@@ -1360,7 +1385,13 @@ export class ModalService {
       return;
     }
     if (type === 'modal_press_state') {
-      if (!this.isOpen()) return;
+      if (!this.isOpen()) {
+        if (this.isControllerMode()) {
+          this._pendingRemotePressState = payload || null;
+          this._hasPendingRemotePressState = true;
+        }
+        return;
+      }
       this._applyRemotePressState(payload);
       return;
     }
