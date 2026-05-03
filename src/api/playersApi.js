@@ -11,6 +11,41 @@ import {
 
 export { MAX_PLAYERS };
 
+const MISSING_RPC_CODE = 'PGRST202';
+let adjustByIdRpcMissing = false;
+
+function isMissingRpcError(error, fnName) {
+    const message = String(error?.message || '');
+    const details = String(error?.details || '');
+    const hint = String(error?.hint || '');
+    const text = `${message} ${details} ${hint}`.toLowerCase();
+    const normalizedFnName = String(fnName || '').toLowerCase();
+    return error?.code === MISSING_RPC_CODE
+        || (
+            normalizedFnName
+            && text.includes(normalizedFnName)
+            && (
+                text.includes('could not find the function')
+                || text.includes('schema cache')
+                || text.includes('not found')
+            )
+        );
+}
+
+async function getPlayerControllerId(gameId, playerId) {
+    const { data, error } = await supabase
+        .from('game_players')
+        .select('controller_id')
+        .eq('game_id', gameId)
+        .eq('id', playerId)
+        .maybeSingle();
+
+    if (error) throw new Error(`[Game] adjustPlayerScore fallback lookup failed: ${error.message}`);
+    const controllerId = String(data?.controller_id || '').trim();
+    if (!controllerId) throw new Error('[Game] adjustPlayerScore fallback failed: player controller not found');
+    return controllerId;
+}
+
 export async function getPlayers(gameId) {
     return fetchPlayerRows(gameId);
 }
@@ -124,10 +159,27 @@ export async function updatePlayer(gameId, playerId, updates = {}) {
 }
 
 export async function adjustPlayerScore(gameId, playerId, delta) {
-    const { data, error } = await supabase.rpc('adjust_game_player_score_by_id', {
+    const normalizedDelta = Number(delta) || 0;
+    if (!adjustByIdRpcMissing) {
+        const { data, error } = await supabase.rpc('adjust_game_player_score_by_id', {
+            p_game_id: gameId,
+            p_player_id: playerId,
+            p_delta: normalizedDelta,
+        });
+
+        if (!error) return mapPlayerRpcResult(data);
+        if (!isMissingRpcError(error, 'adjust_game_player_score_by_id')) {
+            throw new Error(`[Game] adjustPlayerScore failed: ${error.message}`);
+        }
+        adjustByIdRpcMissing = true;
+        console.warn('[Game] adjust_game_player_score_by_id RPC is unavailable, using adjust_game_player_score fallback.');
+    }
+
+    const controllerId = await getPlayerControllerId(gameId, playerId);
+    const { data, error } = await supabase.rpc('adjust_game_player_score', {
         p_game_id: gameId,
-        p_player_id: playerId,
-        p_delta: Number(delta) || 0,
+        p_controller_id: controllerId,
+        p_delta: normalizedDelta,
     });
 
     if (error) throw new Error(`[Game] adjustPlayerScore failed: ${error.message}`);
