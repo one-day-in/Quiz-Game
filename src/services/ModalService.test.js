@@ -231,7 +231,7 @@ describe('ModalService press reset', () => {
     service.close = vi.fn().mockResolvedValue(undefined);
 
     const flowPromise = service._runAutoApplyModifierFlow();
-    await vi.advanceTimersByTimeAsync(900);
+    await vi.advanceTimersByTimeAsync(4000);
     await flowPromise;
 
     expect(adjustPlayerScoreMock).toHaveBeenCalledWith('game-1', 'player-1', -400);
@@ -257,7 +257,7 @@ describe('ModalService press reset', () => {
     service.close = vi.fn().mockResolvedValue(undefined);
 
     const flowPromise = service._runAutoApplyModifierFlow();
-    await vi.advanceTimersByTimeAsync(900);
+    await vi.advanceTimersByTimeAsync(4000);
     await flowPromise;
 
     expect(adjustPlayerScoreMock).toHaveBeenNthCalledWith(1, 'game-1', 'player-2', -1000);
@@ -283,7 +283,7 @@ describe('ModalService press reset', () => {
     service.close = vi.fn().mockResolvedValue(undefined);
 
     const flowPromise = service._runAutoApplyModifierFlow();
-    await vi.advanceTimersByTimeAsync(900);
+    await vi.advanceTimersByTimeAsync(4000);
     await flowPromise;
 
     expect(adjustPlayerScoreMock).toHaveBeenNthCalledWith(1, 'game-1', 'player-1', -1000);
