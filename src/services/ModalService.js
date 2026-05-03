@@ -511,6 +511,12 @@ export class ModalService {
     this._isClosing = true;
     try {
       const hadOpenModal = !!this.activeCell || !!this.view;
+      let didNotifyModalClose = false;
+      const notifyModalClose = () => {
+        if (didNotifyModalClose || !hadOpenModal) return;
+        didNotifyModalClose = true;
+        this._onModalClose?.();
+      };
       // Flush any pending debounced text saves before clearing activeCell
       clearTimeout(this._questionTimer);
       clearTimeout(this._answerTimer);
@@ -558,15 +564,16 @@ export class ModalService {
       this._hasPendingRemoteModalViewState = false;
       this._emitDirectedBetStateChange(null);
       this._tracePressAvailability('close:modal_shutdown', { reason: 'modal_closed' });
+      // Notify host/controller channel immediately after local modal teardown,
+      // before potentially slow runtime shutdown RPCs.
+      notifyModalClose();
       try {
         await this._pressRuntime?.closePress?.();
       } catch (error) {
         console.warn('[ModalService] closePress during modal shutdown failed:', error?.message || error);
       }
       if (this.container?.isConnected) this.container.innerHTML = '';
-      if (hadOpenModal) {
-        this._onModalClose?.();
-      }
+      notifyModalClose();
   
       // Targeted patch — only the closed cell's is-answered state updates
       this._game.touch(lastCell);
