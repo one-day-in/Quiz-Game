@@ -26,14 +26,16 @@ export class ModalSyncStateService {
     this._viewState = null;
     this._directedBetState = null;
     this._pressState = null;
-    this._controllerOpenSignature = '';
+    this._controllerOpenSessionId = null;
   }
 
   beginSession({ payload = null, modalMode = 'view' } = {}) {
     const nextSessionId = `modal-${Date.now()}-${++this._seq}`;
     const mode = normalizeMode(modalMode);
     this._sessionId = nextSessionId;
-    this._openCellPayload = payload ? { ...(payload || {}), sessionId: nextSessionId } : null;
+    this._openCellPayload = payload
+      ? { ...(payload || {}), sessionId: nextSessionId, modalMode: mode }
+      : null;
     this._viewState = {
       mode,
       isAnswerShown: mode === 'edit',
@@ -41,7 +43,7 @@ export class ModalSyncStateService {
     };
     this._directedBetState = { sessionId: nextSessionId };
     this._pressState = createDefaultPressState(nextSessionId);
-    this._controllerOpenSignature = '';
+    this._controllerOpenSessionId = null;
     return nextSessionId;
   }
 
@@ -52,7 +54,7 @@ export class ModalSyncStateService {
     this._viewState = null;
     this._directedBetState = null;
     this._pressState = null;
-    this._controllerOpenSignature = '';
+    this._controllerOpenSessionId = null;
     return closedSessionId;
   }
 
@@ -119,7 +121,7 @@ export class ModalSyncStateService {
 
     const nextMode = normalizeMode(payload?.modalMode);
     this._sessionId = incomingSessionId;
-    this._openCellPayload = { ...(payload || {}), sessionId: incomingSessionId };
+    this._openCellPayload = { ...(payload || {}), sessionId: incomingSessionId, modalMode: nextMode };
     this._viewState = {
       mode: nextMode,
       isAnswerShown: nextMode === 'edit',
@@ -134,23 +136,14 @@ export class ModalSyncStateService {
     return true;
   }
 
-  buildControllerOpenSignature(payload = {}) {
-    const sessionId = normalizeSessionId(payload?.sessionId);
-    const roundId = Number(payload?.roundId);
-    const rowId = Number(payload?.rowId);
-    const cellId = Number(payload?.cellId);
-    const mode = normalizeMode(payload?.modalMode);
-    return sessionId ? `${sessionId}|${roundId}|${rowId}|${cellId}|${mode}` : '';
-  }
-
   isDuplicateControllerOpen(payload = {}) {
-    const signature = this.buildControllerOpenSignature(payload);
-    if (!signature) return false;
-    return this._controllerOpenSignature === signature;
+    const sessionId = normalizeSessionId(payload?.sessionId);
+    if (!sessionId) return false;
+    return this._controllerOpenSessionId === sessionId;
   }
 
   markControllerOpen(payload = {}) {
-    this._controllerOpenSignature = this.buildControllerOpenSignature(payload);
+    this._controllerOpenSessionId = normalizeSessionId(payload?.sessionId);
   }
 
   getOpenCellPayload() {

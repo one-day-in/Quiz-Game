@@ -65,6 +65,7 @@ describe('ModalSyncStateService', () => {
     expect(service.isDuplicateControllerOpen(payload)).toBe(false);
     service.markControllerOpen(payload);
     expect(service.isDuplicateControllerOpen(payload)).toBe(true);
+    expect(service.isDuplicateControllerOpen({ ...payload, modalMode: 'edit' })).toBe(true);
   });
 
   it('accepts modal events only for the active session', () => {
