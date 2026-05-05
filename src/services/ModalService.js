@@ -571,6 +571,7 @@ export class ModalService {
       this._hasPendingRemotePressState = false;
       this._pendingRemoteModalViewState = null;
       this._hasPendingRemoteModalViewState = false;
+      this._pendingMediaControl = null;
       this._emitDirectedBetStateChange(null);
       this._tracePressAvailability('close:modal_shutdown', { reason: 'modal_closed' });
       // Notify host/controller channel immediately after local modal teardown,
@@ -1456,16 +1457,23 @@ export class ModalService {
   async controlMedia(target = '', action = 'play', options = {}) {
     const fromRemote = !!options?.fromRemote;
     const resolvedTarget = target || this.view?.getMediaControlTarget?.() || 'question';
-    if (!this.isControllerMode() && !fromRemote && action === 'play' && !this._mediaInteractionUnlocked) {
+    const normalizedAction = action === 'pause' ? 'pause' : (action === 'stop' ? 'stop' : 'play');
+    if (!this.isControllerMode() && normalizedAction === 'play' && !this._mediaInteractionUnlocked) {
       this._pendingMediaControl = { target: resolvedTarget, action };
       this._onMediaPlaybackStateChange?.({
         target: resolvedTarget,
         isPlaying: false,
       });
+      if (fromRemote) {
+        this._tracePressAvailability('media:queued_until_host_interaction', {
+          target: resolvedTarget,
+          action: normalizedAction,
+        });
+      }
       return { target: resolvedTarget, isPlaying: false };
     }
 
-    const isPlaying = await this.view?.controlMedia?.(resolvedTarget, action);
+    const isPlaying = await this.view?.controlMedia?.(resolvedTarget, normalizedAction);
     this._onMediaPlaybackStateChange?.({
       target: resolvedTarget,
       isPlaying: !!isPlaying,
