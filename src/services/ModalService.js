@@ -73,6 +73,7 @@ export class ModalService {
     this._pressAvailabilityWatchdogTimer = null;
     this._lastPressRuntimeState = null;
     this._isWatchdogSyncInFlight = false;
+    this._isRuntimeSnapshotSyncInFlight = false;
     this._activeModifier = null;
     this._directedBet = null;
     this._openRequestId = 0;
@@ -561,6 +562,7 @@ export class ModalService {
       this._stopPressAvailabilityWatchdog();
       this._lastPressRuntimeState = null;
       this._isWatchdogSyncInFlight = false;
+      this._isRuntimeSnapshotSyncInFlight = false;
       this._activeModifier = null;
       this._directedBet = null;
       this._pendingRemoteDirectedBetState = null;
@@ -1262,6 +1264,9 @@ export class ModalService {
     const shouldEnable = this._isQuestionPressWindowActive();
     const runtimeEnabled = this._lastPressRuntimeState?.pressEnabled === true;
     const hasWinner = !!this._pressWinnerId;
+    if (shouldEnable && !hasWinner) {
+      this._requestRuntimeSnapshotSync(reason);
+    }
     // Winner is an in-flight resolution state. Never force runtime toggles here,
     // otherwise openPress/closePress can wipe winner data and restart the flow.
     if (hasWinner) return;
@@ -1278,6 +1283,34 @@ export class ModalService {
     }).finally(() => {
       this._isWatchdogSyncInFlight = false;
     });
+  }
+
+  _requestRuntimeSnapshotSync(reason = 'watchdog') {
+    if (!this._pressRuntime || typeof this._pressRuntime.getRuntime !== 'function') return;
+    if (this._isRuntimeSnapshotSyncInFlight) return;
+    if (!this.isOpen() || this._isClosing) return;
+
+    this._isRuntimeSnapshotSyncInFlight = true;
+    void Promise.resolve(this._pressRuntime.getRuntime())
+      .then((runtime) => {
+        if (!runtime) return;
+        this._lastPressRuntimeState = runtime;
+        this._handlePressRuntimeUpdate(runtime);
+        this._tracePressAvailability('runtime_snapshot_sync', {
+          reason,
+          pressEnabled: !!runtime?.pressEnabled,
+          winnerPlayerId: runtime?.winnerPlayerId || null,
+        });
+      })
+      .catch((error) => {
+        this._tracePressAvailability('runtime_snapshot_error', {
+          reason,
+          message: error?.message || String(error),
+        });
+      })
+      .finally(() => {
+        this._isRuntimeSnapshotSyncInFlight = false;
+      });
   }
 
   _schedulePressAvailabilityResync(delayMs = 420) {

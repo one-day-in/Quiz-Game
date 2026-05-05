@@ -90,6 +90,12 @@ class ApiPressRuntimeService {
     return runtime;
   }
 
+  async getRuntime() {
+    const runtime = await getGameRuntime(this.gameId);
+    this._setState(runtime);
+    return this._state;
+  }
+
   async claimPress() {
     const runtime = await claimGamePress(this.gameId, this.controllerId);
     this._setState(runtime);
@@ -240,6 +246,15 @@ class SocketPressRuntimeService {
     });
   }
 
+  async getRuntime() {
+    try {
+      await this.connect();
+    } catch {
+      // ignore connect errors here; return the last known state
+    }
+    return this._state;
+  }
+
   destroy() {
     this._destroyed = true;
     clearTimeout(this._reconnectTimer);
@@ -384,6 +399,23 @@ class HybridPressRuntimeService {
 
   async claimPress() {
     return this._call('claimPress');
+  }
+
+  async getRuntime() {
+    await this.connect();
+    if (typeof this._fallback?.getRuntime === 'function') {
+      try {
+        return await this._fallback.getRuntime();
+      } catch (error) {
+        if (IS_DEV) {
+          console.info('[PressRuntimeService] fallback runtime snapshot failed:', error?.message || error);
+        }
+      }
+    }
+    if (typeof this._active?.getRuntime === 'function') {
+      return this._active.getRuntime();
+    }
+    return this._active?._state || null;
   }
 
   destroy() {
