@@ -1,6 +1,6 @@
 # PROJECT_STATE
 
-Last updated: 2026-05-03
+Last updated: 2026-05-05
 
 ## Real Project Overview
 
@@ -68,6 +68,9 @@ The app is realtime, but not purely realtime. It mixes:
 - `services/HostControlChannelService.js`
   - Supabase realtime broadcast channel for host-controller command relay between screens
   - prevents command echo with per-instance sender IDs
+- `services/ModalSyncStateService.js`
+  - single source of truth for modal session state (`open_cell`, `modal_view_state`, `modal_directed_bet_state`, `modal_press_state`, `close_modal`)
+  - owns modal `sessionId` lifecycle and controller-side dedupe signature for repeated `open_cell` events
 
 ### Data / Service Layer
 
@@ -841,3 +844,10 @@ Ordered refactor and improvement steps. Do not treat all items as immediate.
   - auto/interactive type classifiers
   - shared directed-bet stake config and generated stake values
 - Modal template/render now read modifier labels and stake values from shared modifier metadata instead of hardcoded duplicated lists.
+
+### 2026-05-05
+
+- Modal host/controller synchronization was refactored around `ModalSyncStateService` instead of scattered `bootstrap.js` locals.
+- `open_cell` now requires a real `sessionId` and no longer creates legacy fallback session IDs.
+- Controller modal dedupe now uses one signature source (`ModalSyncStateService`) to ignore repeated `open_cell` messages for the same modal session.
+- Session guards for `modal_*` and `close_modal` commands are now centralized through `ModalSyncStateService` helpers.
