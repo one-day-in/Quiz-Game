@@ -17,6 +17,7 @@ import { createPressRuntimeService } from './services/PressRuntimeService.js';
 import { createHostControlChannelService } from './services/HostControlChannelService.js';
 import { createHostControlOutboxService } from './services/HostControlOutboxService.js';
 import { createModalSyncStateService } from './services/ModalSyncStateService.js';
+import { createControllerSyncCoordinator, createHostSyncCoordinator } from './services/HostControlSyncCoordinator.js';
 import { getBuzzerWakeUrl } from './utils/localBuzzerUrl.js';
 import { CONTROL_EVENTS } from './sync/controlEvents.js';
 
@@ -817,272 +818,75 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
                 requestControllerStateSync();
             }, 4000);
         }
+        const onLeaderboardAdjustScore = (payload = {}, { makeManualScoreLog: makeFallbackLog } = {}) => {
+            const amount = Number(payload?.delta) || 0;
+            const player = (playersService.getPlayers?.() || []).find((entry) => String(entry?.id || '') === String(payload?.playerId || ''));
+            const playerName = player?.name || t('player_fallback');
+            void playersService.adjustPlayerScoreWithLog(payload?.playerId, amount, {
+                kind: 'manual',
+                playerName,
+                cellLabel: `${t('leaderboard')} / ${amount >= 0 ? '+' : '-'}${Math.abs(amount)}`,
+                outcome: null,
+                happenedAt: new Date().toISOString(),
+            }).then((scoreMutation) => {
+                appendScoreLog(scoreMutation?.scoreLog || makeFallbackLog({ playerId: payload?.playerId, delta: amount }), { broadcast: true });
+            });
+        };
+
+        const hostSyncCoordinator = createHostSyncCoordinator({
+            sendControl,
+            app,
+            gameService,
+            modalService,
+            modalSyncState,
+            playersService,
+            roundNavigationService,
+            withModalSession,
+            appendScoreLog,
+            mergeScoreLogs,
+            getScoreLogs: () => scoreLogs,
+            setScoreLogs,
+            clearAllScoreLogs,
+            makeManualScoreLog,
+            sendRoundState,
+            sendGameSnapshot,
+            sendPlayersSnapshot,
+            markHostControllerActiveFromPing,
+            getLeaderboardPanelExpanded: () => leaderboardPanelExpanded,
+            setLeaderboardPanelExpanded: (value) => { leaderboardPanelExpanded = !!value; },
+            getScoreLogsOpen: () => scoreLogsOpen,
+            setScoreLogsOpen: (value) => { scoreLogsOpen = !!value; },
+            setHasRoundStateSynced: (value) => { hasRoundStateSynced = !!value; },
+            stopRoundSyncRetry,
+            onLeaderboardAdjustScore,
+        });
+
+        const controllerSyncCoordinator = createControllerSyncCoordinator({
+            sendControl,
+            app,
+            gameService,
+            modalService,
+            modalSyncState,
+            playersService,
+            markMainHostActiveFromPing,
+            getHasRoundStateSynced: () => hasRoundStateSynced,
+            setHasRoundStateSynced: (value) => { hasRoundStateSynced = !!value; },
+            startRoundSyncRetry,
+            stopRoundSyncRetry,
+            setLeaderboardPanelExpanded: (value) => { leaderboardPanelExpanded = !!value; },
+            setScoreLogsOpen: (value) => { scoreLogsOpen = !!value; },
+            appendScoreLog,
+            mergeScoreLogs,
+            getScoreLogs: () => scoreLogs,
+            setScoreLogs,
+        });
+
         const stopHostControlSubscription = hostControlChannel.subscribe((message) => {
-            const type = message?.type;
-            const payload = message?.payload || {};
-            if (!type) return;
-
-            if (type === CONTROL_EVENTS.HOST_RUNTIME_STATE && hostMode === 'controller') {
-                markMainHostActiveFromPing(payload?.active !== false);
-                if (payload?.active === false) {
-                    hasRoundStateSynced = false;
-                    stopRoundSyncRetry();
-                } else if (!hasRoundStateSynced) {
-                    startRoundSyncRetry();
-                }
+            if (hostMode === 'host') {
+                hostSyncCoordinator.handleMessage(message);
                 return;
             }
-
-            if (type === CONTROL_EVENTS.CONTROLLER_RUNTIME_STATE && hostMode === 'host') {
-                markHostControllerActiveFromPing(payload?.active !== false);
-                return;
-            }
-
-            if (type === CONTROL_EVENTS.HOST_RUNTIME_STATE_REQUEST && hostMode === 'host') {
-                void sendControl(CONTROL_EVENTS.HOST_RUNTIME_STATE, {
-                    active: true,
-                    sentAt: new Date().toISOString(),
-                });
-                sendRoundState();
-                sendGameSnapshot({ force: true });
-                sendPlayersSnapshot({ force: true });
-                void sendControl(CONTROL_EVENTS.LEADERBOARD_PANEL_STATE, { isExpanded: leaderboardPanelExpanded });
-                void sendControl(CONTROL_EVENTS.SCORE_LOGS_STATE, { isOpen: !!scoreLogsOpen });
-                void sendControl(CONTROL_EVENTS.GAME_MODE_STATE, { gameMode: gameService.getState()?.uiState?.gameMode || 'play' });
-                void sendControl(CONTROL_EVENTS.CURRENT_PLAYER_STATE, { playerId: gameService.getCurrentPlayerId?.() ?? null });
-                const openCellPayload = modalSyncState.getOpenCellPayload();
-                if (openCellPayload) {
-                    void sendControl(CONTROL_EVENTS.OPEN_CELL, openCellPayload);
-                    const modalViewState = modalSyncState.getViewState();
-                    if (modalViewState) {
-                        void sendControl(CONTROL_EVENTS.MODAL_VIEW_STATE, modalViewState);
-                    }
-                    void sendControl(CONTROL_EVENTS.MODAL_DIRECTED_BET_STATE, modalSyncState.getDirectedBetState() || withModalSession({}));
-                    void sendControl(CONTROL_EVENTS.MODAL_PRESS_STATE, modalSyncState.getPressState() || withModalSession({}));
-                } else {
-                    void sendControl(CONTROL_EVENTS.CLOSE_MODAL, { sessionId: modalSyncState.getSessionId() || null });
-                }
-                return;
-            }
-
-            if (type === CONTROL_EVENTS.CONTROLLER_RUNTIME_STATE_REQUEST && hostMode === 'controller') {
-                void sendControl(CONTROL_EVENTS.CONTROLLER_RUNTIME_STATE, {
-                    active: true,
-                    sentAt: new Date().toISOString(),
-                });
-                return;
-            }
-
-            if (type === CONTROL_EVENTS.GAME_SNAPSHOT_REQUEST && hostMode === 'host') {
-                sendGameSnapshot({ force: true });
-                return;
-            }
-
-            if (type === CONTROL_EVENTS.GAME_SNAPSHOT && hostMode === 'controller') {
-                if (payload?.game) {
-                    gameService.applyRemoteSnapshot?.(payload.game);
-                }
-                if (payload?.uiState) {
-                    gameService.setRoundStateLocal(payload.uiState);
-                }
-                hasRoundStateSynced = true;
-                stopRoundSyncRetry();
-                return;
-            }
-
-            if (type === CONTROL_EVENTS.PLAYERS_SNAPSHOT_REQUEST && hostMode === 'host') {
-                sendPlayersSnapshot({ force: true });
-                return;
-            }
-
-            if (type === CONTROL_EVENTS.PLAYERS_SNAPSHOT && hostMode === 'controller') {
-                playersService.setPlayersLocal?.(payload?.players || []);
-                return;
-            }
-
-            if (type === CONTROL_EVENTS.GAME_MODE_SET && hostMode === 'host') {
-                const nextMode = payload?.gameMode === 'edit' ? 'edit' : 'play';
-                gameService.setGameMode(nextMode);
-                modalService.setGameMode(nextMode);
-                void sendControl(CONTROL_EVENTS.GAME_MODE_STATE, { gameMode: nextMode });
-                return;
-            }
-
-            if (type === CONTROL_EVENTS.GAME_MODE_STATE) {
-                const nextMode = payload?.gameMode === 'edit' ? 'edit' : 'play';
-                gameService.setGameModeLocal(nextMode);
-                modalService.setGameMode(nextMode);
-                return;
-            }
-
-            if (type === CONTROL_EVENTS.GAME_MODE_SYNC_REQUEST && hostMode === 'host') {
-                void sendControl(CONTROL_EVENTS.GAME_MODE_STATE, { gameMode: gameService.getState()?.uiState?.gameMode || 'play' });
-                return;
-            }
-
-            if (type === CONTROL_EVENTS.OPEN_CELL) {
-                const hydrated = modalSyncState.hydrateFromOpenCell(payload);
-                if (!hydrated) return;
-                if (hostMode === 'controller') {
-                    if (modalSyncState.isDuplicateControllerOpen(payload)) {
-                        return;
-                    }
-                    modalSyncState.markControllerOpen(payload);
-                    const roundId = Number(payload?.roundId);
-                    const rowId = Number(payload?.rowId);
-                    const cellId = Number(payload?.cellId);
-                    if (Number.isFinite(roundId) && Number.isFinite(rowId) && Number.isFinite(cellId)) {
-                        gameService.setCellAnsweredLocal(roundId, rowId, cellId, true);
-                    }
-                }
-                app.openCell(payload, { skipBroadcast: true, modalMode: payload?.modalMode || 'view' });
-                return;
-            }
-
-            if (type === CONTROL_EVENTS.MODAL_SYNC_REQUEST && hostMode === 'host') {
-                const openCellPayload = modalSyncState.getOpenCellPayload();
-                if (openCellPayload) {
-                    void sendControl(CONTROL_EVENTS.OPEN_CELL, openCellPayload);
-                    const modalViewState = modalSyncState.getViewState();
-                    if (modalViewState) {
-                        void sendControl(CONTROL_EVENTS.MODAL_VIEW_STATE, modalViewState);
-                    }
-                    void sendControl(CONTROL_EVENTS.MODAL_DIRECTED_BET_STATE, modalSyncState.getDirectedBetState() || withModalSession({}));
-                    void sendControl(CONTROL_EVENTS.MODAL_PRESS_STATE, modalSyncState.getPressState() || withModalSession({}));
-                } else {
-                    void sendControl(CONTROL_EVENTS.CLOSE_MODAL, { sessionId: modalSyncState.getSessionId() || null });
-                }
-                return;
-            }
-
-            if (type === CONTROL_EVENTS.LEADERBOARD_PANEL_STATE) {
-                leaderboardPanelExpanded = !!payload?.isExpanded;
-                app.setLeaderboardExpanded?.(!!payload?.isExpanded, { silent: true });
-                return;
-            }
-
-            if (type === CONTROL_EVENTS.LEADERBOARD_PANEL_SYNC_REQUEST && hostMode === 'host') {
-                void sendControl(CONTROL_EVENTS.LEADERBOARD_PANEL_STATE, { isExpanded: leaderboardPanelExpanded });
-                return;
-            }
-
-            if (type === CONTROL_EVENTS.SCORE_LOG_APPEND) {
-                appendScoreLog(payload, { broadcast: false });
-                return;
-            }
-
-            if (type === CONTROL_EVENTS.SCORE_LOG_SNAPSHOT) {
-                setScoreLogs(mergeScoreLogs(payload?.logs || [], scoreLogs));
-                return;
-            }
-
-            if (type === CONTROL_EVENTS.SCORE_LOG_SYNC_REQUEST && hostMode === 'host') {
-                void sendControl(CONTROL_EVENTS.SCORE_LOG_SNAPSHOT, { logs: scoreLogs });
-                return;
-            }
-
-            if (type === CONTROL_EVENTS.SCORE_LOGS_STATE) {
-                scoreLogsOpen = !!payload?.isOpen;
-                app.setScoreLogsOpen?.(scoreLogsOpen, { silent: true });
-                return;
-            }
-
-            if (type === CONTROL_EVENTS.SCORE_LOGS_SYNC_REQUEST && hostMode === 'host') {
-                void sendControl(CONTROL_EVENTS.SCORE_LOGS_STATE, { isOpen: !!scoreLogsOpen });
-                return;
-            }
-
-            if (type === CONTROL_EVENTS.SCORE_LOGS_CLEAR_REQUEST && hostMode === 'host') {
-                void clearAllScoreLogs().catch((error) => {
-                    console.warn('[Bootstrap] score logs clear skipped:', error?.message || error);
-                });
-                return;
-            }
-
-            if (type === CONTROL_EVENTS.CURRENT_PLAYER_SET && hostMode === 'host') {
-                void gameService.setCurrentPlayerId(payload?.playerId || null).then(() => {
-                    void sendControl(CONTROL_EVENTS.CURRENT_PLAYER_STATE, { playerId: payload?.playerId || null });
-                });
-                return;
-            }
-
-            if (type === CONTROL_EVENTS.CURRENT_PLAYER_SYNC_REQUEST && hostMode === 'host') {
-                void sendControl(CONTROL_EVENTS.CURRENT_PLAYER_STATE, { playerId: gameService.getCurrentPlayerId?.() ?? null });
-                return;
-            }
-
-            if (type === CONTROL_EVENTS.ROUND_SET && hostMode === 'host') {
-                void roundNavigationService.setActiveRound(payload?.roundId);
-                return;
-            }
-
-            if (type === CONTROL_EVENTS.ROUND_STATE) {
-                gameService.setRoundStateLocal(payload || {});
-                hasRoundStateSynced = true;
-                stopRoundSyncRetry();
-                return;
-            }
-
-            if (type === CONTROL_EVENTS.ROUND_SYNC_REQUEST && hostMode === 'host') {
-                sendRoundState();
-                return;
-            }
-
-            if (type === CONTROL_EVENTS.LEADERBOARD_ADJUST_SCORE && hostMode === 'host') {
-                const amount = Number(payload?.delta) || 0;
-                const player = (playersService.getPlayers?.() || []).find((entry) => String(entry?.id || '') === String(payload?.playerId || ''));
-                const playerName = player?.name || t('player_fallback');
-                void playersService.adjustPlayerScoreWithLog(payload?.playerId, amount, {
-                    kind: 'manual',
-                    playerName,
-                    cellLabel: `${t('leaderboard')} / ${amount >= 0 ? '+' : '-'}${Math.abs(amount)}`,
-                    outcome: null,
-                    happenedAt: new Date().toISOString(),
-                }).then((scoreMutation) => {
-                    appendScoreLog(scoreMutation?.scoreLog || makeManualScoreLog({ playerId: payload?.playerId, delta: amount }), { broadcast: true });
-                });
-                return;
-            }
-
-            if (type === CONTROL_EVENTS.CURRENT_PLAYER_STATE) {
-                gameService.setCurrentPlayerIdLocal(payload?.playerId || null);
-                return;
-            }
-
-            if (hostMode === 'controller' && (type === CONTROL_EVENTS.MODAL_VIEW_STATE || type === CONTROL_EVENTS.MODAL_MEDIA_STATE || type === CONTROL_EVENTS.MODAL_DIRECTED_BET_STATE || type === CONTROL_EVENTS.MODAL_PRESS_STATE || type === CONTROL_EVENTS.CLOSE_MODAL)) {
-                if (type === CONTROL_EVENTS.CLOSE_MODAL) {
-                    if (!modalSyncState.acceptCloseForActiveSession(payload)) return;
-                    modalSyncState.closeSession();
-                    modalService.runRemoteCommand(type, payload);
-                    return;
-                }
-                if (!modalSyncState.acceptEventForActiveSession(payload)) return;
-                if (type === CONTROL_EVENTS.MODAL_VIEW_STATE) {
-                    modalSyncState.setViewState(payload);
-                } else if (type === CONTROL_EVENTS.MODAL_DIRECTED_BET_STATE) {
-                    modalSyncState.setDirectedBetState(payload);
-                } else if (type === CONTROL_EVENTS.MODAL_PRESS_STATE) {
-                    modalSyncState.setPressState(payload);
-                }
-                modalService.runRemoteCommand(type, payload);
-                return;
-            }
-
-            if (hostMode !== 'host') return;
-            if (type === CONTROL_EVENTS.MODAL_INCORRECT || type === CONTROL_EVENTS.MODAL_CORRECT || type === CONTROL_EVENTS.MODAL_MEDIA_CONTROL || type === CONTROL_EVENTS.MODAL_TOGGLE_ANSWER || type === CONTROL_EVENTS.MODAL_DIRECTED_BET_ACTION || type === CONTROL_EVENTS.CLOSE_MODAL) {
-                if (type === CONTROL_EVENTS.CLOSE_MODAL) {
-                    if (!modalSyncState.acceptCloseForActiveSession(payload)) return;
-                } else if (!modalSyncState.acceptEventForActiveSession(payload)) {
-                    return;
-                }
-            }
-            const result = modalService.runRemoteCommand(type, payload);
-            if (type === CONTROL_EVENTS.MODAL_MEDIA_CONTROL) {
-                void Promise.resolve(result).then((state) => {
-                    if (!state) return;
-                    void sendControl(CONTROL_EVENTS.MODAL_MEDIA_STATE, withModalSession(state));
-                });
-            }
+            controllerSyncCoordinator.handleMessage(message);
         });
 
         _currentCleanup = () => {

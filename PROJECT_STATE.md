@@ -71,6 +71,9 @@ The app is realtime, but not purely realtime. It mixes:
 - `services/HostControlOutboxService.js`
   - wraps host-control sends with retry/backoff for critical modal synchronization events
   - dedupes in-flight critical resend tasks by key to avoid duplicate flood on transient channel drops
+- `services/HostControlSyncCoordinator.js`
+  - splits host-control message routing into explicit `host` and `controller` coordinators
+  - keeps modal/session guards and snapshot sync logic out of `bootstrap.js` lifecycle wiring
 - `services/ModalSyncStateService.js`
   - single source of truth for modal session state (`open_cell`, `modal_view_state`, `modal_directed_bet_state`, `modal_press_state`, `close_modal`)
   - owns modal `sessionId` lifecycle and controller-side dedupe signature for repeated `open_cell` events
@@ -860,3 +863,4 @@ Ordered refactor and improvement steps. Do not treat all items as immediate.
 - Host/control command transport now has a dedicated outbox retry layer (`HostControlOutboxService`) for critical modal sync events.
 - Host-control event names are now centralized in `sync/controlEvents.js` and unknown incoming event types are filtered at channel parsing time.
 - `bootstrap.js` and `player.js` now use `CONTROL_EVENTS` constants instead of raw string literals for host-control message send/receive paths.
+- Host/controller runtime message handlers were extracted from `bootstrap.js` into `HostControlSyncCoordinator`, reducing coupling between transport routing and app lifecycle bootstrapping.
