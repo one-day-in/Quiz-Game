@@ -117,24 +117,24 @@ describe('QuestionModalView winner state', () => {
     view.destroy();
   });
 
-  it('keeps result buttons disabled until winner appears', () => {
+  it('keeps result buttons active in view mode and toggles banner with winner state', () => {
     const view = createView();
 
-    expect(view._refs.btnIncorrect.disabled).toBe(true);
-    expect(view._refs.btnCorrect.disabled).toBe(true);
+    expect(view._refs.btnIncorrect.disabled).toBe(false);
+    expect(view._refs.btnCorrect.disabled).toBe(false);
     expect(view._refs.pressBanner.hidden).toBe(true);
 
-    view.updateWinnerName('Maria');
+    view.updateWinner('player-1', 'Maria');
 
     expect(view._refs.btnIncorrect.disabled).toBe(false);
     expect(view._refs.btnCorrect.disabled).toBe(false);
     expect(view._refs.pressBanner.hidden).toBe(false);
     expect(view._refs.pressBanner.textContent).toContain('Maria');
 
-    view.updateWinnerName('');
+    view.updateWinner(null, '');
 
-    expect(view._refs.btnIncorrect.disabled).toBe(true);
-    expect(view._refs.btnCorrect.disabled).toBe(true);
+    expect(view._refs.btnIncorrect.disabled).toBe(false);
+    expect(view._refs.btnCorrect.disabled).toBe(false);
     expect(view._refs.pressBanner.hidden).toBe(true);
 
     view.destroy();
@@ -196,6 +196,19 @@ describe('QuestionModalView winner state', () => {
     view.updatePressTimer(30);
 
     expect(view._refs.pressBanner.hidden).toBe(true);
+
+    view.destroy();
+  });
+
+  it('keeps result buttons active when winner id exists but name is empty', () => {
+    const view = createView();
+
+    view.updateWinner('player-1', '');
+
+    expect(view._refs.btnIncorrect.disabled).toBe(false);
+    expect(view._refs.btnCorrect.disabled).toBe(false);
+    expect(view._refs.pressBanner.hidden).toBe(false);
+    expect(view._refs.pressBanner.textContent).toContain('🔔');
 
     view.destroy();
   });

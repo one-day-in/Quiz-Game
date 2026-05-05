@@ -942,7 +942,22 @@ export class ModalService {
 
   _setPressWinner(winnerPlayerId = null, winnerName = '') {
     this._pressWinnerId = winnerPlayerId || null;
-    this.view?.updateWinnerName?.(winnerName || '');
+    const resolvedName = this._resolveWinnerName(this._pressWinnerId, winnerName);
+    if (typeof this.view?.updateWinner === 'function') {
+      this.view.updateWinner(this._pressWinnerId, resolvedName);
+      return;
+    }
+    this.view?.updateWinnerName?.(resolvedName || '');
+  }
+
+  _resolveWinnerName(winnerPlayerId = null, winnerName = '') {
+    const explicitName = String(winnerName || '').trim();
+    if (explicitName) return explicitName;
+    const targetId = String(winnerPlayerId || '').trim();
+    if (!targetId) return '';
+    const matchedPlayer = this._getPlayersSnapshot()
+      .find((player) => String(player?.id || '').trim() === targetId);
+    return String(matchedPlayer?.name || '').trim();
   }
 
   _initDirectedBetState() {

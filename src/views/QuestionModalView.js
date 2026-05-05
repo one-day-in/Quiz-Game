@@ -39,6 +39,8 @@ export class QuestionModalView {
             ? { ...directedBetState }
             : null;
         this._winnerName    = '';
+        this._winnerPlayerId = null;
+        this._hasWinner    = false;
         this._activeModifierType = String(activeModifierType || 'none');
         this._isAnswered    = !!isAnswered;
         this._question      = { ...(question || {}), audioFiles: question?.audioFiles || [] };
@@ -75,7 +77,7 @@ export class QuestionModalView {
         this._syncModifierSelect();
         this.setControllerMediaPlaying(false);
 
-        // Result buttons start disabled — enabled only when a player claims the press
+        // Result buttons stay active in view mode for manual resolution parity.
         this._updateResolutionButtons();
 
         this._prefetchMedia(this._question.media);
@@ -149,17 +151,24 @@ export class QuestionModalView {
         if (this._refs.answeredCheckbox) this._refs.answeredCheckbox.checked = this._isAnswered;
     }
 
-    updateWinnerName(name) {
-        this._winnerName = (name || '').trim();
+    updateWinner(winnerPlayerId = null, winnerName = '') {
+        this._winnerPlayerId = String(winnerPlayerId || '').trim() || null;
+        this._winnerName = String(winnerName || '').trim();
+        this._hasWinner = !!(this._winnerPlayerId || this._winnerName);
+        const bannerName = this._winnerName || (this._hasWinner ? t('player_fallback') : '');
 
         const bannerTextEl = this._refs.pressBannerMain;
-        if (bannerTextEl && this._winnerName) {
-            bannerTextEl.textContent = `🔔 ${this._winnerName}`;
+        if (bannerTextEl) {
+            bannerTextEl.textContent = bannerName ? `🔔 ${bannerName}` : '';
         }
-        this.syncPressBannerVisibility({ animate: !!this._winnerName });
+        this.syncPressBannerVisibility({ animate: this._hasWinner });
 
         // Enable/disable result buttons based on whether there is a winner
         this._updateResolutionButtons();
+    }
+
+    updateWinnerName(name) {
+        this.updateWinner(this._winnerPlayerId, name);
     }
 
     setPressBannerSuppressed(suppressed) {
@@ -328,7 +337,7 @@ export class QuestionModalView {
             return;
         }
 
-        const shouldShow = !this._isPressBannerSuppressed && !!this._winnerName && !(this._mode === 'view' && this._isAnswerShown);
+        const shouldShow = !this._isPressBannerSuppressed && this._hasWinner && !(this._mode === 'view' && this._isAnswerShown);
         if (!shouldShow) {
             bannerEl.hidden = true;
             bannerEl.classList.remove('is-visible');
@@ -609,8 +618,7 @@ export class QuestionModalView {
     }
 
     _updateResolutionButtons() {
-        const hasWinner = !!this._winnerName;
-        const enabled = this._manualResolutionButtons ?? hasWinner;
+        const enabled = this._manualResolutionButtons ?? (this._mode === 'view');
         if (this._refs.btnIncorrect) this._refs.btnIncorrect.disabled = !enabled;
         if (this._refs.btnCorrect) this._refs.btnCorrect.disabled = !enabled;
     }
