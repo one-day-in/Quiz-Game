@@ -35,6 +35,63 @@ function resolveCurrentPlayer(players = [], currentPlayerId = null) {
   return (Array.isArray(players) ? players : []).find((player) => String(player?.id) === String(currentPlayerId)) || null;
 }
 
+function getFullscreenElement() {
+  return (
+    document.fullscreenElement ||
+    document.webkitFullscreenElement ||
+    document.mozFullScreenElement ||
+    document.msFullscreenElement ||
+    null
+  );
+}
+
+function canToggleFullscreen() {
+  const root = document.documentElement;
+  return !!(
+    root?.requestFullscreen ||
+    root?.webkitRequestFullscreen ||
+    root?.mozRequestFullScreen ||
+    root?.msRequestFullscreen
+  );
+}
+
+async function requestFullscreenMode() {
+  const root = document.documentElement;
+  if (root?.requestFullscreen) {
+    await root.requestFullscreen();
+    return;
+  }
+  if (root?.webkitRequestFullscreen) {
+    await root.webkitRequestFullscreen();
+    return;
+  }
+  if (root?.mozRequestFullScreen) {
+    await root.mozRequestFullScreen();
+    return;
+  }
+  if (root?.msRequestFullscreen) {
+    await root.msRequestFullscreen();
+  }
+}
+
+async function exitFullscreenMode() {
+  if (document.exitFullscreen) {
+    await document.exitFullscreen();
+    return;
+  }
+  if (document.webkitExitFullscreen) {
+    await document.webkitExitFullscreen();
+    return;
+  }
+  if (document.mozCancelFullScreen) {
+    await document.mozCancelFullScreen();
+    return;
+  }
+  if (document.msExitFullscreen) {
+    await document.msExitFullscreen();
+  }
+}
+
 export function HeaderView({
   uiState,
   gameId = '',
@@ -95,6 +152,20 @@ export function HeaderView({
       </div>
     </div>
     <div class="hdr-right">
+      <button
+        class="hdr-fullscreen-btn"
+        type="button"
+        aria-pressed="false"
+        title="${escapeHtml(t('enter_fullscreen'))}"
+        aria-label="${escapeHtml(t('enter_fullscreen'))}"
+      >
+        <svg class="hdr-fullscreen-icon" viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+          <path d="M4 9V4h5"></path>
+          <path d="M20 9V4h-5"></path>
+          <path d="M4 15v5h5"></path>
+          <path d="M20 15v5h-5"></path>
+        </svg>
+      </button>
       <div class="hdr-settings">
         <button class="hdr-settings-btn" type="button" aria-haspopup="true" aria-expanded="false" title="${escapeHtml(t('settings'))}" aria-label="${escapeHtml(t('settings'))}">
           <svg class="hdr-settings-icon" viewBox="0 0 24 24" focusable="false" aria-hidden="true">
@@ -151,6 +222,7 @@ export function HeaderView({
   const chooserBtnEl = el.querySelector('.hdr-current-player-btn');
   const chooserMenuEl = el.querySelector('.hdr-current-player-menu');
   const chooserListEl = el.querySelector('.hdr-current-player-list');
+  const fullscreenBtnEl = el.querySelector('.hdr-fullscreen-btn');
   const settingsBtnEl = el.querySelector('.hdr-settings-btn');
   const settingsOverlayEl = el.querySelector('.hdr-settings-overlay');
   const settingsMenuEl = el.querySelector('.hdr-settings-menu');
@@ -168,6 +240,7 @@ export function HeaderView({
   let qrOverlayController = null;
   let settingsOverlayHost = null;
   let qrOverlayHost = null;
+  let fullscreenChangeHandlers = [];
 
   function closeChooserMenu() {
     isChooserMenuOpen = false;
@@ -458,6 +531,44 @@ export function HeaderView({
     qrOverlayEl.hidden = true;
   }
 
+  function renderFullscreenButtonState() {
+    if (!fullscreenBtnEl) return;
+    const isActive = !!getFullscreenElement();
+    const label = isActive ? t('exit_fullscreen') : t('enter_fullscreen');
+    fullscreenBtnEl.classList.toggle('is-active', isActive);
+    fullscreenBtnEl.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    fullscreenBtnEl.setAttribute('title', label);
+    fullscreenBtnEl.setAttribute('aria-label', label);
+  }
+
+  async function handleFullscreenToggle() {
+    try {
+      if (getFullscreenElement()) await exitFullscreenMode();
+      else await requestFullscreenMode();
+    } catch (error) {
+      console.warn('[HeaderView] fullscreen toggle failed:', error);
+    } finally {
+      renderFullscreenButtonState();
+    }
+  }
+
+  if (fullscreenBtnEl) {
+    const canUseFullscreen = canToggleFullscreen();
+    fullscreenBtnEl.hidden = !canUseFullscreen;
+    if (canUseFullscreen) {
+      const fsEvents = ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'];
+      fullscreenChangeHandlers = fsEvents.map((name) => {
+        const handler = () => renderFullscreenButtonState();
+        document.addEventListener(name, handler);
+        return { name, handler };
+      });
+      fullscreenBtnEl.addEventListener('click', () => {
+        void handleFullscreenToggle();
+      });
+      renderFullscreenButtonState();
+    }
+  }
+
   return {
     el,
     update,
@@ -473,6 +584,10 @@ export function HeaderView({
       qrOverlayController?.destroy?.();
       document.removeEventListener('pointerdown', handleDocumentPointerDown);
       document.removeEventListener('keydown', handleDocumentKeyDown);
+      fullscreenChangeHandlers.forEach(({ name, handler }) => {
+        document.removeEventListener(name, handler);
+      });
+      fullscreenChangeHandlers = [];
     },
   };
 }
