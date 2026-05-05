@@ -946,6 +946,28 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
                     if (Number.isFinite(roundId) && Number.isFinite(rowId) && Number.isFinite(cellId)) {
                         gameService.setCellAnsweredLocal(roundId, rowId, cellId, true);
                     }
+                } else if (hostMode === 'host') {
+                    const nextModalMode = payload?.modalMode === 'edit' ? 'edit' : 'view';
+                    activeModalSessionId = sessionId;
+                    lastOpenCellPayload = { ...(payload || {}), sessionId };
+                    lastModalViewState = {
+                        mode: nextModalMode,
+                        isAnswerShown: nextModalMode === 'edit',
+                        sessionId,
+                    };
+                    if (!lastDirectedBetState || String(lastDirectedBetState?.sessionId || '') !== sessionId) {
+                        lastDirectedBetState = { sessionId };
+                    }
+                    if (!lastModalPressState || String(lastModalPressState?.sessionId || '') !== sessionId) {
+                        lastModalPressState = {
+                            winnerPlayerId: null,
+                            winnerName: '',
+                            pressedAt: null,
+                            pressExpiresAt: null,
+                            pressEnabled: false,
+                            sessionId,
+                        };
+                    }
                 }
                 app.openCell(payload, { skipBroadcast: true, modalMode: payload?.modalMode || 'view' });
                 return;

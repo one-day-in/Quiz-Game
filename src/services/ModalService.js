@@ -1262,9 +1262,12 @@ export class ModalService {
     const shouldEnable = this._isQuestionPressWindowActive();
     const runtimeEnabled = this._lastPressRuntimeState?.pressEnabled === true;
     const hasWinner = !!this._pressWinnerId;
+    // Winner is an in-flight resolution state. Never force runtime toggles here,
+    // otherwise openPress/closePress can wipe winner data and restart the flow.
+    if (hasWinner) return;
     const intentMismatch = this._pressAvailabilityIntent !== shouldEnable;
     const shouldForceOpen = shouldEnable && !hasWinner && !runtimeEnabled;
-    const shouldForceClose = (!shouldEnable || hasWinner) && runtimeEnabled;
+    const shouldForceClose = !shouldEnable && runtimeEnabled;
 
     if (!intentMismatch && !shouldForceOpen && !shouldForceClose) return;
     if (this._isWatchdogSyncInFlight) return;
