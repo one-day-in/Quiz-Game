@@ -244,6 +244,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
             send: (type, payload) => hostControlChannel.send(type, payload),
         });
         const sendControl = (type, payload = {}, options = {}) => hostControlOutbox.send(type, payload, options);
+        const makeInteractiveControlKey = (scope = 'ctrl') => `${scope}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
         const roundNavigationService = createRoundNavigationService(gameService);
         let scoreLogs = loadScoreLogsFromStorage(gameId).slice(0, SCORE_LOGS_LIMIT);
         const makeLogId = () => `log-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -521,10 +522,18 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
                 : null,
             onControllerMediaControl: ({ target, action }) => {
                 if (action === 'toggle_answer') {
-                    void sendControl(CONTROL_EVENTS.MODAL_TOGGLE_ANSWER, withModalSession({}));
+                    void sendControl(
+                        CONTROL_EVENTS.MODAL_TOGGLE_ANSWER,
+                        withModalSession({}),
+                        { critical: true, key: makeInteractiveControlKey('toggle-answer') }
+                    );
                     return;
                 }
-                void sendControl(CONTROL_EVENTS.MODAL_MEDIA_CONTROL, withModalSession({ target, action }));
+                void sendControl(
+                    CONTROL_EVENTS.MODAL_MEDIA_CONTROL,
+                    withModalSession({ target, action }),
+                    { critical: true, key: makeInteractiveControlKey(`media-${action || 'play'}`) }
+                );
             },
             onControllerCommand: (type, payload = {}) => {
                 void sendControl(type, withModalSession(payload));
