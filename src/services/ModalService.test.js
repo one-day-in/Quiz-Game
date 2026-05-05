@@ -612,6 +612,45 @@ describe('ModalService press reset', () => {
     expect(service.view.setControllerMediaTarget).toHaveBeenNthCalledWith(2, 'answer');
   });
 
+  it('does not touch press runtime from controller presentation mode', async () => {
+    const gameService = {
+      getGameId: () => 'game-1',
+    };
+    const pressRuntime = {
+      openPress: vi.fn().mockResolvedValue(undefined),
+      closePress: vi.fn().mockResolvedValue(undefined),
+    };
+    const service = new ModalService(gameService, {}, pressRuntime, {}, {
+      presentationMode: 'controller',
+    });
+
+    await service._syncPressAvailability({ force: true, reason: 'controller_test' });
+
+    expect(pressRuntime.openPress).not.toHaveBeenCalled();
+    expect(pressRuntime.closePress).not.toHaveBeenCalled();
+  });
+
+  it('does not auto-resolve timeout on controller presentation mode', async () => {
+    const gameService = {
+      getGameId: () => 'game-1',
+    };
+    const service = new ModalService(gameService, {}, {}, {}, {
+      presentationMode: 'controller',
+    });
+    service.view = {
+      _mode: 'view',
+      _isAnswerShown: false,
+      updatePressTimer: vi.fn(),
+    };
+    service._pressWinnerId = 'player-9';
+    service._handleIncorrect = vi.fn();
+
+    service._startPressCountdown(200);
+    await vi.advanceTimersByTimeAsync(260);
+
+    expect(service._handleIncorrect).not.toHaveBeenCalled();
+  });
+
   it('applies directed bet actions received through remote command channel', () => {
     const gameService = {
       getGameId: () => 'game-1',

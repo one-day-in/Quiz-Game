@@ -17,6 +17,13 @@ const PAUSE_ICON = `
   </svg>
 `;
 
+function isAutoplayPolicyError(error) {
+  if (!error) return false;
+  if (error.name === 'NotAllowedError') return true;
+  const message = String(error?.message || '').toLowerCase();
+  return message.includes('didn\'t interact') || message.includes('user gesture');
+}
+
 function pauseOtherAudioTracks(currentAudioEl) {
   document.querySelectorAll('.qmodal__audioTrack').forEach((audioEl) => {
     if (audioEl !== currentAudioEl) {
@@ -96,7 +103,9 @@ function createAudioPlayer(audio = {}) {
         await audioEl.play();
       }
     } catch (error) {
-      console.warn('[QuestionModal] audio playback failed:', error);
+      if (!isAutoplayPolicyError(error)) {
+        console.warn('[QuestionModal] audio playback failed:', error);
+      }
     } finally {
       syncUI();
     }

@@ -5,6 +5,13 @@ import { buildModalDom } from './questionModal.template.js';
 import { initMediaUI, applyModeUI, renderAll } from './questionModal.render.js';
 import { t } from '../i18n.js';
 
+function isAutoplayPolicyError(error) {
+    if (!error) return false;
+    if (error.name === 'NotAllowedError') return true;
+    const message = String(error?.message || '').toLowerCase();
+    return message.includes('didn\'t interact') || message.includes('user gesture');
+}
+
 export class QuestionModalView {
     constructor({
         mode,
@@ -214,7 +221,9 @@ export class QuestionModalView {
                         await video.play();
                         if (video.paused) video.muted = prevMuted;
                     } catch {
-                        console.warn('[QuestionModal] video playback failed:', error);
+                        if (!isAutoplayPolicyError(error)) {
+                            console.warn('[QuestionModal] video playback failed:', error);
+                        }
                     }
                 }
                 return !video.paused;
@@ -229,7 +238,9 @@ export class QuestionModalView {
         if (!firstAudio) return false;
         if (normalizedAction === 'play') {
             try { await firstAudio.play(); } catch (error) {
-                console.warn('[QuestionModal] audio playback failed:', error);
+                if (!isAutoplayPolicyError(error)) {
+                    console.warn('[QuestionModal] audio playback failed:', error);
+                }
             }
             return !firstAudio.paused;
         }

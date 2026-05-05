@@ -448,12 +448,10 @@ export class ModalService {
         return;
       }
 
-      this._bindPressRuntime();
-      // _resetPressRuntime already performs forced availability sync when modal opens.
-      if (this.isControllerMode()) {
-        void this._syncPressAvailability({ reason: 'modal_opened_controller' });
+      if (!this.isControllerMode()) {
+        this._bindPressRuntime();
+        this._schedulePressAvailabilityResync();
       }
-      this._schedulePressAvailabilityResync();
       this._emitDirectedBetStateChange(this._getDirectedBetViewState());
       // ESC is handled inside QuestionModalView (properly cleaned up on destroy).
       // Do NOT add a document keydown listener here — ModalService._disposer is
@@ -577,10 +575,12 @@ export class ModalService {
       // Notify host/controller channel immediately after local modal teardown,
       // before potentially slow runtime shutdown RPCs.
       notifyModalClose();
-      try {
-        await this._pressRuntime?.closePress?.();
-      } catch (error) {
-        console.warn('[ModalService] closePress during modal shutdown failed:', error?.message || error);
+      if (!this.isControllerMode()) {
+        try {
+          await this._pressRuntime?.closePress?.();
+        } catch (error) {
+          console.warn('[ModalService] closePress during modal shutdown failed:', error?.message || error);
+        }
       }
       if (this.container?.isConnected) this.container.innerHTML = '';
       notifyModalClose();
@@ -654,6 +654,7 @@ export class ModalService {
   }
 
   async _acquirePressResolutionLock(winnerPlayerId, { pressEnabled = false, source = 'manual' } = {}) {
+    if (this.isControllerMode()) return false;
     if (!winnerPlayerId) return false;
     if (this._directedBet?.enabled && this._directedBet.phase === 'answering' && !this._directedBet.fallbackActivated) {
       return true;
@@ -897,6 +898,7 @@ export class ModalService {
   }
 
   async _syncPressAvailability({ force = false, reason = 'unspecified' } = {}) {
+    if (this.isControllerMode()) return;
     if (!this._pressRuntime) return;
     const syncVersion = ++this._pressSyncVersion;
     const shouldEnable = this._isQuestionPressWindowActive();
@@ -1146,6 +1148,7 @@ export class ModalService {
       const remainingMs = this._pressCountdownDeadline - Date.now();
       if (remainingMs <= 0) {
         this._clearPressCountdown();
+        if (this.isControllerMode()) return;
         void this._handleIncorrect({ source: 'timeout' });
         return;
       }
