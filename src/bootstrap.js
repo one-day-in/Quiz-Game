@@ -930,7 +930,8 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
             }
 
             if (type === 'open_cell') {
-                const sessionId = String(payload?.sessionId || '').trim() || null;
+                const incomingSessionId = String(payload?.sessionId || '').trim();
+                const sessionId = incomingSessionId || `legacy-${Number(payload?.roundId)}-${Number(payload?.rowId)}-${Number(payload?.cellId)}`;
                 if (hostMode === 'controller') {
                     const roundId = Number(payload?.roundId);
                     const rowId = Number(payload?.rowId);
@@ -1061,7 +1062,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
             if (hostMode === 'controller' && (type === 'modal_view_state' || type === 'modal_media_state' || type === 'modal_directed_bet_state' || type === 'modal_press_state' || type === 'close_modal')) {
                 const incomingSessionId = String(payload?.sessionId || '').trim() || null;
                 if (type === 'close_modal') {
-                    if (incomingSessionId && activeModalSessionId && incomingSessionId !== activeModalSessionId) {
+                    if (activeModalSessionId && incomingSessionId !== activeModalSessionId) {
                         return;
                     }
                     activeModalSessionId = null;
@@ -1069,7 +1070,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
                     modalService.runRemoteCommand(type, payload);
                     return;
                 }
-                if (incomingSessionId && activeModalSessionId && incomingSessionId !== activeModalSessionId) {
+                if (activeModalSessionId && incomingSessionId !== activeModalSessionId) {
                     return;
                 }
                 if (incomingSessionId && !activeModalSessionId) {
@@ -1083,7 +1084,10 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
             if (type === 'modal_incorrect' || type === 'modal_correct' || type === 'modal_media_control' || type === 'modal_toggle_answer' || type === 'modal_directed_bet_action' || type === 'close_modal') {
                 const incomingSessionId = String(payload?.sessionId || '').trim() || null;
                 const currentSessionId = String(activeModalSessionId || '').trim() || null;
-                if (incomingSessionId && currentSessionId && incomingSessionId !== currentSessionId) {
+                if (currentSessionId && incomingSessionId !== currentSessionId) {
+                    return;
+                }
+                if (!currentSessionId) {
                     return;
                 }
             }
