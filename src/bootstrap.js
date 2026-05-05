@@ -247,9 +247,12 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
         let controllerActivityStaleTimer = null;
         let roundSyncRetryTimer = null;
         let lastOpenCellPayload = null;
+        let activeModalSessionId = null;
+        let nextModalSessionSeq = 0;
         let lastModalViewState = null;
         let lastDirectedBetState = null;
         let lastModalPressState = null;
+        let controllerLastOpenCellSignature = '';
         let isHostControllerConnected = false;
         let stopScoreLogsSubscription = null;
         let stopGameSubscription = null;
@@ -511,31 +514,38 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
             window.clearInterval(roundSyncRetryTimer);
             roundSyncRetryTimer = null;
         };
+        const makeModalSessionId = () => `modal-${Date.now()}-${++nextModalSessionSeq}`;
+        const withModalSession = (payload = {}) => ({
+            ...(payload || {}),
+            sessionId: activeModalSessionId || null,
+        });
         const modalService = createModalService(gameService, mediaService, pressRuntimeService, playersService, {
             presentationMode: hostMode === 'controller' ? 'controller' : 'host',
             onModalClose: hostMode === 'host'
                 ? () => {
+                    const closingSessionId = activeModalSessionId || null;
                     lastOpenCellPayload = null;
+                    activeModalSessionId = null;
                     lastModalViewState = null;
                     lastDirectedBetState = null;
                     lastModalPressState = null;
-                    void hostControlChannel.send('close_modal');
+                    void hostControlChannel.send('close_modal', { sessionId: closingSessionId });
                 }
                 : null,
             onModalViewStateChange: hostMode === 'host'
                 ? ({ mode, isAnswerShown }) => {
                     // Modal preview/edit toggle is local to the modal and must not
                     // switch the global game mode for the whole board.
-                    lastModalViewState = { mode, isAnswerShown };
-                    void hostControlChannel.send('modal_view_state', { mode, isAnswerShown });
+                    lastModalViewState = withModalSession({ mode, isAnswerShown });
+                    void hostControlChannel.send('modal_view_state', withModalSession({ mode, isAnswerShown }));
                 }
                 : null,
             onMediaPlaybackStateChange: hostMode === 'host'
-                ? ({ target, isPlaying }) => { void hostControlChannel.send('modal_media_state', { target, isPlaying }); }
+                ? ({ target, isPlaying }) => { void hostControlChannel.send('modal_media_state', withModalSession({ target, isPlaying })); }
                 : null,
             onDirectedBetStateChange: hostMode === 'host'
                 ? (state) => {
-                    lastDirectedBetState = state ? { ...state } : null;
+                    lastDirectedBetState = state ? withModalSession(state) : withModalSession({});
                     void hostControlChannel.send('modal_directed_bet_state', lastDirectedBetState);
                 }
                 : null,
@@ -544,13 +554,13 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
                 : null,
             onControllerMediaControl: ({ target, action }) => {
                 if (action === 'toggle_answer') {
-                    void hostControlChannel.send('modal_toggle_answer');
+                    void hostControlChannel.send('modal_toggle_answer', withModalSession({}));
                     return;
                 }
-                void hostControlChannel.send('modal_media_control', { target, action });
+                void hostControlChannel.send('modal_media_control', withModalSession({ target, action }));
             },
             onControllerCommand: (type, payload = {}) => {
-                void hostControlChannel.send(type, payload);
+                void hostControlChannel.send(type, withModalSession(payload));
             },
         });
         const leaveGameToLobby = async () => {
@@ -652,17 +662,23 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
             },
             onCellOpen: (payload) => {
                 const gameMode = String(gameService.getState()?.uiState?.gameMode || 'play').toLowerCase() === 'edit' ? 'edit' : 'play';
-                lastOpenCellPayload = payload || null;
-                lastModalViewState = { mode: gameMode === 'edit' ? 'edit' : 'view', isAnswerShown: gameMode === 'edit' };
-                lastDirectedBetState = null;
+                activeModalSessionId = makeModalSessionId();
+                lastOpenCellPayload = payload ? { ...payload, sessionId: activeModalSessionId } : null;
+                lastModalViewState = {
+                    mode: gameMode === 'edit' ? 'edit' : 'view',
+                    isAnswerShown: gameMode === 'edit',
+                    sessionId: activeModalSessionId,
+                };
+                lastDirectedBetState = { sessionId: activeModalSessionId };
                 lastModalPressState = {
                     winnerPlayerId: null,
                     winnerName: '',
                     pressedAt: null,
                     pressExpiresAt: null,
                     pressEnabled: false,
+                    sessionId: activeModalSessionId,
                 };
-                void hostControlChannel.send('open_cell', { ...(payload || {}), modalMode: lastModalViewState.mode });
+                void hostControlChannel.send('open_cell', { ...(payload || {}), modalMode: lastModalViewState.mode, sessionId: activeModalSessionId });
             },
             onLeaderboardExpandedChange: (isExpanded) => {
                 leaderboardPanelExpanded = !!isExpanded;
@@ -715,12 +731,19 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
             let lastPressConfirmationKey = '';
             let lastModalPressStateKey = '';
             stopPressConfirmBroadcast = pressRuntimeService.subscribe((runtime) => {
+                if (!activeModalSessionId) {
+                    lastPressConfirmationKey = '';
+                    lastModalPressStateKey = '';
+                    lastModalPressState = null;
+                    return;
+                }
                 const winnerPlayerId = String(runtime?.winnerPlayerId || '').trim();
                 const winnerName = String(runtime?.winnerName || '').trim();
                 const pressedAt = String(runtime?.pressedAt || '').trim();
                 const pressExpiresAt = String(runtime?.pressExpiresAt || '').trim();
                 const pressEnabled = !!runtime?.pressEnabled;
-                const modalPressStateKey = `${winnerPlayerId}|${winnerName}|${pressedAt}|${pressExpiresAt}|${pressEnabled ? 1 : 0}`;
+                const sessionId = activeModalSessionId || null;
+                const modalPressStateKey = `${sessionId || 'no-session'}|${winnerPlayerId}|${winnerName}|${pressedAt}|${pressExpiresAt}|${pressEnabled ? 1 : 0}`;
                 if (modalPressStateKey !== lastModalPressStateKey) {
                     lastModalPressStateKey = modalPressStateKey;
                     lastModalPressState = {
@@ -729,6 +752,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
                         pressedAt: pressedAt || null,
                         pressExpiresAt: pressExpiresAt || null,
                         pressEnabled,
+                        sessionId,
                     };
                     void hostControlChannel.send('modal_press_state', lastModalPressState);
                 }
@@ -842,10 +866,10 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
                     if (lastModalViewState) {
                         void hostControlChannel.send('modal_view_state', lastModalViewState);
                     }
-                    void hostControlChannel.send('modal_directed_bet_state', lastDirectedBetState);
-                    void hostControlChannel.send('modal_press_state', lastModalPressState);
+                    void hostControlChannel.send('modal_directed_bet_state', lastDirectedBetState || withModalSession({}));
+                    void hostControlChannel.send('modal_press_state', lastModalPressState || withModalSession({}));
                 } else {
-                    void hostControlChannel.send('close_modal');
+                    void hostControlChannel.send('close_modal', { sessionId: activeModalSessionId || null });
                 }
                 return;
             }
@@ -906,10 +930,18 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
             }
 
             if (type === 'open_cell') {
+                const sessionId = String(payload?.sessionId || '').trim() || null;
                 if (hostMode === 'controller') {
                     const roundId = Number(payload?.roundId);
                     const rowId = Number(payload?.rowId);
                     const cellId = Number(payload?.cellId);
+                    const modalMode = payload?.modalMode || 'view';
+                    const openSignature = `${sessionId || 'no-session'}|${roundId}|${rowId}|${cellId}|${modalMode}`;
+                    if (modalService.isOpen() && controllerLastOpenCellSignature === openSignature) {
+                        return;
+                    }
+                    controllerLastOpenCellSignature = openSignature;
+                    activeModalSessionId = sessionId || activeModalSessionId;
                     if (Number.isFinite(roundId) && Number.isFinite(rowId) && Number.isFinite(cellId)) {
                         gameService.setCellAnsweredLocal(roundId, rowId, cellId, true);
                     }
@@ -924,10 +956,10 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
                     if (lastModalViewState) {
                         void hostControlChannel.send('modal_view_state', lastModalViewState);
                     }
-                    void hostControlChannel.send('modal_directed_bet_state', lastDirectedBetState);
-                    void hostControlChannel.send('modal_press_state', lastModalPressState);
+                    void hostControlChannel.send('modal_directed_bet_state', lastDirectedBetState || withModalSession({}));
+                    void hostControlChannel.send('modal_press_state', lastModalPressState || withModalSession({}));
                 } else {
-                    void hostControlChannel.send('close_modal');
+                    void hostControlChannel.send('close_modal', { sessionId: activeModalSessionId || null });
                 }
                 return;
             }
@@ -1027,16 +1059,39 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
             }
 
             if (hostMode === 'controller' && (type === 'modal_view_state' || type === 'modal_media_state' || type === 'modal_directed_bet_state' || type === 'modal_press_state' || type === 'close_modal')) {
+                const incomingSessionId = String(payload?.sessionId || '').trim() || null;
+                if (type === 'close_modal') {
+                    if (incomingSessionId && activeModalSessionId && incomingSessionId !== activeModalSessionId) {
+                        return;
+                    }
+                    activeModalSessionId = null;
+                    controllerLastOpenCellSignature = '';
+                    modalService.runRemoteCommand(type, payload);
+                    return;
+                }
+                if (incomingSessionId && activeModalSessionId && incomingSessionId !== activeModalSessionId) {
+                    return;
+                }
+                if (incomingSessionId && !activeModalSessionId) {
+                    activeModalSessionId = incomingSessionId;
+                }
                 modalService.runRemoteCommand(type, payload);
                 return;
             }
 
             if (hostMode !== 'host') return;
+            if (type === 'modal_incorrect' || type === 'modal_correct' || type === 'modal_media_control' || type === 'modal_toggle_answer' || type === 'modal_directed_bet_action' || type === 'close_modal') {
+                const incomingSessionId = String(payload?.sessionId || '').trim() || null;
+                const currentSessionId = String(activeModalSessionId || '').trim() || null;
+                if (incomingSessionId && currentSessionId && incomingSessionId !== currentSessionId) {
+                    return;
+                }
+            }
             const result = modalService.runRemoteCommand(type, payload);
             if (type === 'modal_media_control') {
                 void Promise.resolve(result).then((state) => {
                     if (!state) return;
-                    void hostControlChannel.send('modal_media_state', state);
+                    void hostControlChannel.send('modal_media_state', withModalSession(state));
                 });
             }
         });

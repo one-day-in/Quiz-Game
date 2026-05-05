@@ -21,6 +21,7 @@ const DIRECTED_BET_STEP = DIRECTED_BET_STAKE_CONFIG.step;
 const DIRECTED_BET_RESPONSE_SECONDS = DIRECTED_BET_STAKE_CONFIG.responseSeconds;
 const STEAL_LEADER_POINTS_VALUE = 1000;
 const AUTO_MODIFIER_BANNER_MS = 4000;
+const PRESS_AVAILABILITY_WATCHDOG_MS = 1200;
 const PRESS_TRACE_ENABLED = String(import.meta?.env?.VITE_PRESS_TRACE || '').toLowerCase() === 'true';
 
 export class ModalService {
@@ -69,6 +70,9 @@ export class ModalService {
     this._mediaInteractionUnlocked = this.isControllerMode();
     this._pendingMediaControl = null;
     this._pressResyncTimer = null;
+    this._pressAvailabilityWatchdogTimer = null;
+    this._lastPressRuntimeState = null;
+    this._isWatchdogSyncInFlight = false;
     this._activeModifier = null;
     this._directedBet = null;
     this._openRequestId = 0;
@@ -554,6 +558,9 @@ export class ModalService {
       this._pressAvailabilityIntent = null;
       clearTimeout(this._pressResyncTimer);
       this._pressResyncTimer = null;
+      this._stopPressAvailabilityWatchdog();
+      this._lastPressRuntimeState = null;
+      this._isWatchdogSyncInFlight = false;
       this._activeModifier = null;
       this._directedBet = null;
       this._pendingRemoteDirectedBetState = null;
@@ -900,18 +907,21 @@ export class ModalService {
     try {
       if (shouldEnable) {
         this._tracePressAvailability('open:start', { reason, syncVersion, shouldEnable, force });
-        await this._openPressRuntimeWithRetry();
+        const runtime = await this._openPressRuntimeWithRetry();
+        if (runtime) this._lastPressRuntimeState = runtime;
         const staleOpen = syncVersion !== this._pressSyncVersion;
         if (!this._isQuestionPressWindowActive()) {
           this._tracePressAvailability('open:postcheck-close', { reason, syncVersion, staleOpen });
-          await this._pressRuntime?.closePress?.();
+          const closeRuntime = await this._pressRuntime?.closePress?.();
+          if (closeRuntime) this._lastPressRuntimeState = closeRuntime;
           return;
         }
         this._tracePressAvailability('open:done', { reason, syncVersion, staleOpen });
         return;
       }
       this._tracePressAvailability('close:start', { reason, syncVersion, shouldEnable, force });
-      await this._pressRuntime?.closePress?.();
+      const runtime = await this._pressRuntime?.closePress?.();
+      if (runtime) this._lastPressRuntimeState = runtime;
       this._tracePressAvailability('close:done', { reason, syncVersion });
     } catch (error) {
       // Do not leave stale intent on transport/socket failures.
@@ -929,8 +939,8 @@ export class ModalService {
     let lastError = null;
     for (let attempt = 1; attempt <= PRESS_OPEN_RETRY_ATTEMPTS; attempt += 1) {
       try {
-        await this._pressRuntime?.openPress?.();
-        return true;
+        const runtime = await this._pressRuntime?.openPress?.();
+        return runtime || true;
       } catch (error) {
         lastError = error;
         if (attempt >= PRESS_OPEN_RETRY_ATTEMPTS) break;
@@ -1216,15 +1226,55 @@ export class ModalService {
 
   _bindPressRuntime() {
     this._stopRuntimeSubscription?.();
+    this._stopPressAvailabilityWatchdog();
     if (!this._pressRuntime) return;
 
     const stopSub = this._pressRuntime.subscribe((runtime) => {
+      this._lastPressRuntimeState = runtime || null;
       this._handlePressRuntimeUpdate(runtime);
     });
 
     this._stopRuntimeSubscription = () => {
       stopSub?.();
     };
+    this._startPressAvailabilityWatchdog();
+  }
+
+  _startPressAvailabilityWatchdog() {
+    if (this.isControllerMode()) return;
+    if (this._pressAvailabilityWatchdogTimer) return;
+    this._pressAvailabilityWatchdogTimer = setInterval(() => {
+      this._reconcilePressAvailability('watchdog_tick');
+    }, PRESS_AVAILABILITY_WATCHDOG_MS);
+  }
+
+  _stopPressAvailabilityWatchdog() {
+    clearInterval(this._pressAvailabilityWatchdogTimer);
+    this._pressAvailabilityWatchdogTimer = null;
+  }
+
+  _reconcilePressAvailability(reason = 'watchdog') {
+    if (this.isControllerMode()) return;
+    if (!this._pressRuntime) return;
+    if (!this.isOpen() || this._isClosing) return;
+    if (this._isResettingPressRuntime || this._isResolvingPressResult) return;
+
+    const shouldEnable = this._isQuestionPressWindowActive();
+    const runtimeEnabled = this._lastPressRuntimeState?.pressEnabled === true;
+    const hasWinner = !!this._pressWinnerId;
+    const intentMismatch = this._pressAvailabilityIntent !== shouldEnable;
+    const shouldForceOpen = shouldEnable && !hasWinner && !runtimeEnabled;
+    const shouldForceClose = (!shouldEnable || hasWinner) && runtimeEnabled;
+
+    if (!intentMismatch && !shouldForceOpen && !shouldForceClose) return;
+    if (this._isWatchdogSyncInFlight) return;
+
+    this._isWatchdogSyncInFlight = true;
+    void this._syncPressAvailability({ force: true, reason }).catch((error) => {
+      console.warn('[ModalService] watchdog sync failed:', error?.message || error);
+    }).finally(() => {
+      this._isWatchdogSyncInFlight = false;
+    });
   }
 
   _schedulePressAvailabilityResync(delayMs = 420) {
@@ -1361,6 +1411,7 @@ export class ModalService {
   }
 
   destroy() {
+    this._stopPressAvailabilityWatchdog();
     this.close();
     this._disposer.destroy();
     this.container = null;
