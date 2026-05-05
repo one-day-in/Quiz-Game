@@ -38,20 +38,21 @@ describe('HostControlChannelService connect handshake', () => {
     const sendPromise = service.send('modal_sync_request', {});
 
     await Promise.resolve();
-    expect(channel.httpSend).not.toHaveBeenCalled();
+    expect(channel.send).not.toHaveBeenCalled();
 
     statusHandler?.('SUBSCRIBED');
     const sent = await sendPromise;
 
     expect(sent).toBe(true);
-    expect(channel.httpSend).toHaveBeenCalledTimes(1);
-    expect(channel.httpSend).toHaveBeenCalledWith(
-      'host-command',
-      expect.objectContaining({
+    expect(channel.send).toHaveBeenCalledTimes(1);
+    expect(channel.send).toHaveBeenCalledWith({
+      type: 'broadcast',
+      event: 'host-command',
+      payload: expect.objectContaining({
         type: 'modal_sync_request',
         senderRole: 'host',
-      })
-    );
+      }),
+    });
   });
 
   it('returns false on transient subscribe failure instead of throwing', async () => {
@@ -64,6 +65,6 @@ describe('HostControlChannelService connect handshake', () => {
 
     expect(sent).toBe(false);
     expect(mockSupabase.removeChannel).toHaveBeenCalledTimes(1);
-    expect(channel.httpSend).not.toHaveBeenCalled();
+    expect(channel.send).not.toHaveBeenCalled();
   });
 });

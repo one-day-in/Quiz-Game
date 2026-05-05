@@ -32,6 +32,7 @@ export class HostControlChannelService {
     this._isConnected = false;
     this._connectPromise = null;
     this._lastSendWarningAt = 0;
+    this._httpSendDisabled = false;
   }
 
   async connect() {
@@ -128,29 +129,39 @@ export class HostControlChannelService {
       sentAt: new Date().toISOString(),
     };
 
-    try {
-      if (typeof this._channel.httpSend === 'function') {
-        await this._channel.httpSend('host-command', broadcastPayload);
-        return true;
-      }
-
+    const sendViaWs = async () => {
+      if (typeof this._channel.send !== 'function') return false;
       await this._channel.send({
         type: 'broadcast',
         event: 'host-command',
         payload: broadcastPayload,
       });
       return true;
+    };
+
+    const sendViaHttp = async () => {
+      if (this._httpSendDisabled) return false;
+      if (typeof this._channel.httpSend !== 'function') return false;
+      await this._channel.httpSend('host-command', broadcastPayload);
+      return true;
+    };
+
+    try {
+      // Realtime websocket is the primary transport. It avoids REST broadcast
+      // CORS/502 issues on static origins like GitHub Pages.
+      if (await sendViaWs()) {
+        return true;
+      }
+      if (await sendViaHttp()) return true;
+      return false;
     } catch (error) {
-      // If REST broadcast fails (401/network), best-effort fallback to WS send.
-      if (typeof this._channel.send === 'function') {
+      // If websocket send fails, retry with HTTP once (unless already disabled).
+      if (!this._httpSendDisabled && typeof this._channel.httpSend === 'function') {
         try {
-          await this._channel.send({
-            type: 'broadcast',
-            event: 'host-command',
-            payload: broadcastPayload,
-          });
+          await this._channel.httpSend('host-command', broadcastPayload);
           return true;
         } catch (fallbackError) {
+          this._httpSendDisabled = true;
           if (isTransientChannelError(fallbackError)) {
             this._isConnected = false;
             this._warnTransientSendError(type, fallbackError);
@@ -161,6 +172,7 @@ export class HostControlChannelService {
       }
 
       if (isTransientChannelError(error)) {
+        this._httpSendDisabled = true;
         this._isConnected = false;
         this._warnTransientSendError(type, error);
         return false;
