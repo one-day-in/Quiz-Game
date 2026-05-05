@@ -859,3 +859,4 @@ Ordered refactor and improvement steps. Do not treat all items as immediate.
 - Session guards for `modal_*` and `close_modal` commands are now centralized through `ModalSyncStateService` helpers.
 - Host/control command transport now has a dedicated outbox retry layer (`HostControlOutboxService`) for critical modal sync events.
 - Host-control event names are now centralized in `sync/controlEvents.js` and unknown incoming event types are filtered at channel parsing time.
+- `bootstrap.js` and `player.js` now use `CONTROL_EVENTS` constants instead of raw string literals for host-control message send/receive paths.

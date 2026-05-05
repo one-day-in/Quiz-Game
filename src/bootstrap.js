@@ -18,6 +18,7 @@ import { createHostControlChannelService } from './services/HostControlChannelSe
 import { createHostControlOutboxService } from './services/HostControlOutboxService.js';
 import { createModalSyncStateService } from './services/ModalSyncStateService.js';
 import { getBuzzerWakeUrl } from './utils/localBuzzerUrl.js';
+import { CONTROL_EVENTS } from './sync/controlEvents.js';
 
 import { renderLogin } from './views/LoginView.js';
 import { LobbyView } from './views/LobbyView.js';
@@ -365,7 +366,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
             const nextEntry = enrichScoreLogWithPoints(entry);
             setScoreLogs([nextEntry, ...scoreLogs]);
             if (broadcast) {
-                void sendControl('score_log_append', nextEntry);
+                void sendControl(CONTROL_EVENTS.SCORE_LOG_APPEND, nextEntry);
             }
             return nextEntry;
         };
@@ -373,7 +374,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
             if (hostMode !== 'host') return;
             await clearScoreLogs(gameId);
             setScoreLogs([]);
-            void sendControl('score_log_snapshot', { logs: [] });
+            void sendControl(CONTROL_EVENTS.SCORE_LOG_SNAPSHOT, { logs: [] });
         };
         const makeManualScoreLog = ({ playerId, delta }) => {
             const players = playersService.getPlayers?.() || [];
@@ -396,7 +397,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
         };
         const sendRoundState = () => {
             const uiState = gameService.getState()?.uiState || {};
-            void sendControl('round_state', {
+            void sendControl(CONTROL_EVENTS.ROUND_STATE, {
                 activeRoundId: Number(uiState?.activeRoundId) || 0,
                 isRoundTransitioning: !!uiState?.isRoundTransitioning,
                 pendingRoundId: Number.isFinite(Number(uiState?.pendingRoundId))
@@ -441,7 +442,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
             const nextSignature = getGameSnapshotSignature(snapshotPayload);
             if (!force && nextSignature === lastGameSnapshotSignature) return;
             lastGameSnapshotSignature = nextSignature;
-            void sendControl('game_snapshot', snapshotPayload);
+            void sendControl(CONTROL_EVENTS.GAME_SNAPSHOT, snapshotPayload);
         };
         const scheduleGameSnapshotBroadcast = ({ immediate = false, force = false } = {}) => {
             if (hostMode !== 'host') return;
@@ -472,7 +473,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
             const nextSignature = getPlayersSnapshotSignature(snapshotPayload);
             if (!force && nextSignature === lastPlayersSnapshotSignature) return;
             lastPlayersSnapshotSignature = nextSignature;
-            void sendControl('players_snapshot', snapshotPayload);
+            void sendControl(CONTROL_EVENTS.PLAYERS_SNAPSHOT, snapshotPayload);
         };
         const schedulePlayersSnapshotBroadcast = ({ immediate = false, force = false } = {}) => {
             if (hostMode !== 'host') return;
@@ -489,13 +490,13 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
         };
         const requestControllerStateSync = () => {
             if (hostMode !== 'controller') return;
-            void sendControl('game_snapshot_request');
-            void sendControl('players_snapshot_request');
-            void sendControl('round_sync_request');
-            void sendControl('leaderboard_panel_sync_request');
-            void sendControl('score_logs_sync_request');
-            void sendControl('current_player_sync_request');
-            void sendControl('modal_sync_request');
+            void sendControl(CONTROL_EVENTS.GAME_SNAPSHOT_REQUEST);
+            void sendControl(CONTROL_EVENTS.PLAYERS_SNAPSHOT_REQUEST);
+            void sendControl(CONTROL_EVENTS.ROUND_SYNC_REQUEST);
+            void sendControl(CONTROL_EVENTS.LEADERBOARD_PANEL_SYNC_REQUEST);
+            void sendControl(CONTROL_EVENTS.SCORE_LOGS_SYNC_REQUEST);
+            void sendControl(CONTROL_EVENTS.CURRENT_PLAYER_SYNC_REQUEST);
+            void sendControl(CONTROL_EVENTS.MODAL_SYNC_REQUEST);
         };
         const startRoundSyncRetry = () => {
             if (hostMode !== 'controller') return;
@@ -521,7 +522,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
             onModalClose: hostMode === 'host'
                 ? () => {
                     const closingSessionId = modalSyncState.closeSession();
-                    void sendControl('close_modal', { sessionId: closingSessionId });
+                    void sendControl(CONTROL_EVENTS.CLOSE_MODAL, { sessionId: closingSessionId });
                 }
                 : null,
             onModalViewStateChange: hostMode === 'host'
@@ -530,18 +531,18 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
                     // switch the global game mode for the whole board.
                     const nextViewState = modalSyncState.setViewState({ mode, isAnswerShown });
                     if (nextViewState) {
-                        void sendControl('modal_view_state', nextViewState);
+                        void sendControl(CONTROL_EVENTS.MODAL_VIEW_STATE, nextViewState);
                     }
                 }
                 : null,
             onMediaPlaybackStateChange: hostMode === 'host'
-                ? ({ target, isPlaying }) => { void sendControl('modal_media_state', withModalSession({ target, isPlaying })); }
+                ? ({ target, isPlaying }) => { void sendControl(CONTROL_EVENTS.MODAL_MEDIA_STATE, withModalSession({ target, isPlaying })); }
                 : null,
             onDirectedBetStateChange: hostMode === 'host'
                 ? (state) => {
                     const nextDirectedBetState = modalSyncState.setDirectedBetState(state);
                     if (nextDirectedBetState) {
-                        void sendControl('modal_directed_bet_state', nextDirectedBetState);
+                        void sendControl(CONTROL_EVENTS.MODAL_DIRECTED_BET_STATE, nextDirectedBetState);
                     }
                 }
                 : null,
@@ -550,10 +551,10 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
                 : null,
             onControllerMediaControl: ({ target, action }) => {
                 if (action === 'toggle_answer') {
-                    void sendControl('modal_toggle_answer', withModalSession({}));
+                    void sendControl(CONTROL_EVENTS.MODAL_TOGGLE_ANSWER, withModalSession({}));
                     return;
                 }
-                void sendControl('modal_media_control', withModalSession({ target, action }));
+                void sendControl(CONTROL_EVENTS.MODAL_MEDIA_CONTROL, withModalSession({ target, action }));
             },
             onControllerCommand: (type, payload = {}) => {
                 void sendControl(type, withModalSession(payload));
@@ -562,7 +563,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
         const leaveGameToLobby = async () => {
             if (hostMode === 'host') {
                 try {
-                    await sendControl('host_runtime_state', {
+                    await sendControl(CONTROL_EVENTS.HOST_RUNTIME_STATE, {
                         active: false,
                         sentAt: new Date().toISOString(),
                     });
@@ -634,7 +635,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
             scoreLogs,
             onAdjustPlayerScore: async (playerId, delta) => {
                 if (hostMode === 'controller') {
-                    void sendControl('leaderboard_adjust_score', { playerId, delta });
+                    void sendControl(CONTROL_EVENTS.LEADERBOARD_ADJUST_SCORE, { playerId, delta });
                     return;
                 }
                 const amount = Number(delta) || 0;
@@ -651,7 +652,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
             },
             onCurrentPlayerChange: async (playerId) => {
                 if (hostMode === 'controller') {
-                    void sendControl('current_player_set', { playerId: playerId || null });
+                    void sendControl(CONTROL_EVENTS.CURRENT_PLAYER_SET, { playerId: playerId || null });
                     return;
                 }
                 await gameService.setCurrentPlayerId(playerId);
@@ -661,19 +662,19 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
                 const modalMode = gameMode === 'edit' ? 'edit' : 'view';
                 const sessionId = modalSyncState.beginSession({ payload, modalMode });
                 const openCellPayload = modalSyncState.getOpenCellPayload();
-                void sendControl('open_cell', { ...(openCellPayload || {}), modalMode, sessionId });
+                void sendControl(CONTROL_EVENTS.OPEN_CELL, { ...(openCellPayload || {}), modalMode, sessionId });
             },
             onLeaderboardExpandedChange: (isExpanded) => {
                 leaderboardPanelExpanded = !!isExpanded;
-                void sendControl('leaderboard_panel_state', { isExpanded: !!isExpanded });
+                void sendControl(CONTROL_EVENTS.LEADERBOARD_PANEL_STATE, { isExpanded: !!isExpanded });
             },
             onScoreLogsOpenChange: (isOpen) => {
                 scoreLogsOpen = !!isOpen;
-                void sendControl('score_logs_state', { isOpen: !!isOpen });
+                void sendControl(CONTROL_EVENTS.SCORE_LOGS_STATE, { isOpen: !!isOpen });
             },
             onRoundChangeRequest: (roundId) => {
                 if (hostMode === 'controller') {
-                    void sendControl('round_set', { roundId });
+                    void sendControl(CONTROL_EVENTS.ROUND_SET, { roundId });
                     return;
                 }
                 void roundNavigationService.setActiveRound(roundId);
@@ -681,16 +682,16 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
             onGameModeChange: (mode) => {
                 const nextMode = mode === 'edit' ? 'edit' : 'play';
                 if (hostMode === 'controller') {
-                    void sendControl('game_mode_set', { gameMode: nextMode });
+                    void sendControl(CONTROL_EVENTS.GAME_MODE_SET, { gameMode: nextMode });
                     return;
                 }
                 gameService.setGameMode(nextMode);
                 modalService.setGameMode(nextMode);
-                void sendControl('game_mode_state', { gameMode: nextMode });
+                void sendControl(CONTROL_EVENTS.GAME_MODE_STATE, { gameMode: nextMode });
             },
             onClearScoreLogs: async () => {
                 if (hostMode === 'controller') {
-                    void sendControl('score_logs_clear_request');
+                    void sendControl(CONTROL_EVENTS.SCORE_LOGS_CLEAR_REQUEST);
                     return;
                 }
                 await clearAllScoreLogs();
@@ -737,7 +738,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
                         pressEnabled,
                     });
                     if (nextPressState) {
-                        void sendControl('modal_press_state', nextPressState);
+                        void sendControl(CONTROL_EVENTS.MODAL_PRESS_STATE, nextPressState);
                     }
                 }
 
@@ -751,7 +752,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
                 if (confirmationKey === lastPressConfirmationKey) return;
                 lastPressConfirmationKey = confirmationKey;
 
-                void sendControl('press_confirmed', {
+                void sendControl(CONTROL_EVENTS.PRESS_CONFIRMED, {
                     winnerPlayerId,
                     confirmationKey,
                     pressedAt: runtime?.pressedAt || null,
@@ -764,7 +765,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
                 const nextPlayerId = state?.model?.getCurrentPlayerId?.() ?? null;
                 if (nextPlayerId === lastCurrentPlayerId) return;
                 lastCurrentPlayerId = nextPlayerId;
-                void sendControl('current_player_state', { playerId: nextPlayerId });
+                void sendControl(CONTROL_EVENTS.CURRENT_PLAYER_STATE, { playerId: nextPlayerId });
             });
         }
 
@@ -793,18 +794,18 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
         await hostControlChannel.connect();
         if (hostMode === 'host') {
             const sendHostActivity = () => {
-                void sendControl('host_runtime_state', {
+                void sendControl(CONTROL_EVENTS.HOST_RUNTIME_STATE, {
                     active: true,
                     sentAt: new Date().toISOString(),
                 });
             };
             sendHostActivity();
             hostActivityPingTimer = window.setInterval(sendHostActivity, HOST_ACTIVITY_PING_MS);
-            void sendControl('controller_runtime_state_request');
+            void sendControl(CONTROL_EVENTS.CONTROLLER_RUNTIME_STATE_REQUEST);
         } else {
             setControllerAvailability(false);
             const sendControllerActivity = (active = true) => {
-                void sendControl('controller_runtime_state', {
+                void sendControl(CONTROL_EVENTS.CONTROLLER_RUNTIME_STATE, {
                     active: !!active,
                     sentAt: new Date().toISOString(),
                 });
@@ -821,7 +822,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
             const payload = message?.payload || {};
             if (!type) return;
 
-            if (type === 'host_runtime_state' && hostMode === 'controller') {
+            if (type === CONTROL_EVENTS.HOST_RUNTIME_STATE && hostMode === 'controller') {
                 markMainHostActiveFromPing(payload?.active !== false);
                 if (payload?.active === false) {
                     hasRoundStateSynced = false;
@@ -832,52 +833,52 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
                 return;
             }
 
-            if (type === 'controller_runtime_state' && hostMode === 'host') {
+            if (type === CONTROL_EVENTS.CONTROLLER_RUNTIME_STATE && hostMode === 'host') {
                 markHostControllerActiveFromPing(payload?.active !== false);
                 return;
             }
 
-            if (type === 'host_runtime_state_request' && hostMode === 'host') {
-                void sendControl('host_runtime_state', {
+            if (type === CONTROL_EVENTS.HOST_RUNTIME_STATE_REQUEST && hostMode === 'host') {
+                void sendControl(CONTROL_EVENTS.HOST_RUNTIME_STATE, {
                     active: true,
                     sentAt: new Date().toISOString(),
                 });
                 sendRoundState();
                 sendGameSnapshot({ force: true });
                 sendPlayersSnapshot({ force: true });
-                void sendControl('leaderboard_panel_state', { isExpanded: leaderboardPanelExpanded });
-                void sendControl('score_logs_state', { isOpen: !!scoreLogsOpen });
-                void sendControl('game_mode_state', { gameMode: gameService.getState()?.uiState?.gameMode || 'play' });
-                void sendControl('current_player_state', { playerId: gameService.getCurrentPlayerId?.() ?? null });
+                void sendControl(CONTROL_EVENTS.LEADERBOARD_PANEL_STATE, { isExpanded: leaderboardPanelExpanded });
+                void sendControl(CONTROL_EVENTS.SCORE_LOGS_STATE, { isOpen: !!scoreLogsOpen });
+                void sendControl(CONTROL_EVENTS.GAME_MODE_STATE, { gameMode: gameService.getState()?.uiState?.gameMode || 'play' });
+                void sendControl(CONTROL_EVENTS.CURRENT_PLAYER_STATE, { playerId: gameService.getCurrentPlayerId?.() ?? null });
                 const openCellPayload = modalSyncState.getOpenCellPayload();
                 if (openCellPayload) {
-                    void sendControl('open_cell', openCellPayload);
+                    void sendControl(CONTROL_EVENTS.OPEN_CELL, openCellPayload);
                     const modalViewState = modalSyncState.getViewState();
                     if (modalViewState) {
-                        void sendControl('modal_view_state', modalViewState);
+                        void sendControl(CONTROL_EVENTS.MODAL_VIEW_STATE, modalViewState);
                     }
-                    void sendControl('modal_directed_bet_state', modalSyncState.getDirectedBetState() || withModalSession({}));
-                    void sendControl('modal_press_state', modalSyncState.getPressState() || withModalSession({}));
+                    void sendControl(CONTROL_EVENTS.MODAL_DIRECTED_BET_STATE, modalSyncState.getDirectedBetState() || withModalSession({}));
+                    void sendControl(CONTROL_EVENTS.MODAL_PRESS_STATE, modalSyncState.getPressState() || withModalSession({}));
                 } else {
-                    void sendControl('close_modal', { sessionId: modalSyncState.getSessionId() || null });
+                    void sendControl(CONTROL_EVENTS.CLOSE_MODAL, { sessionId: modalSyncState.getSessionId() || null });
                 }
                 return;
             }
 
-            if (type === 'controller_runtime_state_request' && hostMode === 'controller') {
-                void sendControl('controller_runtime_state', {
+            if (type === CONTROL_EVENTS.CONTROLLER_RUNTIME_STATE_REQUEST && hostMode === 'controller') {
+                void sendControl(CONTROL_EVENTS.CONTROLLER_RUNTIME_STATE, {
                     active: true,
                     sentAt: new Date().toISOString(),
                 });
                 return;
             }
 
-            if (type === 'game_snapshot_request' && hostMode === 'host') {
+            if (type === CONTROL_EVENTS.GAME_SNAPSHOT_REQUEST && hostMode === 'host') {
                 sendGameSnapshot({ force: true });
                 return;
             }
 
-            if (type === 'game_snapshot' && hostMode === 'controller') {
+            if (type === CONTROL_EVENTS.GAME_SNAPSHOT && hostMode === 'controller') {
                 if (payload?.game) {
                     gameService.applyRemoteSnapshot?.(payload.game);
                 }
@@ -889,37 +890,37 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
                 return;
             }
 
-            if (type === 'players_snapshot_request' && hostMode === 'host') {
+            if (type === CONTROL_EVENTS.PLAYERS_SNAPSHOT_REQUEST && hostMode === 'host') {
                 sendPlayersSnapshot({ force: true });
                 return;
             }
 
-            if (type === 'players_snapshot' && hostMode === 'controller') {
+            if (type === CONTROL_EVENTS.PLAYERS_SNAPSHOT && hostMode === 'controller') {
                 playersService.setPlayersLocal?.(payload?.players || []);
                 return;
             }
 
-            if (type === 'game_mode_set' && hostMode === 'host') {
+            if (type === CONTROL_EVENTS.GAME_MODE_SET && hostMode === 'host') {
                 const nextMode = payload?.gameMode === 'edit' ? 'edit' : 'play';
                 gameService.setGameMode(nextMode);
                 modalService.setGameMode(nextMode);
-                void sendControl('game_mode_state', { gameMode: nextMode });
+                void sendControl(CONTROL_EVENTS.GAME_MODE_STATE, { gameMode: nextMode });
                 return;
             }
 
-            if (type === 'game_mode_state') {
+            if (type === CONTROL_EVENTS.GAME_MODE_STATE) {
                 const nextMode = payload?.gameMode === 'edit' ? 'edit' : 'play';
                 gameService.setGameModeLocal(nextMode);
                 modalService.setGameMode(nextMode);
                 return;
             }
 
-            if (type === 'game_mode_sync_request' && hostMode === 'host') {
-                void sendControl('game_mode_state', { gameMode: gameService.getState()?.uiState?.gameMode || 'play' });
+            if (type === CONTROL_EVENTS.GAME_MODE_SYNC_REQUEST && hostMode === 'host') {
+                void sendControl(CONTROL_EVENTS.GAME_MODE_STATE, { gameMode: gameService.getState()?.uiState?.gameMode || 'play' });
                 return;
             }
 
-            if (type === 'open_cell') {
+            if (type === CONTROL_EVENTS.OPEN_CELL) {
                 const hydrated = modalSyncState.hydrateFromOpenCell(payload);
                 if (!hydrated) return;
                 if (hostMode === 'controller') {
@@ -938,96 +939,96 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
                 return;
             }
 
-            if (type === 'modal_sync_request' && hostMode === 'host') {
+            if (type === CONTROL_EVENTS.MODAL_SYNC_REQUEST && hostMode === 'host') {
                 const openCellPayload = modalSyncState.getOpenCellPayload();
                 if (openCellPayload) {
-                    void sendControl('open_cell', openCellPayload);
+                    void sendControl(CONTROL_EVENTS.OPEN_CELL, openCellPayload);
                     const modalViewState = modalSyncState.getViewState();
                     if (modalViewState) {
-                        void sendControl('modal_view_state', modalViewState);
+                        void sendControl(CONTROL_EVENTS.MODAL_VIEW_STATE, modalViewState);
                     }
-                    void sendControl('modal_directed_bet_state', modalSyncState.getDirectedBetState() || withModalSession({}));
-                    void sendControl('modal_press_state', modalSyncState.getPressState() || withModalSession({}));
+                    void sendControl(CONTROL_EVENTS.MODAL_DIRECTED_BET_STATE, modalSyncState.getDirectedBetState() || withModalSession({}));
+                    void sendControl(CONTROL_EVENTS.MODAL_PRESS_STATE, modalSyncState.getPressState() || withModalSession({}));
                 } else {
-                    void sendControl('close_modal', { sessionId: modalSyncState.getSessionId() || null });
+                    void sendControl(CONTROL_EVENTS.CLOSE_MODAL, { sessionId: modalSyncState.getSessionId() || null });
                 }
                 return;
             }
 
-            if (type === 'leaderboard_panel_state') {
+            if (type === CONTROL_EVENTS.LEADERBOARD_PANEL_STATE) {
                 leaderboardPanelExpanded = !!payload?.isExpanded;
                 app.setLeaderboardExpanded?.(!!payload?.isExpanded, { silent: true });
                 return;
             }
 
-            if (type === 'leaderboard_panel_sync_request' && hostMode === 'host') {
-                void sendControl('leaderboard_panel_state', { isExpanded: leaderboardPanelExpanded });
+            if (type === CONTROL_EVENTS.LEADERBOARD_PANEL_SYNC_REQUEST && hostMode === 'host') {
+                void sendControl(CONTROL_EVENTS.LEADERBOARD_PANEL_STATE, { isExpanded: leaderboardPanelExpanded });
                 return;
             }
 
-            if (type === 'score_log_append') {
+            if (type === CONTROL_EVENTS.SCORE_LOG_APPEND) {
                 appendScoreLog(payload, { broadcast: false });
                 return;
             }
 
-            if (type === 'score_log_snapshot') {
+            if (type === CONTROL_EVENTS.SCORE_LOG_SNAPSHOT) {
                 setScoreLogs(mergeScoreLogs(payload?.logs || [], scoreLogs));
                 return;
             }
 
-            if (type === 'score_log_sync_request' && hostMode === 'host') {
-                void sendControl('score_log_snapshot', { logs: scoreLogs });
+            if (type === CONTROL_EVENTS.SCORE_LOG_SYNC_REQUEST && hostMode === 'host') {
+                void sendControl(CONTROL_EVENTS.SCORE_LOG_SNAPSHOT, { logs: scoreLogs });
                 return;
             }
 
-            if (type === 'score_logs_state') {
+            if (type === CONTROL_EVENTS.SCORE_LOGS_STATE) {
                 scoreLogsOpen = !!payload?.isOpen;
                 app.setScoreLogsOpen?.(scoreLogsOpen, { silent: true });
                 return;
             }
 
-            if (type === 'score_logs_sync_request' && hostMode === 'host') {
-                void sendControl('score_logs_state', { isOpen: !!scoreLogsOpen });
+            if (type === CONTROL_EVENTS.SCORE_LOGS_SYNC_REQUEST && hostMode === 'host') {
+                void sendControl(CONTROL_EVENTS.SCORE_LOGS_STATE, { isOpen: !!scoreLogsOpen });
                 return;
             }
 
-            if (type === 'score_logs_clear_request' && hostMode === 'host') {
+            if (type === CONTROL_EVENTS.SCORE_LOGS_CLEAR_REQUEST && hostMode === 'host') {
                 void clearAllScoreLogs().catch((error) => {
                     console.warn('[Bootstrap] score logs clear skipped:', error?.message || error);
                 });
                 return;
             }
 
-            if (type === 'current_player_set' && hostMode === 'host') {
+            if (type === CONTROL_EVENTS.CURRENT_PLAYER_SET && hostMode === 'host') {
                 void gameService.setCurrentPlayerId(payload?.playerId || null).then(() => {
-                    void sendControl('current_player_state', { playerId: payload?.playerId || null });
+                    void sendControl(CONTROL_EVENTS.CURRENT_PLAYER_STATE, { playerId: payload?.playerId || null });
                 });
                 return;
             }
 
-            if (type === 'current_player_sync_request' && hostMode === 'host') {
-                void sendControl('current_player_state', { playerId: gameService.getCurrentPlayerId?.() ?? null });
+            if (type === CONTROL_EVENTS.CURRENT_PLAYER_SYNC_REQUEST && hostMode === 'host') {
+                void sendControl(CONTROL_EVENTS.CURRENT_PLAYER_STATE, { playerId: gameService.getCurrentPlayerId?.() ?? null });
                 return;
             }
 
-            if (type === 'round_set' && hostMode === 'host') {
+            if (type === CONTROL_EVENTS.ROUND_SET && hostMode === 'host') {
                 void roundNavigationService.setActiveRound(payload?.roundId);
                 return;
             }
 
-            if (type === 'round_state') {
+            if (type === CONTROL_EVENTS.ROUND_STATE) {
                 gameService.setRoundStateLocal(payload || {});
                 hasRoundStateSynced = true;
                 stopRoundSyncRetry();
                 return;
             }
 
-            if (type === 'round_sync_request' && hostMode === 'host') {
+            if (type === CONTROL_EVENTS.ROUND_SYNC_REQUEST && hostMode === 'host') {
                 sendRoundState();
                 return;
             }
 
-            if (type === 'leaderboard_adjust_score' && hostMode === 'host') {
+            if (type === CONTROL_EVENTS.LEADERBOARD_ADJUST_SCORE && hostMode === 'host') {
                 const amount = Number(payload?.delta) || 0;
                 const player = (playersService.getPlayers?.() || []).find((entry) => String(entry?.id || '') === String(payload?.playerId || ''));
                 const playerName = player?.name || t('player_fallback');
@@ -1043,24 +1044,24 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
                 return;
             }
 
-            if (type === 'current_player_state') {
+            if (type === CONTROL_EVENTS.CURRENT_PLAYER_STATE) {
                 gameService.setCurrentPlayerIdLocal(payload?.playerId || null);
                 return;
             }
 
-            if (hostMode === 'controller' && (type === 'modal_view_state' || type === 'modal_media_state' || type === 'modal_directed_bet_state' || type === 'modal_press_state' || type === 'close_modal')) {
-                if (type === 'close_modal') {
+            if (hostMode === 'controller' && (type === CONTROL_EVENTS.MODAL_VIEW_STATE || type === CONTROL_EVENTS.MODAL_MEDIA_STATE || type === CONTROL_EVENTS.MODAL_DIRECTED_BET_STATE || type === CONTROL_EVENTS.MODAL_PRESS_STATE || type === CONTROL_EVENTS.CLOSE_MODAL)) {
+                if (type === CONTROL_EVENTS.CLOSE_MODAL) {
                     if (!modalSyncState.acceptCloseForActiveSession(payload)) return;
                     modalSyncState.closeSession();
                     modalService.runRemoteCommand(type, payload);
                     return;
                 }
                 if (!modalSyncState.acceptEventForActiveSession(payload)) return;
-                if (type === 'modal_view_state') {
+                if (type === CONTROL_EVENTS.MODAL_VIEW_STATE) {
                     modalSyncState.setViewState(payload);
-                } else if (type === 'modal_directed_bet_state') {
+                } else if (type === CONTROL_EVENTS.MODAL_DIRECTED_BET_STATE) {
                     modalSyncState.setDirectedBetState(payload);
-                } else if (type === 'modal_press_state') {
+                } else if (type === CONTROL_EVENTS.MODAL_PRESS_STATE) {
                     modalSyncState.setPressState(payload);
                 }
                 modalService.runRemoteCommand(type, payload);
@@ -1068,18 +1069,18 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
             }
 
             if (hostMode !== 'host') return;
-            if (type === 'modal_incorrect' || type === 'modal_correct' || type === 'modal_media_control' || type === 'modal_toggle_answer' || type === 'modal_directed_bet_action' || type === 'close_modal') {
-                if (type === 'close_modal') {
+            if (type === CONTROL_EVENTS.MODAL_INCORRECT || type === CONTROL_EVENTS.MODAL_CORRECT || type === CONTROL_EVENTS.MODAL_MEDIA_CONTROL || type === CONTROL_EVENTS.MODAL_TOGGLE_ANSWER || type === CONTROL_EVENTS.MODAL_DIRECTED_BET_ACTION || type === CONTROL_EVENTS.CLOSE_MODAL) {
+                if (type === CONTROL_EVENTS.CLOSE_MODAL) {
                     if (!modalSyncState.acceptCloseForActiveSession(payload)) return;
                 } else if (!modalSyncState.acceptEventForActiveSession(payload)) {
                     return;
                 }
             }
             const result = modalService.runRemoteCommand(type, payload);
-            if (type === 'modal_media_control') {
+            if (type === CONTROL_EVENTS.MODAL_MEDIA_CONTROL) {
                 void Promise.resolve(result).then((state) => {
                     if (!state) return;
-                    void sendControl('modal_media_state', withModalSession(state));
+                    void sendControl(CONTROL_EVENTS.MODAL_MEDIA_STATE, withModalSession(state));
                 });
             }
         });
@@ -1101,13 +1102,13 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
             playersSnapshotBroadcastTimer = null;
             stopRoundSyncRetry();
             if (hostMode === 'host') {
-                void sendControl('host_runtime_state', {
+                void sendControl(CONTROL_EVENTS.HOST_RUNTIME_STATE, {
                     active: false,
                     sentAt: new Date().toISOString(),
                 });
                 setHostControllerConnected(false);
             } else {
-                void sendControl('controller_runtime_state', {
+                void sendControl(CONTROL_EVENTS.CONTROLLER_RUNTIME_STATE, {
                     active: false,
                     sentAt: new Date().toISOString(),
                 });
@@ -1136,9 +1137,9 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
         app.render();
         if (hostMode === 'controller') {
             hasRoundStateSynced = false;
-            void sendControl('host_runtime_state_request');
-            void sendControl('score_log_sync_request');
-            void sendControl('game_mode_sync_request');
+            void sendControl(CONTROL_EVENTS.HOST_RUNTIME_STATE_REQUEST);
+            void sendControl(CONTROL_EVENTS.SCORE_LOG_SYNC_REQUEST);
+            void sendControl(CONTROL_EVENTS.GAME_MODE_SYNC_REQUEST);
             requestControllerStateSync();
             startRoundSyncRetry();
         } else {
