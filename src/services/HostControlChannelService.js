@@ -15,6 +15,9 @@ function isTransientChannelError(error) {
     || message.includes('name not resolved')
     || message.includes('quic')
     || message.includes('timeout')
+    || message.includes('channel status')
+    || message.includes('before subscribe')
+    || message.includes('subscribe timeout')
   );
 }
 
@@ -26,26 +29,84 @@ export class HostControlChannelService {
     this._subs = new Set();
     this._channel = null;
     this._isConnected = false;
+    this._connectPromise = null;
     this._lastSendWarningAt = 0;
   }
 
   async connect() {
     if (this._isConnected || !this._gameId) return;
+    if (this._connectPromise) return this._connectPromise;
 
-    this._channel = supabase
-      .channel(`host-control:${this._gameId}`)
-      .on('broadcast', { event: 'host-command' }, (payload) => {
-        const message = payload?.payload || null;
-        if (!message) return;
-        if (message.senderId === this._instanceId) return;
+    this._connectPromise = new Promise((resolve, reject) => {
+      let settled = false;
+      const settle = (fn, value) => {
+        if (settled) return;
+        settled = true;
+        fn(value);
+      };
 
-        for (const fn of this._subs) {
-          fn(message);
+      const channel = supabase
+        .channel(`host-control:${this._gameId}`)
+        .on('broadcast', { event: 'host-command' }, (payload) => {
+          const message = payload?.payload || null;
+          if (!message) return;
+          if (message.senderId === this._instanceId) return;
+
+          for (const fn of this._subs) {
+            fn(message);
+          }
+        });
+
+      this._channel = channel;
+
+      const timeoutId = globalThis.setTimeout(() => {
+        this._isConnected = false;
+        if (this._channel === channel) {
+          this._channel = null;
+        }
+        try {
+          supabase.removeChannel(channel);
+        } catch {}
+        settle(reject, new Error('Host control channel subscribe timeout'));
+      }, 6000);
+
+      channel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          globalThis.clearTimeout(timeoutId);
+          this._isConnected = true;
+          settle(resolve);
+          return;
+        }
+
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          globalThis.clearTimeout(timeoutId);
+          this._isConnected = false;
+          if (this._channel === channel) {
+            this._channel = null;
+          }
+          try {
+            supabase.removeChannel(channel);
+          } catch {}
+          settle(reject, new Error(`Host control channel status: ${status}`));
+          return;
+        }
+
+        if (status === 'CLOSED') {
+          globalThis.clearTimeout(timeoutId);
+          this._isConnected = false;
+          if (this._channel === channel) {
+            this._channel = null;
+          }
+          if (!settled) {
+            settle(reject, new Error('Host control channel closed before subscribe'));
+          }
         }
       });
+    }).finally(() => {
+      this._connectPromise = null;
+    });
 
-    await this._channel.subscribe();
-    this._isConnected = true;
+    return this._connectPromise;
   }
 
   subscribe(fn) {
@@ -125,6 +186,7 @@ export class HostControlChannelService {
 
   destroy() {
     this._subs.clear();
+    this._connectPromise = null;
     if (this._channel) {
       supabase.removeChannel(this._channel);
       this._channel = null;
