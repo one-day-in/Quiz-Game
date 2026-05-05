@@ -164,6 +164,9 @@ function renderError(error, onRetry) {
 
 async function prepareGameForPlayStart(gameId) {
     saveScoreLogsToStorage(gameId, []);
+    // Force fresh play sessions to always start from Round 1.
+    localStorage.setItem('activeRoundId', '0');
+    localStorage.setItem('gameMode', 'play');
 
     await Promise.all([
         resetAllCellsAnsweredState(gameId),
