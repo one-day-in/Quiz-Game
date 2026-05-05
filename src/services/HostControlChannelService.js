@@ -58,8 +58,7 @@ export class HostControlChannelService {
         });
 
       this._channel = channel;
-
-      const timeoutId = globalThis.setTimeout(() => {
+      const resetOnTerminalStatus = (status) => {
         this._isConnected = false;
         if (this._channel === channel) {
           this._channel = null;
@@ -67,7 +66,13 @@ export class HostControlChannelService {
         try {
           supabase.removeChannel(channel);
         } catch {}
-        settle(reject, new Error('Host control channel subscribe timeout'));
+        if (!settled) {
+          settle(reject, new Error(`Host control channel status: ${status}`));
+        }
+      };
+
+      const timeoutId = globalThis.setTimeout(() => {
+        resetOnTerminalStatus('SUBSCRIBE_TIMEOUT');
       }, 6000);
 
       channel.subscribe((status) => {
@@ -80,26 +85,13 @@ export class HostControlChannelService {
 
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
           globalThis.clearTimeout(timeoutId);
-          this._isConnected = false;
-          if (this._channel === channel) {
-            this._channel = null;
-          }
-          try {
-            supabase.removeChannel(channel);
-          } catch {}
-          settle(reject, new Error(`Host control channel status: ${status}`));
+          resetOnTerminalStatus(status);
           return;
         }
 
         if (status === 'CLOSED') {
           globalThis.clearTimeout(timeoutId);
-          this._isConnected = false;
-          if (this._channel === channel) {
-            this._channel = null;
-          }
-          if (!settled) {
-            settle(reject, new Error('Host control channel closed before subscribe'));
-          }
+          resetOnTerminalStatus(status);
         }
       });
     }).finally(() => {
@@ -159,6 +151,7 @@ export class HostControlChannelService {
           return true;
         } catch (fallbackError) {
           if (isTransientChannelError(fallbackError)) {
+            this._isConnected = false;
             this._warnTransientSendError(type, fallbackError);
             return false;
           }
@@ -167,6 +160,7 @@ export class HostControlChannelService {
       }
 
       if (isTransientChannelError(error)) {
+        this._isConnected = false;
         this._warnTransientSendError(type, error);
         return false;
       }

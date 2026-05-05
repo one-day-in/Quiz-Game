@@ -245,6 +245,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
         let hostActivityStaleTimer = null;
         let controllerActivityPingTimer = null;
         let controllerActivityStaleTimer = null;
+        let controllerStateSyncTimer = null;
         let roundSyncRetryTimer = null;
         let lastOpenCellPayload = null;
         let activeModalSessionId = null;
@@ -827,6 +828,10 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
             };
             sendControllerActivity(true);
             controllerActivityPingTimer = window.setInterval(() => sendControllerActivity(true), HOST_ACTIVITY_PING_MS);
+            requestControllerStateSync();
+            controllerStateSyncTimer = window.setInterval(() => {
+                requestControllerStateSync();
+            }, 4000);
         }
         const stopHostControlSubscription = hostControlChannel.subscribe((message) => {
             const type = message?.type;
@@ -1131,6 +1136,8 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
             controllerActivityPingTimer = null;
             window.clearTimeout(controllerActivityStaleTimer);
             controllerActivityStaleTimer = null;
+            window.clearInterval(controllerStateSyncTimer);
+            controllerStateSyncTimer = null;
             window.clearTimeout(gameSnapshotBroadcastTimer);
             gameSnapshotBroadcastTimer = null;
             window.clearTimeout(playersSnapshotBroadcastTimer);
