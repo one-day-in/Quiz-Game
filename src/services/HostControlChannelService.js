@@ -1,4 +1,5 @@
 import { supabase } from '../api/supabaseClient.js';
+import { parseControlMessage } from '../sync/controlEvents.js';
 
 function randomId(prefix = 'hostctl') {
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}-${Date.now().toString(36)}`;
@@ -48,7 +49,7 @@ export class HostControlChannelService {
       const channel = supabase
         .channel(`host-control:${this._gameId}`)
         .on('broadcast', { event: 'host-command' }, (payload) => {
-          const message = payload?.payload || null;
+          const message = parseControlMessage(payload?.payload || null);
           if (!message) return;
           if (message.senderId === this._instanceId) return;
 

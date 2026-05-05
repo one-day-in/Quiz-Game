@@ -11,7 +11,9 @@ import { initLanguageFromUrl, t } from './i18n.js';
 import { initThemeFromStorage } from './theme.js';
 import { createPressRuntimeService } from './services/PressRuntimeService.js';
 import { createHostControlChannelService } from './services/HostControlChannelService.js';
+import { createHostControlOutboxService } from './services/HostControlOutboxService.js';
 import { normalizeBuzzerUrl } from './utils/localBuzzerUrl.js';
+import { CONTROL_EVENTS } from './sync/controlEvents.js';
 import {
   createPlayerPressAudio,
 } from './utils/playerPressAudio.js';
@@ -38,6 +40,7 @@ let pressRuntime = null;
 let lastPlayedWinnerToneKey = null;
 let statusHideTimer = null;
 let hostControlChannel = null;
+let hostControlOutbox = null;
 let hostActivityStaleTimer = null;
 let isMainGameActive = false;
 let isHostModalOpen = false;
@@ -45,6 +48,7 @@ const playerPressAudio = createPlayerPressAudio();
 
 const CONTROLLER_DISABLED_SELECTOR = '.player-controller__input, .player-controller__leaveBtn';
 const MAIN_GAME_LOCK_SELECTOR = '[data-main-game-lock]';
+const sendControl = (type, payload = {}, options = {}) => hostControlOutbox?.send(type, payload, options) || Promise.resolve(false);
 
 async function startPlayerController() {
   if (!gameId) {
@@ -58,6 +62,9 @@ async function startPlayerController() {
   try {
     player = await getPlayerByController(gameId, controllerId);
     hostControlChannel = createHostControlChannelService({ gameId, role: 'player' });
+    hostControlOutbox = createHostControlOutboxService({
+      send: (type, payload) => hostControlChannel.send(type, payload),
+    });
     await hostControlChannel.connect();
     bindMainGameActivity();
     pressRuntime = createPressRuntimeService({
@@ -406,30 +413,30 @@ function bindMainGameActivity() {
     const payload = message?.payload || {};
     if (!type) return;
 
-    if (type === 'host_runtime_state') {
+    if (type === CONTROL_EVENTS.HOST_RUNTIME_STATE) {
       markMainGameActive(payload?.active !== false);
       return;
     }
 
-    if (type === 'open_cell') {
+    if (type === CONTROL_EVENTS.OPEN_CELL) {
       isHostModalOpen = true;
       syncPressButtonState();
       return;
     }
 
-    if (type === 'close_modal') {
+    if (type === CONTROL_EVENTS.CLOSE_MODAL) {
       isHostModalOpen = false;
       syncPressButtonState();
       return;
     }
 
-    if (type === 'press_confirmed') {
+    if (type === CONTROL_EVENTS.PRESS_CONFIRMED) {
       handleHostPressConfirmed(payload);
       return;
     }
   });
-  void hostControlChannel?.send('host_runtime_state_request');
-  void hostControlChannel?.send('modal_sync_request');
+  void sendControl(CONTROL_EVENTS.HOST_RUNTIME_STATE_REQUEST);
+  void sendControl(CONTROL_EVENTS.MODAL_SYNC_REQUEST);
 }
 
 function markMainGameActive(active) {
@@ -557,6 +564,7 @@ startPlayerController().catch((error) => {
 
 window.addEventListener('beforeunload', () => {
   stopPlayersSubscription?.();
+  hostControlOutbox?.destroy?.();
   hostControlChannel?.destroy?.();
   pressRuntime?.destroy?.();
   window.clearTimeout(hostActivityStaleTimer);

@@ -68,9 +68,15 @@ The app is realtime, but not purely realtime. It mixes:
 - `services/HostControlChannelService.js`
   - Supabase realtime broadcast channel for host-controller command relay between screens
   - prevents command echo with per-instance sender IDs
+- `services/HostControlOutboxService.js`
+  - wraps host-control sends with retry/backoff for critical modal synchronization events
+  - dedupes in-flight critical resend tasks by key to avoid duplicate flood on transient channel drops
 - `services/ModalSyncStateService.js`
   - single source of truth for modal session state (`open_cell`, `modal_view_state`, `modal_directed_bet_state`, `modal_press_state`, `close_modal`)
   - owns modal `sessionId` lifecycle and controller-side dedupe signature for repeated `open_cell` events
+- `sync/controlEvents.js`
+  - canonical host-control event type registry (`CONTROL_EVENTS`) plus critical-event classification
+  - shared control-message parser now drops unknown event types at the channel boundary
 
 ### Data / Service Layer
 
@@ -851,3 +857,5 @@ Ordered refactor and improvement steps. Do not treat all items as immediate.
 - `open_cell` now requires a real `sessionId` and no longer creates legacy fallback session IDs.
 - Controller modal dedupe now uses one signature source (`ModalSyncStateService`) to ignore repeated `open_cell` messages for the same modal session.
 - Session guards for `modal_*` and `close_modal` commands are now centralized through `ModalSyncStateService` helpers.
+- Host/control command transport now has a dedicated outbox retry layer (`HostControlOutboxService`) for critical modal sync events.
+- Host-control event names are now centralized in `sync/controlEvents.js` and unknown incoming event types are filtered at channel parsing time.
