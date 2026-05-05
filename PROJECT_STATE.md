@@ -74,6 +74,9 @@ The app is realtime, but not purely realtime. It mixes:
 - `services/HostControlSyncCoordinator.js`
   - splits host-control message routing into explicit `host` and `controller` coordinators
   - keeps modal/session guards and snapshot sync logic out of `bootstrap.js` lifecycle wiring
+- `services/HostControlRuntimeCoordinator.js`
+  - owns host/controller activity ping loops, stale-connection timers, and controller state-sync polling cycles
+  - centralizes round-sync retry loop so `bootstrap.js` no longer manages transport timers directly
 - `services/ModalSyncStateService.js`
   - single source of truth for modal session state (`open_cell`, `modal_view_state`, `modal_directed_bet_state`, `modal_press_state`, `close_modal`)
   - owns modal `sessionId` lifecycle and controller-side dedupe signature for repeated `open_cell` events
@@ -864,3 +867,4 @@ Ordered refactor and improvement steps. Do not treat all items as immediate.
 - Host-control event names are now centralized in `sync/controlEvents.js` and unknown incoming event types are filtered at channel parsing time.
 - `bootstrap.js` and `player.js` now use `CONTROL_EVENTS` constants instead of raw string literals for host-control message send/receive paths.
 - Host/controller runtime message handlers were extracted from `bootstrap.js` into `HostControlSyncCoordinator`, reducing coupling between transport routing and app lifecycle bootstrapping.
+- Host/controller activity/sync timers were extracted into `HostControlRuntimeCoordinator`, including host/controller heartbeat, stale-state demotion, and controller round-sync retry cadence.

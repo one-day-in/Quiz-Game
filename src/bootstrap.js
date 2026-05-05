@@ -16,6 +16,7 @@ import { createPlayersService } from './services/PlayersService.js';
 import { createPressRuntimeService } from './services/PressRuntimeService.js';
 import { createHostControlChannelService } from './services/HostControlChannelService.js';
 import { createHostControlOutboxService } from './services/HostControlOutboxService.js';
+import { createHostControlRuntimeCoordinator } from './services/HostControlRuntimeCoordinator.js';
 import { createModalSyncStateService } from './services/ModalSyncStateService.js';
 import { createControllerSyncCoordinator, createHostSyncCoordinator } from './services/HostControlSyncCoordinator.js';
 import { getBuzzerWakeUrl } from './utils/localBuzzerUrl.js';
@@ -249,12 +250,6 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
         let appRef = null;
         let leaderboardPanelExpanded = false;
         let scoreLogsOpen = false;
-        let hostActivityPingTimer = null;
-        let hostActivityStaleTimer = null;
-        let controllerActivityPingTimer = null;
-        let controllerActivityStaleTimer = null;
-        let controllerStateSyncTimer = null;
-        let roundSyncRetryTimer = null;
         const modalSyncState = createModalSyncStateService();
         let isHostControllerConnected = false;
         let stopScoreLogsSubscription = null;
@@ -262,7 +257,6 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
         let stopGameSnapshotBroadcast = null;
         let stopPlayersSnapshotBroadcast = null;
         let stopPressConfirmBroadcast = null;
-        let hasRoundStateSynced = false;
         let gameSnapshotBroadcastTimer = null;
         let playersSnapshotBroadcastTimer = null;
         let lastGameSnapshotSignature = '';
@@ -282,28 +276,12 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
             const banner = ensureControllerInactiveBanner();
             banner.hidden = !!active;
         };
-        const markMainHostActiveFromPing = (active) => {
-            setControllerAvailability(!!active);
-            window.clearTimeout(hostActivityStaleTimer);
-            if (!active) return;
-            hostActivityStaleTimer = window.setTimeout(() => {
-                setControllerAvailability(false);
-            }, HOST_ACTIVITY_STALE_MS);
-        };
         const setHostControllerConnected = (connected) => {
             if (hostMode !== 'host') return;
             const nextConnected = !!connected;
             if (isHostControllerConnected === nextConnected) return;
             isHostControllerConnected = nextConnected;
             appRef?.setHostControllerConnected?.(nextConnected);
-        };
-        const markHostControllerActiveFromPing = (active) => {
-            setHostControllerConnected(!!active);
-            window.clearTimeout(controllerActivityStaleTimer);
-            if (!active) return;
-            controllerActivityStaleTimer = window.setTimeout(() => {
-                setHostControllerConnected(false);
-            }, HOST_ACTIVITY_STALE_MS);
         };
         const normalizeScoreLog = (entry = {}) => ({
             id: entry?.id || makeLogId(),
@@ -499,24 +477,15 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
             void sendControl(CONTROL_EVENTS.CURRENT_PLAYER_SYNC_REQUEST);
             void sendControl(CONTROL_EVENTS.MODAL_SYNC_REQUEST);
         };
-        const startRoundSyncRetry = () => {
-            if (hostMode !== 'controller') return;
-            if (roundSyncRetryTimer) return;
-            requestControllerStateSync();
-            roundSyncRetryTimer = window.setInterval(() => {
-                if (hasRoundStateSynced) {
-                    window.clearInterval(roundSyncRetryTimer);
-                    roundSyncRetryTimer = null;
-                    return;
-                }
-                requestControllerStateSync();
-            }, 1500);
-        };
-        const stopRoundSyncRetry = () => {
-            if (!roundSyncRetryTimer) return;
-            window.clearInterval(roundSyncRetryTimer);
-            roundSyncRetryTimer = null;
-        };
+        const runtimeCoordinator = createHostControlRuntimeCoordinator({
+            hostMode,
+            sendControl,
+            requestControllerStateSync,
+            onControllerAvailabilityChange: setControllerAvailability,
+            onHostControllerConnectedChange: setHostControllerConnected,
+            pingMs: HOST_ACTIVITY_PING_MS,
+            staleMs: HOST_ACTIVITY_STALE_MS,
+        });
         const withModalSession = (payload = {}) => modalSyncState.withSession(payload);
         const modalService = createModalService(gameService, mediaService, pressRuntimeService, playersService, {
             presentationMode: hostMode === 'controller' ? 'controller' : 'host',
@@ -793,31 +762,7 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
         }
 
         await hostControlChannel.connect();
-        if (hostMode === 'host') {
-            const sendHostActivity = () => {
-                void sendControl(CONTROL_EVENTS.HOST_RUNTIME_STATE, {
-                    active: true,
-                    sentAt: new Date().toISOString(),
-                });
-            };
-            sendHostActivity();
-            hostActivityPingTimer = window.setInterval(sendHostActivity, HOST_ACTIVITY_PING_MS);
-            void sendControl(CONTROL_EVENTS.CONTROLLER_RUNTIME_STATE_REQUEST);
-        } else {
-            setControllerAvailability(false);
-            const sendControllerActivity = (active = true) => {
-                void sendControl(CONTROL_EVENTS.CONTROLLER_RUNTIME_STATE, {
-                    active: !!active,
-                    sentAt: new Date().toISOString(),
-                });
-            };
-            sendControllerActivity(true);
-            controllerActivityPingTimer = window.setInterval(() => sendControllerActivity(true), HOST_ACTIVITY_PING_MS);
-            requestControllerStateSync();
-            controllerStateSyncTimer = window.setInterval(() => {
-                requestControllerStateSync();
-            }, 4000);
-        }
+        runtimeCoordinator.start();
         const onLeaderboardAdjustScore = (payload = {}, { makeManualScoreLog: makeFallbackLog } = {}) => {
             const amount = Number(payload?.delta) || 0;
             const player = (playersService.getPlayers?.() || []).find((entry) => String(entry?.id || '') === String(payload?.playerId || ''));
@@ -851,13 +796,13 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
             sendRoundState,
             sendGameSnapshot,
             sendPlayersSnapshot,
-            markHostControllerActiveFromPing,
+            markHostControllerActiveFromPing: (active) => runtimeCoordinator.handleControllerRuntimeState(active),
             getLeaderboardPanelExpanded: () => leaderboardPanelExpanded,
             setLeaderboardPanelExpanded: (value) => { leaderboardPanelExpanded = !!value; },
             getScoreLogsOpen: () => scoreLogsOpen,
             setScoreLogsOpen: (value) => { scoreLogsOpen = !!value; },
-            setHasRoundStateSynced: (value) => { hasRoundStateSynced = !!value; },
-            stopRoundSyncRetry,
+            setHasRoundStateSynced: (value) => { runtimeCoordinator.setRoundStateSynced(value); },
+            stopRoundSyncRetry: () => runtimeCoordinator.stopRoundSyncRetry(),
             onLeaderboardAdjustScore,
         });
 
@@ -868,11 +813,11 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
             modalService,
             modalSyncState,
             playersService,
-            markMainHostActiveFromPing,
-            getHasRoundStateSynced: () => hasRoundStateSynced,
-            setHasRoundStateSynced: (value) => { hasRoundStateSynced = !!value; },
-            startRoundSyncRetry,
-            stopRoundSyncRetry,
+            markMainHostActiveFromPing: (active) => runtimeCoordinator.handleHostRuntimeState(active),
+            getHasRoundStateSynced: () => runtimeCoordinator.hasRoundStateSynced(),
+            setHasRoundStateSynced: (value) => { runtimeCoordinator.setRoundStateSynced(value); },
+            startRoundSyncRetry: () => runtimeCoordinator.startRoundSyncRetry(),
+            stopRoundSyncRetry: () => runtimeCoordinator.stopRoundSyncRetry(),
             setLeaderboardPanelExpanded: (value) => { leaderboardPanelExpanded = !!value; },
             setScoreLogsOpen: (value) => { scoreLogsOpen = !!value; },
             appendScoreLog,
@@ -890,33 +835,11 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
         });
 
         _currentCleanup = () => {
-            window.clearInterval(hostActivityPingTimer);
-            hostActivityPingTimer = null;
-            window.clearTimeout(hostActivityStaleTimer);
-            hostActivityStaleTimer = null;
-            window.clearInterval(controllerActivityPingTimer);
-            controllerActivityPingTimer = null;
-            window.clearTimeout(controllerActivityStaleTimer);
-            controllerActivityStaleTimer = null;
-            window.clearInterval(controllerStateSyncTimer);
-            controllerStateSyncTimer = null;
             window.clearTimeout(gameSnapshotBroadcastTimer);
             gameSnapshotBroadcastTimer = null;
             window.clearTimeout(playersSnapshotBroadcastTimer);
             playersSnapshotBroadcastTimer = null;
-            stopRoundSyncRetry();
-            if (hostMode === 'host') {
-                void sendControl(CONTROL_EVENTS.HOST_RUNTIME_STATE, {
-                    active: false,
-                    sentAt: new Date().toISOString(),
-                });
-                setHostControllerConnected(false);
-            } else {
-                void sendControl(CONTROL_EVENTS.CONTROLLER_RUNTIME_STATE, {
-                    active: false,
-                    sentAt: new Date().toISOString(),
-                });
-            }
+            runtimeCoordinator.stop();
             stopCurrentPlayerBroadcast?.();
             stopPressConfirmBroadcast?.();
             stopRoundBroadcast?.();
@@ -940,12 +863,12 @@ async function renderGame(user, gameId, gameName, { hostMode = 'host', entryMode
 
         app.render();
         if (hostMode === 'controller') {
-            hasRoundStateSynced = false;
+            runtimeCoordinator.setRoundStateSynced(false);
             void sendControl(CONTROL_EVENTS.HOST_RUNTIME_STATE_REQUEST);
             void sendControl(CONTROL_EVENTS.SCORE_LOG_SYNC_REQUEST);
             void sendControl(CONTROL_EVENTS.GAME_MODE_SYNC_REQUEST);
             requestControllerStateSync();
-            startRoundSyncRetry();
+            runtimeCoordinator.startRoundSyncRetry();
         } else {
             sendRoundState();
             sendGameSnapshot({ force: true });
