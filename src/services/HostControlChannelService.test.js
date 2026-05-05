@@ -67,4 +67,18 @@ describe('HostControlChannelService connect handshake', () => {
     expect(mockSupabase.removeChannel).toHaveBeenCalledTimes(1);
     expect(channel.send).not.toHaveBeenCalled();
   });
+
+  it('cleans up channel once when CLOSED is emitted multiple times', async () => {
+    const service = new HostControlChannelService({ gameId: 'game-1', role: 'host' });
+    const connectPromise = service.connect();
+
+    await Promise.resolve();
+    statusHandler?.('SUBSCRIBED');
+    await connectPromise;
+
+    statusHandler?.('CLOSED');
+    statusHandler?.('CLOSED');
+
+    expect(mockSupabase.removeChannel).toHaveBeenCalledTimes(1);
+  });
 });

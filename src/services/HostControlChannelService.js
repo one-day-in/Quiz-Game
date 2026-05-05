@@ -41,6 +41,7 @@ export class HostControlChannelService {
 
     this._connectPromise = new Promise((resolve, reject) => {
       let settled = false;
+      let terminalHandled = false;
       const settle = (fn, value) => {
         if (settled) return;
         settled = true;
@@ -61,13 +62,18 @@ export class HostControlChannelService {
 
       this._channel = channel;
       const resetOnTerminalStatus = (status) => {
+        if (terminalHandled) return;
+        terminalHandled = true;
         this._isConnected = false;
-        if (this._channel === channel) {
+        const ownsChannel = this._channel === channel;
+        if (ownsChannel) {
           this._channel = null;
         }
-        try {
-          supabase.removeChannel(channel);
-        } catch {}
+        if (ownsChannel) {
+          try {
+            supabase.removeChannel(channel);
+          } catch {}
+        }
         if (!settled) {
           settle(reject, new Error(`Host control channel status: ${status}`));
         }
@@ -195,8 +201,11 @@ export class HostControlChannelService {
     this._subs.clear();
     this._connectPromise = null;
     if (this._channel) {
-      supabase.removeChannel(this._channel);
+      const channel = this._channel;
       this._channel = null;
+      try {
+        supabase.removeChannel(channel);
+      } catch {}
     }
     this._isConnected = false;
   }
