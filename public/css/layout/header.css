@@ -395,7 +395,7 @@
 .hdr-settings-menu {
   position: relative;
   z-index: 1;
-  width: clamp(300px, 24vw, 420px);
+  width: clamp(300px, 29vw, 520px);
   height: 100dvh;
   max-height: 100dvh;
   padding: calc(16px + env(safe-area-inset-top, 0px)) 14px calc(16px + env(safe-area-inset-bottom, 0px));
