@@ -38,7 +38,8 @@ Board/player persistence stays in Supabase, while low-latency buzzer transport i
 Requirements:
 
 - Node.js 20+
-- a Supabase project
+- Docker Desktop (for the local Supabase stack)
+- a new Supabase project only when you are ready for remote deployment
 
 Install dependencies:
 
@@ -74,36 +75,45 @@ npm test
 
 ## Supabase Setup
 
-The project expects:
+Timestamped files in [supabase/migrations](/Users/oneday_in/Desktop/Quiz-Game/supabase/migrations) are the only deployable schema source. The older root-level `supabase/*.sql` files are historical reference and must not be applied to a new project.
 
-- a `games` table for board data
-- a `game_players` table and RPC functions for player join/rename/score/leave
-- a `game_runtime` table plus `claim_game_press(...)` and `resolve_game_press(...)` for press winner state
-- server-side press timer fields in `game_runtime`:
-  - `press_expires_at timestamptz`
-  - `press_status text`
-  - `resolved_at timestamptz`
-  - `resolved_by text`
-- RPC `resolve_game_press_timeout(...)` for atomic timeout resolution
-- a `score_logs` table for score-change history sync between host/controller
-- RPC `adjust_game_player_score_with_log(...)` for atomic "score update + score log insert" per player
-- RPC `transfer_game_player_score_with_logs(...)` for atomic two-player transfer + both score logs (used by `steal_leader_points`)
-- a `media` storage bucket
-- a `service_role` key for the dedicated buzzer server
+Start the local stack and recreate the database entirely from Git:
 
-Apply the SQL files in [/Users/oneday_in/Desktop/Quiz-Game/supabase](/Users/oneday_in/Desktop/Quiz-Game/supabase):
+```bash
+npm run supabase:start
+npm run db:reset
+npm run db:test
+npm run db:test:concurrency
+```
 
-- [games.sql](/Users/oneday_in/Desktop/WEB-products/Quiz-Game/supabase/games.sql)
-- [game_players.sql](/Users/oneday_in/Desktop/Quiz-Game/supabase/game_players.sql)
-- [game_runtime.sql](/Users/oneday_in/Desktop/Quiz-Game/supabase/game_runtime.sql)
-- [score_logs.sql](/Users/oneday_in/Desktop/Quiz-Game/supabase/score_logs.sql)
+For a local browser smoke test against that stack, create the disposable local-only host, then run the frontend and buzzer in separate terminals:
 
-Recommended `games` RLS:
+```bash
+npm run smoke:user:setup
+npm run dev:local
+npm run buzzer:local
+```
 
-- `SELECT`: authenticated users can read
-- `INSERT`: authenticated users can create with `created_by = auth.uid()`
-- `UPDATE`: the owner can modify, or an admin account can modify if your production rules require it
-- `DELETE`: owner-only or admin-only depending on your production policy
+When finished, remove the disposable host and stop Supabase:
+
+```bash
+npm run smoke:user:cleanup
+npm run supabase:stop
+```
+
+`dev:local`, `buzzer:local`, and the smoke-user scripts read credentials from the local Supabase CLI. They are for the disposable local stack only and do not modify `.env`.
+
+The migrations create the access model, profiles, games, controller-token hashes, player/runtime/score RPCs, RLS policies, `media` bucket policies, and required Realtime publications. [supabase/seed.sql](/Users/oneday_in/Desktop/Quiz-Game/supabase/seed.sql) intentionally contains no users or secrets.
+
+To provision the first admin after that user has signed in once, run this only from a trusted shell with a server-side service-role key:
+
+```bash
+SUPABASE_URL=https://your-project.supabase.co \
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key \
+npm run admin:grant -- <auth-user-uuid>
+```
+
+Never expose `SUPABASE_SERVICE_ROLE_KEY` through a `VITE_` variable, browser bundle, committed file, or public CI log.
 
 ## Buzzer Server
 
@@ -162,6 +172,9 @@ Current repository checks:
 
 - `npm run build`
 - `npm test`
+- `npm run db:reset`
+- `npm run db:test`
+- `npm run db:test:concurrency`
 
 Manual smoke test before release:
 
@@ -177,52 +190,28 @@ Manual smoke test before release:
 
 The press response timer is server-authoritative. Frontend countdown is only a UI mirror based on `game_runtime.press_expires_at`.
 
-### 1. Required DB fields
+### Required RPC functions
 
-Ensure `public.game_runtime` has:
-
-- `press_expires_at timestamptz`
-- `press_status text`
-- `resolved_at timestamptz`
-- `resolved_by text`
-
-### 2. Required RPC functions
-
-You need all three RPCs:
+The migration-owned runtime exposes:
 
 - `claim_game_press(uuid, text)`:
   - atomically claims winner
   - sets `press_status = 'claimed'`
   - sets `press_expires_at = now() + interval '30 seconds'`
   - clears `resolved_at/resolved_by`
-- `resolve_game_press(uuid, text, text)`:
-  - resolves `correct|incorrect`
-  - clears claim fields and timer
-  - sets `resolved_at/resolved_by`
-- `resolve_game_press_timeout(uuid, text, timestamptz)`:
+- `resolve_game_press(uuid, uuid, boolean)`:
+  - requires the expected winner and owner/admin access
+  - clears claim fields and either closes or reopens the race
+- `resolve_game_press_timeout(uuid, uuid, timestamptz)`:
   - resolves only if the same winner is still active and deadline has passed
   - prevents duplicate or stale timeout penalties
 
-### 3. If SQL says return type cannot be changed
-
-If Supabase returns:
-
-- `cannot change return type of existing function`
-
-drop function first, then recreate:
-
-```sql
-drop function if exists public.claim_game_press(uuid, text);
-```
-
-Then run your new function definition.
-
-### 4. Frontend fallback env (optional)
+### Frontend fallback env (optional)
 
 `VITE_PRESS_RESPONSE_SECONDS` is a fallback UI duration if `press_expires_at` is missing.  
 Recommended value: `30`.
 
-### 5. Verification checklist
+### Verification checklist
 
 1. Open modal and wait for `PRESS` opening delay.
 2. Player presses: winner appears, timer starts from server deadline.

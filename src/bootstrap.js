@@ -1,5 +1,5 @@
 // src/bootstrap.js
-import { getSession, signOut, onAuthStateChange } from './api/authApi.js';
+import { getCurrentUserAccess, getSession, signOut, onAuthStateChange } from './api/authApi.js';
 import { createGame, getGame, resetAllCellsAnsweredState, saveGame, savePlayers, subscribeToGame } from './api/gameApi.js';
 import { clearScoreLogs, listScoreLogs, subscribeToScoreLogs } from './api/scoreLogsApi.js';
 import { syncCurrentUserProfile } from './api/profileApi.js';
@@ -22,7 +22,7 @@ import { createControllerSyncCoordinator, createHostSyncCoordinator } from './se
 import { getBuzzerWakeUrl } from './utils/localBuzzerUrl.js';
 import { CONTROL_EVENTS } from './sync/controlEvents.js';
 
-import { renderLogin } from './views/LoginView.js';
+import { renderAccessDenied, renderLogin } from './views/LoginView.js';
 import { LobbyView } from './views/LobbyView.js';
 import { initLanguageFromUrl, t } from './i18n.js';
 import { initThemeFromStorage } from './theme.js';
@@ -143,6 +143,7 @@ function clearRoot() {
 }
 
 function renderLoading(msg = t('loading')) {
+    clearRoot();
     root.innerHTML = `
         <div class="page-loader">
             <div class="page-loader__ring"></div>
@@ -215,7 +216,6 @@ function renderLobby(user, { hostMode = 'host' } = {}) {
         },
         onLogout: async () => {
             await signOut();
-            renderLogin(root);
         }
     });
 
@@ -930,22 +930,33 @@ async function startApp({ hostMode = 'host', forcedGameId = '' } = {}) {
         _sessionActive = true;
 
         const user = session.user;
+        const access = await getCurrentUserAccess(user);
+        if (!access.authorized) {
+            _sessionActive = false;
+            clearRoot();
+            renderAccessDenied(root, user, async () => {
+                await signOut();
+            });
+            return;
+        }
+
+        const appUser = { ...user, appRole: access.role };
         try {
-            await syncCurrentUserProfile(user);
+            await syncCurrentUserProfile(appUser);
         } catch (error) {
             console.error('[Bootstrap] profile sync failed:', error);
         }
 
         if (forcedGameId) {
-            renderGame(user, forcedGameId, t('new_game'), { hostMode });
+            renderGame(appUser, forcedGameId, t('new_game'), { hostMode });
             return;
         }
 
         const lastGame = getLastGame();
         if (lastGame) {
-            renderGame(user, lastGame.id, lastGame.name, { hostMode });
+            renderGame(appUser, lastGame.id, lastGame.name, { hostMode });
         } else {
-            renderLobby(user, { hostMode });
+            renderLobby(appUser, { hostMode });
         }
     } catch (error) {
         console.error('[Bootstrap] Failed:', error);

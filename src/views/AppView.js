@@ -198,6 +198,11 @@ export function AppView({
     void options;
   }
 
+  function destroy() {
+    disposer.destroy();
+    container.remove();
+  }
+
   // Targeted patch for a single cell (avoids full grid rebuild)
   function patchCell(rowId, cellId, isAnswered) {
     const el = gridEl?.querySelector(`[data-cell="r${rowId}c${cellId}"]`);
@@ -219,5 +224,6 @@ export function AppView({
     syncLive,
     setRoundTransition,
     setHostControllerConnected,
+    destroy,
   };
 }

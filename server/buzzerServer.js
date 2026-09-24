@@ -28,6 +28,10 @@ function normalizeRuntime(gameId, row, winnerName = null) {
     winnerPlayerId: row?.winner_player_id || null,
     winnerName: winnerName || null,
     pressedAt: row?.pressed_at || null,
+    pressExpiresAt: row?.press_expires_at || null,
+    pressStatus: row?.press_status || null,
+    resolvedAt: row?.resolved_at || null,
+    resolvedBy: row?.resolved_by || null,
     updatedAt: row?.updated_at || null,
   };
 }
@@ -47,7 +51,7 @@ async function fetchWinnerName(winnerPlayerId) {
 async function loadRuntime(gameId) {
   const { data, error } = await supabase
     .from('game_runtime')
-    .select('game_id, press_enabled, winner_player_id, pressed_at, updated_at')
+    .select('game_id, press_enabled, winner_player_id, pressed_at, press_expires_at, press_status, resolved_at, resolved_by, updated_at')
     .eq('game_id', gameId)
     .maybeSingle();
 
@@ -64,9 +68,13 @@ async function setPressState(gameId, enabled) {
       press_enabled: !!enabled,
       winner_player_id: null,
       pressed_at: null,
+      press_expires_at: null,
+      press_status: enabled ? 'open' : 'idle',
+      resolved_at: enabled ? null : new Date().toISOString(),
+      resolved_by: enabled ? null : 'buzzer_server',
       updated_at: new Date().toISOString(),
     }, { onConflict: 'game_id' })
-    .select('game_id, press_enabled, winner_player_id, pressed_at, updated_at')
+    .select('game_id, press_enabled, winner_player_id, pressed_at, press_expires_at, press_status, resolved_at, resolved_by, updated_at')
     .single();
 
   if (error) throw new Error(`[buzzer] set press state failed: ${error.message}`);
@@ -88,7 +96,11 @@ async function claimPress(gameId, controllerId) {
     winnerPlayerId: row?.winner_player_id || null,
     winnerName: row?.winner_name || null,
     pressedAt: row?.pressed_at || null,
-    updatedAt: new Date().toISOString(),
+    pressExpiresAt: row?.press_expires_at || null,
+    pressStatus: row?.press_status || null,
+    resolvedAt: row?.resolved_at || null,
+    resolvedBy: row?.resolved_by || null,
+    updatedAt: row?.updated_at || new Date().toISOString(),
   };
 }
 

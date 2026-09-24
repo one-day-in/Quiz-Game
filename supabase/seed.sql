@@ -1,0 +1,2 @@
+-- Intentionally empty.
+-- Production hosts/admins are provisioned explicitly and secrets never belong in seed data.

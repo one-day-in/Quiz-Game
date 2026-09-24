@@ -1,32 +1,42 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const {
-  rpcMock,
-  fromMock,
-  selectMock,
-  eqMock,
-  maybeSingleMock,
-} = vi.hoisted(() => {
-  const rpc = vi.fn();
-  const maybeSingle = vi.fn();
-  const eq = vi.fn(() => ({ eq, maybeSingle }));
-  const select = vi.fn(() => ({ eq, maybeSingle }));
-  const from = vi.fn(() => ({ select }));
-  return {
-    rpcMock: rpc,
-    fromMock: from,
-    selectMock: select,
-    eqMock: eq,
-    maybeSingleMock: maybeSingle,
-  };
-});
+const { rpcMock } = vi.hoisted(() => ({ rpcMock: vi.fn() }));
 
 vi.mock('./supabaseClient.js', () => ({
   supabase: {
     rpc: rpcMock,
-    from: fromMock,
   },
 }));
+
+describe('playersApi.getPlayerByController', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.clearAllMocks();
+  });
+
+  it('uses the capability-checking RPC and never reads controller credentials directly', async () => {
+    rpcMock.mockResolvedValueOnce({
+      data: [{
+        id: 'player-1',
+        game_id: 'game-1',
+        name: 'Maria',
+        points: 300,
+        joined_at: '2026-05-03T00:00:00.000Z',
+      }],
+      error: null,
+    });
+    const { getPlayerByController } = await import('./playersApi.js');
+
+    const result = await getPlayerByController('game-1', 'controller-secret');
+
+    expect(rpcMock).toHaveBeenCalledWith('get_game_player_by_controller', {
+      p_game_id: 'game-1',
+      p_controller_id: 'controller-secret',
+    });
+    expect(result).toMatchObject({ id: 'player-1', name: 'Maria', points: 300 });
+    expect(result.controllerId).toBeNull();
+  });
+});
 
 describe('playersApi.adjustPlayerScore', () => {
   beforeEach(() => {
@@ -57,44 +67,6 @@ describe('playersApi.adjustPlayerScore', () => {
     expect(result).toMatchObject({ id: 'player-1', points: 300 });
   });
 
-  it('falls back to adjust_game_player_score when by-id RPC is missing', async () => {
-    const { adjustPlayerScore } = await import('./playersApi.js');
-    rpcMock
-      .mockResolvedValueOnce({
-        data: null,
-        error: {
-          code: 'PGRST202',
-          message: 'Could not find the function public.adjust_game_player_score_by_id(p_game_id, p_player_id, p_delta) in the schema cache',
-        },
-      })
-      .mockResolvedValueOnce({
-        data: [{
-          id: 'player-1',
-          game_id: 'game-1',
-          name: 'Maria',
-          points: 450,
-          joined_at: '2026-05-03T00:00:00.000Z',
-        }],
-        error: null,
-      });
-    maybeSingleMock.mockResolvedValueOnce({
-      data: { controller_id: 'ctrl-1' },
-      error: null,
-    });
-
-    const result = await adjustPlayerScore('game-1', 'player-1', 150);
-
-    expect(fromMock).toHaveBeenCalledWith('game_players');
-    expect(selectMock).toHaveBeenCalledWith('controller_id');
-    expect(eqMock).toHaveBeenNthCalledWith(1, 'game_id', 'game-1');
-    expect(eqMock).toHaveBeenNthCalledWith(2, 'id', 'player-1');
-    expect(rpcMock).toHaveBeenNthCalledWith(2, 'adjust_game_player_score', {
-      p_game_id: 'game-1',
-      p_controller_id: 'ctrl-1',
-      p_delta: 150,
-    });
-    expect(result).toMatchObject({ id: 'player-1', points: 450 });
-  });
 });
 
 describe('playersApi.adjustPlayerScoreWithLog', () => {
@@ -155,75 +127,6 @@ describe('playersApi.adjustPlayerScoreWithLog', () => {
     });
   });
 
-  it('falls back to adjust + append_score_log when RPC is missing', async () => {
-    const { adjustPlayerScoreWithLog } = await import('./playersApi.js');
-    rpcMock
-      .mockResolvedValueOnce({
-        data: null,
-        error: {
-          code: 'PGRST202',
-          message: 'Could not find the function public.adjust_game_player_score_with_log(...) in the schema cache',
-        },
-      })
-      .mockResolvedValueOnce({
-        data: [{
-          id: 'player-1',
-          game_id: 'game-1',
-          name: 'Maria',
-          points: 450,
-          joined_at: '2026-05-03T00:00:00.000Z',
-        }],
-        error: null,
-      })
-      .mockResolvedValueOnce({
-        data: [{
-          id: 'log-2',
-          game_id: 'game-1',
-          player_id: 'player-1',
-          player_name: 'Maria',
-          cell_label: 'Leaderboard / +150',
-          outcome: null,
-          delta: 150,
-          score_before: 300,
-          score_after: 450,
-          kind: 'manual',
-          happened_at: '2026-05-03T00:00:02.000Z',
-          created_at: '2026-05-03T00:00:02.000Z',
-        }],
-        error: null,
-      });
-
-    const result = await adjustPlayerScoreWithLog('game-1', 'player-1', 150, {
-      cellLabel: 'Leaderboard / +150',
-      kind: 'manual',
-      happenedAt: '2026-05-03T00:00:02.000Z',
-    });
-
-    expect(rpcMock).toHaveBeenNthCalledWith(2, 'adjust_game_player_score_by_id', {
-      p_game_id: 'game-1',
-      p_player_id: 'player-1',
-      p_delta: 150,
-    });
-    expect(rpcMock).toHaveBeenNthCalledWith(3, 'append_score_log', {
-      p_id: null,
-      p_game_id: 'game-1',
-      p_player_id: 'player-1',
-      p_player_name: 'Maria',
-      p_cell_label: 'Leaderboard / +150',
-      p_outcome: null,
-      p_delta: 150,
-      p_score_before: 300,
-      p_score_after: 450,
-      p_kind: 'manual',
-      p_happened_at: '2026-05-03T00:00:02.000Z',
-    });
-    expect(result.player).toMatchObject({ id: 'player-1', points: 450 });
-    expect(result.scoreLog).toMatchObject({
-      id: 'log-2',
-      scoreBefore: 300,
-      scoreAfter: 450,
-    });
-  });
 });
 
 describe('playersApi.transferPlayerScoreWithLogs', () => {

@@ -16,37 +16,26 @@ export async function getSession() {
     return data.session;
 }
 
-export async function isAuthorized(user) {
-    const email = user?.email?.trim().toLowerCase();
-    const userId = user?.id;
+export async function getCurrentUserAccess(user) {
+    if (!user?.id) return { authorized: false, role: null };
 
-    if (userId) {
-        const { data: userIdMatch } = await supabase
-            .from('authorized_users')
-            .select('user_id')
-            .eq('user_id', userId)
-            .maybeSingle();
-
-        if (userIdMatch) return true;
+    const { data, error } = await supabase.rpc('get_current_user_access');
+    if (error) {
+        throw new Error(`[Auth] access check failed: ${error.message}`);
     }
 
-    if (!email) return false;
+    const access = Array.isArray(data) ? data[0] : data;
+    return {
+        authorized: access?.authorized === true,
+        role: access?.authorized === true && ['host', 'admin'].includes(access?.role)
+            ? access.role
+            : null,
+    };
+}
 
-    const { data: emailMatch } = await supabase
-        .from('authorized_emails')
-        .select('email')
-        .eq('email', email)
-        .maybeSingle();
-
-    if (emailMatch) return true;
-
-    const { data: legacyEmailMatch } = await supabase
-        .from('authorized_users')
-        .select('email')
-        .eq('email', email)
-        .maybeSingle();
-
-    return !!legacyEmailMatch;
+export async function isAuthorized(user) {
+    const access = await getCurrentUserAccess(user);
+    return access.authorized;
 }
 
 export function onAuthStateChange(callback) {

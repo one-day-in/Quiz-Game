@@ -13,6 +13,7 @@ function mapRuntimeRow(gameId, row, winnerName = null) {
         pressExpiresAt: row?.press_expires_at || null,
         pressStatus: row?.press_status || null,
         resolvedAt: row?.resolved_at || null,
+        resolvedBy: row?.resolved_by || null,
         updatedAt: row?.updated_at || null,
     };
 }
@@ -57,6 +58,7 @@ export async function setPressEnabled(gameId, enabled) {
             press_expires_at: null,
             press_status: isEnabled ? 'open' : 'idle',
             resolved_at: isEnabled ? null : new Date().toISOString(),
+            resolved_by: isEnabled ? null : 'host',
             updated_at: new Date().toISOString(),
         }, { onConflict: 'game_id' })
         .select(GAME_RUNTIME_COLUMNS)
@@ -83,6 +85,7 @@ export async function claimGamePress(gameId, controllerId) {
         pressExpiresAt: row?.press_expires_at || null,
         pressStatus: row?.press_status || null,
         resolvedAt: row?.resolved_at || null,
+        resolvedBy: row?.resolved_by || null,
         pressEnabled: !!row?.press_enabled,
         updatedAt: row?.updated_at || null,
     };
@@ -106,41 +109,36 @@ export async function resolveGamePress(gameId, expectedWinnerPlayerId, { pressEn
         pressExpiresAt: row?.press_expires_at || null,
         pressStatus: row?.press_status || null,
         resolvedAt: row?.resolved_at || null,
+        resolvedBy: row?.resolved_by || null,
         pressEnabled: !!row?.press_enabled,
         updatedAt: row?.updated_at || null,
     };
 }
 
 export async function resolveGamePressTimeout(gameId, expectedWinnerPlayerId, expectedPressExpiresAt = null) {
-    try {
-        const { data, error } = await supabase.rpc('resolve_game_press_timeout', {
-            p_game_id: gameId,
-            p_expected_winner_player_id: expectedWinnerPlayerId,
-            p_expected_press_expires_at: expectedPressExpiresAt,
-        });
+    const { data, error } = await supabase.rpc('resolve_game_press_timeout', {
+        p_game_id: gameId,
+        p_expected_winner_player_id: expectedWinnerPlayerId,
+        p_expected_press_expires_at: expectedPressExpiresAt,
+    });
 
-        if (error) throw new Error(error.message);
-
-        const row = Array.isArray(data) ? data[0] : data;
-        return {
-            gameId: row?.game_id || gameId,
-            winnerPlayerId: row?.winner_player_id || null,
-            winnerName: null,
-            pressedAt: row?.pressed_at || null,
-            pressExpiresAt: row?.press_expires_at || null,
-            pressStatus: row?.press_status || null,
-            resolvedAt: row?.resolved_at || null,
-            pressEnabled: !!row?.press_enabled,
-            updatedAt: row?.updated_at || null,
-        };
-    } catch (error) {
-        const message = String(error?.message || '');
-        // Compatibility fallback before RPC migration is applied.
-        if (message.includes('resolve_game_press_timeout')) {
-            return resolveGamePress(gameId, expectedWinnerPlayerId, { pressEnabled: true });
-        }
-        throw new Error(`[Game] resolveGamePressTimeout failed: ${message}`);
+    if (error) {
+        throw new Error(`[Game] resolveGamePressTimeout failed: ${error.message}`);
     }
+
+    const row = Array.isArray(data) ? data[0] : data;
+    return {
+        gameId: row?.game_id || gameId,
+        winnerPlayerId: row?.winner_player_id || null,
+        winnerName: null,
+        pressedAt: row?.pressed_at || null,
+        pressExpiresAt: row?.press_expires_at || null,
+        pressStatus: row?.press_status || null,
+        resolvedAt: row?.resolved_at || null,
+        resolvedBy: row?.resolved_by || null,
+        pressEnabled: !!row?.press_enabled,
+        updatedAt: row?.updated_at || null,
+    };
 }
 
 export function subscribeToGameRuntime(gameId, onRuntimeChange) {

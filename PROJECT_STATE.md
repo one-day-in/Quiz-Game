@@ -1,6 +1,6 @@
 # PROJECT_STATE
 
-Last updated: 2026-05-05
+Last updated: 2026-09-24
 
 ## Real Project Overview
 
@@ -123,7 +123,7 @@ The app is realtime, but not purely realtime. It mixes:
   - board CRUD, board subscriptions, board-level audio/reset helpers
 - `api/playersApi.js`
   - player CRUD, score mutation, player subscriptions
-  - now includes backend-atomic score+log mutation RPC clients with compatibility fallback when RPCs are not yet deployed
+  - uses mandatory migration-owned RPCs for controller capabilities and backend-atomic score+log mutations; obsolete missing-RPC fallbacks have been removed
 - `api/runtimeApi.js`
   - fallback press-race reads/writes and runtime subscriptions
   - now includes `resolve_game_press(...)` RPC integration for atomic host-side press resolution
@@ -304,7 +304,7 @@ The app is realtime, but not purely realtime. It mixes:
 - Host game open now attempts to wake the remote buzzer server before establishing websocket transport.
 - Supabase `game_runtime` remains the persistent snapshot and fallback path, not the preferred live transport.
 - Modal correctness flow does not go through `GameService`; it calls player score API directly.
-- Host score mutations by `playerId` depend on remote Supabase function `adjust_game_player_score_by_id(...)`.
+- Host score mutations by `playerId` use the migration-owned `adjust_game_player_score_by_id(...)`; adjudication paths that also write history use the atomic adjust/transfer-with-log RPCs.
 
 ### Realtime Reality
 
@@ -327,9 +327,7 @@ The app is realtime, but not purely realtime. It mixes:
 - `player.js` now suppresses loser/failure press toasts when this controller is already the confirmed runtime winner.
 - `ModalService` no longer owns its own runtime polling loop; it listens through `PressRuntimeService`.
 - `runtimeApi.subscribeToGameRuntime()` still emits the raw realtime payload immediately for `press_enabled` and `winner_player_id` changes, then lazily enriches `winnerName` only when that extra lookup is actually needed.
-- Remote Supabase now has both score RPC paths required by the host and player surfaces:
-  - `adjust_game_player_score(...)`
-  - `adjust_game_player_score_by_id(...)`
+- The clean migration baseline defines the score RPC paths required by host and player surfaces; remote deployment remains intentionally pending until local P0 verification is complete.
 
 ### Local Storage Reality
 
@@ -433,32 +431,119 @@ Each of these had local `click` and `keydown` dismissal wiring. That made a simp
 
 ## TODO For Agent
 
-Ordered refactor and improvement steps. Do not treat all items as immediate.
+Ordered refactor and improvement steps. Do not treat all items as immediate. The Supabase rebuild is the current P0 and must be completed before unrelated refactors resume.
 
-1. Harden dedicated buzzer deployment and operations.
+1. **[P0][IN PROGRESS] Rebuild Supabase from a clean, migration-owned baseline.**
+   - Progress (2026-09-24):
+     - completed the local CLI/config foundation, six ordered migrations, intentionally empty seed, and initial pgTAP suite
+     - implemented the private host/admin access model, complete games/player/runtime/log schema, hashed controller capabilities, atomic score RPCs, Storage policies, and Realtime publication membership
+     - updated auth/profile/player/runtime/log/buzzer JavaScript contracts and removed the obsolete missing-RPC fallbacks covered by focused tests
+     - added `npm run admin:grant -- <auth-user-uuid>` as the explicit service-role-only first-admin operation
+     - verified a clean `supabase db reset` through local Supabase CLI `2.117.0`; all six migrations apply from Git without manual SQL
+     - verified both database test files and all 54 pgTAP assertions through `supabase test db`, including owner/admin/anonymous/non-owner/service-role behavior
+     - added a genuinely parallel database harness and passed it in four independent runs: 12 concurrent joins admit exactly 8 players, 8 concurrent presses produce one winner, and 12 duplicate score requests apply exactly once while changed replay payloads conflict
+     - verified the application suite (`17` files / `88` tests), production Vite build, new-script syntax, and whitespace integrity
+     - completed a real-browser host/player smoke against the local stack and buzzer: host login/session, lobby, game creation, player join, Realtime propagation, board edit, PRESS, server timeout penalty, immediate correct adjudication, score update, and current-player promotion all passed
+     - fixed the browser smoke-discovered local CSP issue with a Vite serve-only policy extension; production builds retain the strict static CSP
+     - extended the local browser smoke with two independent controllers: both joined and appeared in the host leaderboard; Beta won the first PRESS while Alpha was blocked; Beta's timeout applied -100 and reopened the race; Alpha then pressed and received +100 for a correct answer and became the current player; Beta later received -200 for an incorrect answer and the race reopened
+     - verified the score-log UI after a host +100 adjustment, including persistence after refresh; verified host refresh/re-entry and logout, player refresh/re-entry and leave, and upload/public read (HTTP 200)/delete through `mediaApi` with a disposable file
+     - verified editor media upload/render/delete in a separate local browser check: the temporary SVG rendered, its saved cell reference cleared after deletion, and no object remained in the game folder; the buzzer was off during this editor-only check, so WebSocket fallback errors were expected
+     - the disposable password-based host did not exercise Google OAuth
+     - remaining for the new-project rollout: apply the verified migrations, configure Google OAuth and the first admin, then repeat the production smoke
+   - Scope and authority:
+     - do not migrate or preserve data from the blocked Supabase project
+     - treat the existing root-level `supabase/*.sql` files as historical implementation evidence, not deployable bootstrap authority
+     - do not apply the existing SQL files to the new remote project as-is
+     - make timestamped files under `supabase/migrations/` the only schema-change path
+     - keep the new remote project empty until a full local `supabase db reset` succeeds
+   - Establish the local migration workflow:
+     - add and verify `supabase/config.toml`
+     - create ordered migrations for extensions/types, identity/access, games, players, runtime, score logs, RPC privileges, Storage, and Realtime
+     - keep non-secret development-only seed data in `supabase/seed.sql`
+     - add database checks under `supabase/tests/`
+   - Replace the legacy authorization model:
+     - create a private role/access model for `host` and `admin`
+     - replace direct frontend reads of `authorized_users` and `authorized_emails` with a minimal current-user access RPC
+     - remove the hardcoded admin email policy
+     - keep email out of publicly readable profile projections
+     - provision the first admin through an explicit one-time administrative operation, not committed seed data
+   - Create the complete `games` foundation:
+     - define the missing `public.games` DDL, constraints, timestamps, foreign keys, and indexes
+     - allow hosts to manage only their own games and admins to manage all games
+     - do not expose the full games list or private board/answer JSON to anonymous clients
+     - define a deliberate public join projection/capability for QR entry
+   - Secure player identity and joining:
+     - replace publicly readable raw `controller_id` values with an unexposed controller capability/hash design
+     - expose only safe player fields to public leaderboard/controller reads
+     - keep anonymous join/rename/leave limited to the caller's controller capability
+     - make the eight-player admission limit concurrency-safe
+     - reserve score mutation and player removal for the owning host/admin
+   - Rebuild the authoritative press runtime:
+     - align `game_runtime` with current code and include `press_expires_at`, `press_status`, `resolved_at`, `resolved_by`, and required constraints
+     - implement `claim_game_press`, `resolve_game_press`, and `resolve_game_press_timeout` with current signatures
+     - guarantee one winner, one resolution, and idempotent/stale-safe timeout behavior
+     - keep the server deadline authoritative and preserve the dedicated buzzer/Supabase fallback boundary
+     - remove missing-RPC compatibility fallbacks only after the new baseline is mandatory and verified
+   - Keep score changes and logs atomic:
+     - implement owner-authorized, transactionally atomic adjust-and-log and transfer-and-log RPCs
+     - use a stable request/log identifier to prevent duplicate score application
+     - allow log clearing only to the owning host/admin
+     - remove non-atomic legacy fallbacks after migration rollout
+   - Harden every database function and grant:
+     - prefer `security invoker`; use `security definer` only when required
+     - use an empty `search_path` and schema-qualified relations in definer functions
+     - revoke default execution from `public`, `anon`, and `authenticated`, then grant only the minimum role-specific access
+     - perform ownership/admin checks inside every privileged RPC rather than relying only on `GRANT authenticated`
+     - separate anonymous player RPCs, authenticated host RPCs, and service-role buzzer operations
+   - Manage Storage and Realtime through migrations:
+     - create the `media` bucket and ownership policies in code
+     - permit public media reads only if the retained `getPublicUrl` contract requires them
+     - permit upload/update/delete only for the owner of the game folder or an admin
+     - add only required tables to the Realtime publication and verify RLS-scoped subscriptions
+   - Update application contracts with the schema:
+     - update auth, profile, lobby, player, runtime, score-log, media, and buzzer-server call sites together with their migrations
+     - remove schema-version fallbacks only when their replacement has focused coverage
+     - update this document and README so setup instructions match the executable migrations
+   - Verification gates before remote deployment:
+     - a clean local `supabase db reset` recreates the entire database from Git
+     - database tests cover `anon`, owner, non-owner, admin, and service-role access
+     - concurrency tests cover the eight-player cap, first press, resolution, timeout, and duplicate score requests
+     - `npm test` and `npm run build` pass
+     - local manual smoke covers login/access, game CRUD, two-player join, Realtime, PRESS, correct/incorrect, timeout, score logs, media, refresh/re-entry, and logout
+   - Remote rollout:
+     - apply only the verified migrations to the new Supabase project
+     - configure Google OAuth and the first admin after schema deployment
+     - keep the service-role key exclusively in the buzzer server environment
+     - run the same production smoke flow before marking this item complete
+   - Completion criteria:
+     - the repository is the reproducible source of truth for the complete Supabase schema
+     - no manual SQL Editor prerequisite remains
+     - no anonymous caller can enumerate controller credentials, mutate scores, delete other players, or clear logs
+     - local and remote schemas match the current JavaScript contracts
+2. Harden dedicated buzzer deployment and operations.
    - provision a real production WebSocket host for `server/buzzerServer.js`
    - wire `VITE_BUZZER_WS_URL` in all environments
    - monitor reconnect/fallback behavior on mobile networks
-2. Revisit standalone leaderboard page vs host leaderboard panel responsibilities.
+3. Revisit standalone leaderboard page vs host leaderboard panel responsibilities.
    - keep the host panel as the primary host UX
    - avoid unnecessary divergence in QR and player-management affordances
-3. Add targeted tests for:
+4. Add targeted tests for:
    - `AppView` footer leaderboard behavior
    - player controller score sync
    - press race flow
    - modal correct/incorrect score application
-4. Move document metadata and page-level language handling to a consistent approach across all HTML entry points.
-5. Revisit `GameModel.players`.
+5. Move document metadata and page-level language handling to a consistent approach across all HTML entry points.
+6. Revisit `GameModel.players`.
    - either formalize it as read-only snapshot data
    - or remove it from the model layer to reduce confusion
-6. Audit view modules for direct data fetching and decide which fetches belong in controller/service instead.
-7. Add focused tests for the single host leaderboard panel.
+7. Audit view modules for direct data fetching and decide which fetches belong in controller/service instead.
+8. Add focused tests for the single host leaderboard panel.
    - compact state
    - expanded state
    - overlay close behavior
    - edit controls
-8. Add a small architecture test checklist to the repo so future UI changes do not regress multiplayer flow.
-9. Add targeted tests for shared overlay dismissal behavior.
+9. Add a small architecture test checklist to the repo so future UI changes do not regress multiplayer flow.
+10. Add targeted tests for shared overlay dismissal behavior.
    - Escape closes
    - backdrop click closes
    - fullscreen question modal remains exempt from Escape
@@ -501,6 +586,19 @@ Ordered refactor and improvement steps. Do not treat all items as immediate.
   Medium
 
 ## Decisions Log
+
+### 2026-09-24
+
+- The local clean-reset gate is closed: the pinned Supabase CLI recreates the database solely from timestamped migrations and the empty seed.
+- Parallel admission, press arbitration, and score idempotency are verified by `npm run db:test:concurrency` in addition to pgTAP coverage.
+- Local Supabase origins are added to CSP only by the Vite development server; generated production HTML keeps the strict deployment policy.
+
+### 2026-09-22
+
+- The blocked Supabase project's data is not required and will not be migrated.
+- Supabase will be rebuilt from a clean local baseline owned by immutable timestamped migrations.
+- Existing root-level SQL files are historical reference only until the migration-owned baseline is verified; they must not be applied to the new remote project as-is.
+- The remote project stays empty until schema, RLS/RPC security, Storage, Realtime, application contracts, and clean-reset verification pass locally.
 
 ### 2026-04-13
 

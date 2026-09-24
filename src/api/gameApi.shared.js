@@ -3,8 +3,7 @@ import { createCellModifier, normalizeCellModifier } from '../modifiers/modifier
 
 export const MAX_PLAYERS = 8;
 export const PUBLIC_PLAYER_COLUMNS = 'id, game_id, name, points, joined_at';
-export const PRIVATE_PLAYER_COLUMNS = `${PUBLIC_PLAYER_COLUMNS}, controller_id`;
-export const GAME_RUNTIME_COLUMNS = '*';
+export const GAME_RUNTIME_COLUMNS = 'game_id, press_enabled, winner_player_id, pressed_at, press_expires_at, press_status, resolved_at, resolved_by, updated_at';
 
 export const DEFAULT_CELL = {
     isAnswered: false,
@@ -109,12 +108,12 @@ export function serializeGameForStorage(game = {}) {
     };
 }
 
-export function normalizePlayerRow(row, idx = 0, { includeControllerId = false } = {}) {
+export function normalizePlayerRow(row, idx = 0) {
     return normalizePlayer({
         id: row?.id,
         name: row?.name,
         points: row?.points,
-        controllerId: includeControllerId ? row?.controller_id : null,
+        controllerId: null,
         joinedAt: row?.joined_at,
     }, idx);
 }
@@ -139,22 +138,21 @@ export async function fetchGameRecord(gameId) {
     return normalizeGame(data.data);
 }
 
-export async function fetchPlayerRows(gameId, { includeControllerId = false } = {}) {
+export async function fetchPlayerRows(gameId) {
     if (!gameId) throw new Error('[Game] getPlayers failed: missing gameId');
 
-    const columns = includeControllerId ? PRIVATE_PLAYER_COLUMNS : PUBLIC_PLAYER_COLUMNS;
     const { data, error } = await supabase
         .from('game_players')
-        .select(columns)
+        .select(PUBLIC_PLAYER_COLUMNS)
         .eq('game_id', gameId)
         .order('joined_at', { ascending: true });
 
     if (error) throw new Error(`[Game] getPlayers failed: ${error.message}`);
-    return normalizePlayerRows(data, { includeControllerId });
+    return normalizePlayerRows(data);
 }
 
 export function mapPlayerRpcResult(data) {
     const row = Array.isArray(data) ? data[0] : data;
     if (!row) throw new Error('Player not found');
-    return normalizePlayerRow(row, 0, { includeControllerId: false });
+    return normalizePlayerRow(row);
 }

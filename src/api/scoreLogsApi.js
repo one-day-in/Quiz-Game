@@ -55,26 +55,7 @@ export async function clearScoreLogs(gameId) {
   const { error } = await supabase.rpc('clear_score_logs', {
     p_game_id: gameId,
   });
-  if (!error) return;
-
-  const message = String(error?.message || '');
-  const rpcMissing =
-    error?.code === 'PGRST202'
-    || message.includes('Could not find the function')
-    || message.includes('clear_score_logs');
-
-  if (!rpcMissing) {
-    throw new Error(`[Game] clearScoreLogs failed: ${message}`);
-  }
-
-  const { error: fallbackError } = await supabase
-    .from('score_logs')
-    .delete()
-    .eq('game_id', gameId);
-
-  if (fallbackError) {
-    throw new Error(`[Game] clearScoreLogs fallback failed: ${fallbackError.message}`);
-  }
+  if (error) throw new Error(`[Game] clearScoreLogs failed: ${error.message}`);
 }
 
 export function subscribeToScoreLogs(gameId, onInsert) {

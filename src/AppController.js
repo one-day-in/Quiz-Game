@@ -208,7 +208,11 @@ export function createAppController({
     (players) => appViewRef?.updatePlayers?.(players)
   );
 
-  disposer.add(() => { appViewRef?.el?.remove(); appViewRef = null; });
+  disposer.add(() => {
+    appViewRef?.destroy?.();
+    appViewRef?.el?.remove();
+    appViewRef = null;
+  });
   disposer.observeRemoval(root, () => modalService?.destroy?.());
 
   return {

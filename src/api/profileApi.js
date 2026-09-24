@@ -3,11 +3,8 @@ import { supabase } from './supabaseClient.js';
 function mapProfile(user) {
   const fullName = user?.user_metadata?.full_name || user?.user_metadata?.name || '';
   const avatarUrl = user?.user_metadata?.avatar_url || user?.user_metadata?.picture || '';
-  const email = user?.email || '';
-
   return {
     id: user?.id,
-    email,
     full_name: fullName,
     avatar_url: avatarUrl,
   };
@@ -34,7 +31,7 @@ export async function getProfilesByIds(userIds = []) {
 
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, email, full_name, avatar_url')
+    .select('id, full_name, avatar_url')
     .in('id', ids);
 
   if (error) {
