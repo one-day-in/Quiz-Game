@@ -8,6 +8,7 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  VITE_SUPABASE_URL: https://srbtmfpvgiacoihtgmsk.supabase.co
 
 permissions:
   contents: read
@@ -37,14 +38,12 @@ jobs:
       - name: Test
         run: npm test
         env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_BUZZER_WS_URL: ${{ secrets.VITE_BUZZER_WS_URL }}
 
       - name: Build
         run: npm run build
         env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_BUZZER_WS_URL: ${{ secrets.VITE_BUZZER_WS_URL }}
 
